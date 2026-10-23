@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Not loaded in Phase 1. The API process does not start a ROS node.
+  If a later phase enables a per-robot agent, that process must use this
+  profile (or a reviewed replacement) and a domain id that is not the
+  legacy Care-Move domain. Do not point it at a robot NIC until that
+  review exists.
+-->
+<CycloneDDS>
+  <Domain id="73">
+    <General>
+      <AllowMulticast>false</AllowMulticast>
+      <Interfaces>
+        <NetworkInterface name="lo" priority="0"/>
+      </Interfaces>
+    </General>
+  </Domain>
+</CycloneDDS>

@@ -1,0 +1,26 @@
+name: care-move-fms
+
+# Nothing starts unless the postgres profile is requested explicitly.
+# This file is not a Care-Move or Open-RMF compose project.
+services:
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: fms
+      POSTGRES_PASSWORD: ${FMS_POSTGRES_PASSWORD:-local-fms-only-not-from-care-move}
+      POSTGRES_DB: care_move_fms
+    ports:
+      - "55432:5432"
+    volumes:
+      - care-move-fms-pg:/var/lib/postgresql/data
+    networks:
+      - care-move-fms-net
+
+networks:
+  care-move-fms-net:
+    name: care-move-fms-net
+
+volumes:
+  care-move-fms-pg:
+    name: care-move-fms-pg

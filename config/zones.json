@@ -1,0 +1,37 @@
+[
+  {
+    "zone_id": "ZONE_A",
+    "name": "복도",
+    "kind": "corridor",
+    "capacity": 1,
+    "bounds": {"x": 1.0, "y": 3.0, "w": 6.0, "h": 1.4}
+  },
+  {
+    "zone_id": "ZONE_B",
+    "name": "교차로",
+    "kind": "intersection",
+    "capacity": 1,
+    "bounds": {"x": 7.0, "y": 2.4, "w": 2.0, "h": 3.2}
+  },
+  {
+    "zone_id": "ZONE_C",
+    "name": "엘리베이터 대기",
+    "kind": "elevator_wait",
+    "capacity": 1,
+    "bounds": {"x": 9.2, "y": 3.0, "w": 1.8, "h": 1.6}
+  },
+  {
+    "zone_id": "ZONE_D",
+    "name": "화장실 입구",
+    "kind": "restroom_entrance",
+    "capacity": 1,
+    "bounds": {"x": 1.0, "y": 5.4, "w": 1.8, "h": 1.6}
+  },
+  {
+    "zone_id": "ZONE_E",
+    "name": "도킹",
+    "kind": "docking",
+    "capacity": 1,
+    "bounds": {"x": 0.4, "y": 0.4, "w": 2.2, "h": 1.8}
+  }
+]

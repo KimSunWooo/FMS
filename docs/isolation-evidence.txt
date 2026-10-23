@@ -1,0 +1,18 @@
+collected_at=2026-10-23T10:48:19+00:00
+hostname=cursor
+pwd=/workspace/backend
+branch=main
+--- legacy path probe ---
+ls: cannot access '/home/sw': No such file or directory
+ls: cannot access '/home/sw/DevSpace': No such file or directory
+ls: cannot access '/home/sw/DevSpace/care-move-rmf-starter': No such file or directory
+ls: cannot access '/home/sw/DevSpace/care-move-fms': No such file or directory
+--- report probe ---
+--- ros/rmf processes ---
+none
+--- ros/rmf environment ---
+none
+--- tool presence ---
+ros2 missing
+docker missing
+--- listeners ---

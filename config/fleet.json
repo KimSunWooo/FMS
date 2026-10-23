@@ -1,0 +1,25 @@
+{
+  "robots": [
+    {
+      "robot_id": "pinky-1",
+      "name": "Pinky #1",
+      "battery_percent": 90,
+      "controller_ready": true,
+      "pose": {"x": 1.2, "y": 1.2, "yaw": 0.4}
+    },
+    {
+      "robot_id": "pinky-2",
+      "name": "Pinky #2",
+      "battery_percent": 78,
+      "controller_ready": true,
+      "pose": {"x": 1.8, "y": 6.2, "yaw": -0.2}
+    },
+    {
+      "robot_id": "pinky-3",
+      "name": "Pinky #3",
+      "battery_percent": 86,
+      "controller_ready": true,
+      "pose": {"x": 10.2, "y": 6.4, "yaw": 3.0}
+    }
+  ]
+}
