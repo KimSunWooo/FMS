@@ -12,7 +12,7 @@ from sqlalchemy.pool import NullPool
 from app.models.base import Base
 from app.models.tables import SchemaMigration
 
-LATEST_SCHEMA = 1
+LATEST_SCHEMA = 2
 
 _PARTIAL_INDEXES = (
     """
@@ -71,6 +71,14 @@ class Database:
         with self.engine.begin() as connection:
             for statement in _PARTIAL_INDEXES:
                 connection.exec_driver_sql(statement)
+            columns = {
+                row[1]
+                for row in connection.execute(text("PRAGMA table_info(navigation_goals)")).fetchall()
+            }
+            if "nav2_action_goal_id" not in columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE navigation_goals ADD COLUMN nav2_action_goal_id VARCHAR(64)"
+                )
             current = connection.execute(
                 text("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")
             ).scalar()
@@ -82,6 +90,11 @@ class Database:
             elif int(current) > LATEST_SCHEMA:
                 raise RuntimeError(
                     f"Database schema {current} is newer than this build ({LATEST_SCHEMA})."
+                )
+            elif int(current) < LATEST_SCHEMA:
+                connection.execute(
+                    text("INSERT INTO schema_migrations (version, applied_at) VALUES (:v, :t)"),
+                    {"v": LATEST_SCHEMA, "t": datetime.now(timezone.utc).isoformat()},
                 )
 
     @contextmanager

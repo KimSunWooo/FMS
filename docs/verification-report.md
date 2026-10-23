@@ -88,9 +88,14 @@ Lease와 안전
 | 교차로 예약 충돌 | PASS | 예약 정책 |
 | 예약 owner 종료 | PASS | blocked, 만료로 해제하지 않음 |
 | 대기열 교착 | PARTIAL | 대기 상태를 만들지 않아 교착이 생기지 않음. 대기열 탐지기는 NOT_RUN |
-| Gazebo Nav2 E2E | NOT_RUN | ROS 없음 |
+| Gazebo Nav2 E2E | NOT_RUN | 호스트에 Jazzy, Gazebo, Pinky 시뮬 패키지 없음. [phase2-report.md](phase2-report.md) |
+| Phase 2 계약 (UNIT/MOCK) | PASS | `test_phase2_nav2_contract.py` 15건. Gazebo 주행이 아님 |
 | 실물 Pinky goal | BLOCKED | 이 빌드가 명령을 거부. 현장 승인 없음 |
 | 실물 3대 교통 | NOT_RUN | |
+
+## Phase 2 추가 테스트
+
+`pytest` 49 passed. 기존 34개에 `tests/test_phase2_nav2_contract.py` 15개가 더해졌다. 15개 모두 UNIT 또는 MOCK이다. GAZEBO_E2E 테스트는 수집하지 않았다.
 
 ## 관제 화면
 

@@ -4,6 +4,8 @@
 
 ## Phase 2 — Gazebo / Nav2
 
+상태: **BLOCKED / GAZEBO_E2E NOT_RUN**. 계약과 실패 닫힘 경로는 코드와 UNIT/MOCK 테스트에 있다. Gazebo Pinky 주행 로그는 없다. 자세한 기록은 [phase2-report.md](phase2-report.md).
+
 목표: `FMS task → 로봇별 에이전트 → Nav2 NavigateToPose → Gazebo Pinky → SUCCEEDED → FMS COMPLETED`.
 
 조건:

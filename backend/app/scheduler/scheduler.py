@@ -109,7 +109,11 @@ class Scheduler:
     def _reject_reason(self, session: Session, task: Task, robot: Robot) -> str | None:
         if task.requested_robot_id and task.requested_robot_id != robot.id:
             return "not_requested_robot"
-        if robot.mode != "mock":
+        if robot.mode == "physical":
+            return "physical_blocked"
+        if robot.mode == "gazebo" and self.settings.execution_mode != "gazebo":
+            return "gazebo_mode_not_armed"
+        if robot.mode not in {"mock", "gazebo"}:
             return "mode_not_mock"
         if robot.connection_status != "online":
             return "offline"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import uuid
 from datetime import timedelta
@@ -9,7 +10,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.core.clock import Clock
-from app.core.config import Settings
+from app.core.config import ROOT, Settings
 from app.core.database import Database
 from app.core.errors import (
     FmsError,
@@ -17,6 +18,8 @@ from app.core.errors import (
     LeaseRejectedError,
     NotFoundError,
     PhysicalControlBlocked,
+    StaleOwnerError,
+    VersionConflictError,
     ZoneConflictError,
 )
 from app.core.logging import configure_logging, get_logger
@@ -40,7 +43,7 @@ class Runtime:
         self.settings = settings
         self.clock = Clock()
         self.db = Database(settings.database_url)
-        self.safety = SafetyGuard()
+        self.safety = SafetyGuard(execution_mode=settings.execution_mode)
         self.gateway = MockGateway(
             environment_id=settings.environment_id,
             secret=settings.lease_secret,
@@ -88,6 +91,7 @@ class Runtime:
                             "gateway_boot_id": self.gateway.boot_id,
                             "physical_control": "blocked",
                             "ros_bridge": "disabled",
+                            "execution_mode": self.settings.execution_mode,
                             "rmf": "not_used",
                             "ros_domain_id": self.settings.ros_domain_id,
                         }
@@ -175,7 +179,8 @@ class Runtime:
             robot = self._new_robot(kwargs, now, source="registry")
             session.add(robot)
             session.flush()
-            self.agent.start(session, robot, now)
+            if robot.mode == "mock":
+                self.agent.start(session, robot, now)
             robot.pose_trustworthy = True
             traffic.sync_pose_occupancy(
                 session, robot, now, reservation_ttl=max(self.settings.lease_ttl_seconds * 4, 120)
@@ -202,7 +207,8 @@ class Runtime:
             robot.connection_status = "online"
             robot.controller_ready = True
             robot.updated_at = now
-            self.agent.start(session, robot, now)
+            if robot.mode == "mock":
+                self.agent.start(session, robot, now)
             self._restore_idle_pose(session, robot, now)
             refresh_robot(session, robot)
             return robot_out(session, robot)
@@ -381,6 +387,8 @@ class Runtime:
                 "physical_control": "blocked",
                 "rmf": "not_used",
                 "ros_bridge": "disabled",
+                "execution_mode": self.settings.execution_mode,
+                "gazebo_preflight": self._preflight_summary(),
                 "ros_domain_id": self.settings.ros_domain_id,
                 "distance_model": self.settings.distance_model,
                 "gateway": {
@@ -427,16 +435,19 @@ class Runtime:
         return {
             "service": "care-move-fms",
             "status": "ok" if db_ok and self.started else "starting",
-            "phase": 1,
+            "phase": 2,
             "database": "ok" if db_ok else "error",
             "physical_control": "blocked",
             "ros_bridge": "disabled",
+            "execution_mode": self.settings.execution_mode,
+            "gazebo_e2e": "NOT_RUN",
+            "gazebo_preflight": self._preflight_summary(),
             "rmf_runtime": "not_used",
             "environment_id": self.settings.environment_id,
             "ros_domain_id": self.settings.ros_domain_id,
             "gateway_boot_id": self.gateway.boot_id,
             "auto_tick": self.settings.auto_tick,
-            "motion_backend": "mock-only",
+            "motion_backend": "mock-only" if self.settings.execution_mode == "mock" else "gazebo-armed-awaiting-nav2-result",
         }
 
     def readiness(self) -> dict:
@@ -446,6 +457,153 @@ class Runtime:
         if not ready:
             raise FmsError("not ready")
         return body
+
+    def open_agent_session(self, robot_id: str) -> dict:
+        now = self.clock.now()
+        with self.db.write() as session:
+            robot = self._require_robot(session, robot_id)
+            self.tasks._require_external_agent(robot)
+            if self.agent.is_alive(robot.id):
+                raise VersionConflictError("an agent session is already attached to this robot")
+            session_id = self.agent.start(session, robot, now)
+            robot.last_heartbeat_at = now
+            return {"robot_id": robot.id, "session_id": session_id, "attached": True}
+
+    def replace_agent_session(self, robot_id: str) -> dict:
+        now = self.clock.now()
+        with self.db.write() as session:
+            robot = self._require_robot(session, robot_id)
+            self.tasks._require_external_agent(robot)
+            self.agent.stop(session, robot, now)
+            session_id = self.agent.start(session, robot, now)
+            recovered = self.reconciliation.run(session, now, process_restart=False)
+            return {
+                "robot_id": robot.id,
+                "session_id": session_id,
+                "recovered_task_ids": recovered,
+                "resumed_previous_goal": False,
+            }
+
+    def agent_stop(self, robot_id: str, session_id: str) -> dict:
+        now = self.clock.now()
+        with self.db.write() as session:
+            robot = self._require_robot(session, robot_id)
+            self.tasks._require_external_agent(robot)
+            if self.agent.session_id(robot.id) != session_id:
+                raise StaleOwnerError("agent session does not match this robot")
+            self.agent.stop(session, robot, now)
+            recovered = self.reconciliation.run(session, now, process_restart=False)
+            return {"robot_id": robot.id, "stopped": True, "recovered_task_ids": recovered}
+
+    def agent_heartbeat(self, robot_id: str, session_id: str) -> dict:
+        now = self.clock.now()
+        with self.db.write() as session:
+            robot = self._require_robot(session, robot_id)
+            self.tasks._require_external_agent(robot)
+            if self.agent.session_id(robot.id) != session_id:
+                raise StaleOwnerError("agent session does not match this robot")
+            robot.last_heartbeat_at = now
+            robot.agent_online = True
+            task = session.scalar(
+                select(Task).where(
+                    Task.robot_id == robot.id,
+                    Task.session_id == session_id,
+                    Task.status.in_([status.value for status in IN_FLIGHT]),
+                )
+            )
+            if task is not None:
+                self.tasks.heartbeat(session, task, now)
+            return {
+                "robot_id": robot.id,
+                "session_id": session_id,
+                "task_id": None if task is None else task.id,
+                "status": None if task is None else task.status,
+            }
+
+    def agent_claim(self, **kwargs) -> dict:
+        with self.db.write() as session:
+            return self.tasks.claim_send(session, now=self.clock.now(), **kwargs)
+
+    def agent_goal_event(self, **kwargs) -> dict:
+        kind = kwargs.pop("kind")
+        nav2_action_goal_id = kwargs.pop("nav2_action_goal_id", None)
+        robot_id = kwargs.pop("robot_id")
+        now = self.clock.now()
+        with self.db.write() as session:
+            robot = self._require_robot(session, robot_id)
+            self.tasks._require_external_agent(robot)
+            if self.agent.session_id(robot.id) != kwargs["session_id"]:
+                raise StaleOwnerError("agent session does not match this robot")
+            if kind == "accepted":
+                task = self.tasks.note_nav2_accept(
+                    session,
+                    now=now,
+                    nav2_action_goal_id=nav2_action_goal_id,
+                    task_id=kwargs["task_id"],
+                    goal_id=kwargs["goal_id"],
+                    execution_id=kwargs["execution_id"],
+                    owner_epoch=kwargs["owner_epoch"],
+                    session_id=kwargs["session_id"],
+                )
+            elif kind in {"result", "disconnected"}:
+                outcome = "disconnected" if kind == "disconnected" else kwargs["outcome"]
+                task = self.tasks.apply_result(
+                    session,
+                    now=now,
+                    task_id=kwargs["task_id"],
+                    goal_id=kwargs["goal_id"],
+                    execution_id=kwargs["execution_id"],
+                    owner_epoch=kwargs["owner_epoch"],
+                    session_id=kwargs["session_id"],
+                    outcome=outcome,
+                    pose_x=kwargs.get("pose_x") or 0.0,
+                    pose_y=kwargs.get("pose_y") or 0.0,
+                    pose_yaw=kwargs.get("pose_yaw") or 0.0,
+                    pose_trustworthy=bool(kwargs.get("pose_trustworthy")),
+                    source="gazebo-agent",
+                )
+            else:
+                raise FmsError("goal event kind must be accepted, result, or disconnected")
+            return task_out(session, task)
+
+    def agent_assignment(self, robot_id: str, session_id: str) -> dict:
+        with self.db.read() as session:
+            robot = self._require_robot(session, robot_id)
+            self.tasks._require_external_agent(robot)
+            if self.agent.session_id(robot.id) != session_id:
+                raise StaleOwnerError("agent session does not match this robot")
+            task = session.scalar(
+                select(Task).where(
+                    Task.robot_id == robot.id,
+                    Task.session_id == session_id,
+                    Task.status.in_([TaskStatus.DISPATCHING.value, TaskStatus.RUNNING.value]),
+                )
+            )
+            if task is None:
+                return {"assignment": None, "send_navigate_to_pose": False}
+            goal = session.get(NavigationGoal, task.goal_id) if task.goal_id else None
+            send = (
+                task.status == TaskStatus.DISPATCHING.value
+                and goal is not None
+                and goal.status == "pending"
+            )
+            return {"assignment": task_out(session, task), "send_navigate_to_pose": send}
+
+    def _preflight_summary(self) -> dict:
+        root = str(ROOT)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from robot_agent.preflight import live_report
+
+        report = live_report(expected_domain=self.settings.ros_domain_id)
+        return {
+            "status": "ready" if report.ready else "not_ready",
+            "reasons": report.reasons,
+            "ros_distro": report.ros_distro,
+            "ros_domain_id": report.ros_domain_id,
+            "rmw_implementation": report.rmw_implementation,
+            "pinky_packages": report.pinky_packages,
+        }
 
     def _dispatch(self, now) -> None:
         with self.db.read() as session:
@@ -488,6 +646,9 @@ class Runtime:
             with self.db.write() as session:
                 task = session.get(Task, task_id)
                 if task is None or task.robot_id is None:
+                    continue
+                robot = session.get(Robot, task.robot_id)
+                if robot is None or robot.mode != "mock":
                     continue
                 if not self.agent.is_alive(task.robot_id):
                     continue
@@ -548,7 +709,13 @@ class Runtime:
                 Task.status.in_([TaskStatus.RECOVERY_REQUIRED.value] + [status.value for status in IN_FLIGHT]),
             )
         )
-        if blocking or robot.connection_status != "online" or robot.mode != "mock" or robot.estop_latched:
+        if robot.mode != "mock":
+            if blocking or robot.connection_status != "online" or robot.estop_latched:
+                robot.pose_trustworthy = False
+                if blocking:
+                    traffic.block_robot_zones(session, robot.id, now, "fail_closed_uncertain_task")
+            return
+        if blocking or robot.connection_status != "online" or robot.estop_latched:
             robot.pose_trustworthy = False
             if blocking:
                 traffic.block_robot_zones(session, robot.id, now, "fail_closed_uncertain_task")
@@ -587,7 +754,7 @@ class Runtime:
             operational_state="idle",
             battery_percent=spec["battery_percent"],
             controller_ready=spec.get("controller_ready", True),
-            controller_kind="mock",
+            controller_kind="nav2" if spec["mode"] == "gazebo" else "mock",
             pose_x=spec["x"],
             pose_y=spec["y"],
             pose_yaw=spec["yaw"],

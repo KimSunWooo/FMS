@@ -324,14 +324,17 @@ class TaskManager:
             row.lease_id = lease.lease_id
             row.lease_expires_at = lease.expires_at
             row.goal_may_be_in_flight = True
+            row.last_heartbeat_at = now
 
+        robot.last_heartbeat_at = now
+        handed = "goal_handed_to_mock_agent" if robot.mode == "mock" else "goal_handed_to_robot_agent"
         transition(
             session,
             task,
             TaskStatus.DISPATCHING,
             actor=task.owner_id or "fms",
             now=now,
-            reason="goal_handed_to_mock_agent",
+            reason=handed,
             mutate=mutate,
         )
         record_ownership(session, task, "dispatch", now, detail=lease.lease_id)
@@ -390,7 +393,12 @@ class TaskManager:
             return task
         goal.status = "accepted"
         goal.updated_at = now
-        goal.auto_complete_at = now + timedelta(seconds=self.settings.mock_goal_duration_seconds)
+        if robot.mode == "mock":
+            goal.auto_complete_at = now + timedelta(seconds=self.settings.mock_goal_duration_seconds)
+            reason = "mock_goal_accepted_not_completed"
+        else:
+            goal.auto_complete_at = None
+            reason = "nav2_goal_accepted_not_completed"
         task.last_heartbeat_at = now
         robot.last_heartbeat_at = now
         robot.agent_online = True
@@ -401,7 +409,8 @@ class TaskManager:
             actor=task.owner_id or "fms",
             now=now,
             expected_epoch=task.owner_epoch,
-            reason="mock_goal_accepted_not_completed",
+            reason=reason,
+            detail={"goal_id": goal.goal_id, "nav2_action_goal_id": goal.nav2_action_goal_id},
         )
         return task
 
@@ -488,25 +497,33 @@ class TaskManager:
         ):
             self.enter_recovery(session, task, "result_without_valid_lease", now)
             return task
-        if outcome == "aborted":
-            goal.status = "aborted"
+        if task.status == TaskStatus.CANCEL_REQUESTED.value and outcome != "canceled":
             goal.last_result_outcome = outcome
-            goal.last_result_disposition = "accepted_abort"
+            goal.last_result_disposition = "cancel_race"
             goal.updated_at = now
-            transition(
-                session,
-                task,
-                TaskStatus.FAILED,
-                actor=task.owner_id or "fms",
-                now=now,
-                expected_epoch=owner_epoch,
-                reason="mock_goal_aborted",
-                mutate=lambda row: setattr(row, "failure_reason", "mock_goal_aborted") or setattr(row, "completed_at", now),
-            )
-            refresh_robot(session, robot)
+            reason = "cancel_success_race" if outcome == "succeeded" else f"cancel_conflict_{outcome}"
+            self.enter_recovery(session, task, reason, now)
+            return task
+        if outcome == "rejected":
+            return self._apply_rejection(session, task, goal, robot, now)
+        if outcome == "aborted":
+            return self._apply_abort(session, task, goal, robot, now, source)
+        if outcome == "canceled":
+            return self._apply_cancel_result(session, task, goal, now, pose_trustworthy)
+        if outcome == "disconnected":
+            goal.last_result_outcome = outcome
+            goal.last_result_disposition = "action_server_disconnected"
+            goal.updated_at = now
+            self.enter_recovery(session, task, "nav2_action_server_disconnected", now)
             return task
         if outcome != "succeeded":
             self._reject_result(session, task, goal, outcome, "rejected_outcome", now)
+            return task
+        if task.status != TaskStatus.RUNNING.value:
+            goal.last_result_outcome = outcome
+            goal.last_result_disposition = "success_before_running"
+            goal.updated_at = now
+            self.enter_recovery(session, task, "success_before_running", now)
             return task
         if not pose_trustworthy:
             self.enter_recovery(session, task, "success_report_without_trustworthy_pose", now)
@@ -658,6 +675,206 @@ class TaskManager:
                 created_at=now,
             )
         )
+        return task
+
+    def claim_send(
+        self,
+        session: Session,
+        *,
+        robot_id: str,
+        session_id: str,
+        owner_epoch: int,
+        lease_id: str,
+        goal_id: str,
+        now,
+    ) -> dict:
+        """Allow one Nav2 send for this goal. A second claim does not insert a goal."""
+        robot = session.get(Robot, robot_id)
+        goal = session.get(NavigationGoal, goal_id)
+        if robot is None or goal is None or goal.robot_id != robot_id:
+            raise NotFoundError("goal is not owned by this robot")
+        self._require_external_agent(robot)
+        task = self._require(session, goal.task_id)
+        goals_before = 1
+        fence_ok = (
+            task.owner_epoch == owner_epoch
+            and task.session_id == session_id
+            and task.lease_id == lease_id
+            and task.goal_id == goal_id
+            and task.status == TaskStatus.DISPATCHING.value
+        )
+        lease = session.get(ControlLease, lease_id)
+        lease_ok = lease is not None and self.gateway.verify(
+            session, lease, now=now, robot_id=robot_id, session_id=session_id
+        )
+        if not fence_ok or not lease_ok:
+            reason = "fence_mismatch"
+        elif goal.status != "pending":
+            reason = "duplicate_send"
+        else:
+            reason = ""
+        if reason:
+            self._reject_result(session, task, goal, "claim", reason, now)
+            return {
+                "send_navigate_to_pose": False,
+                "reason": reason,
+                "goal_id": goal.goal_id,
+                "task_id": task.id,
+                "execution_id": task.execution_id,
+                "owner_epoch": task.owner_epoch,
+                "navigation_goal_count": goals_before,
+            }
+        goal.status = "send_claimed"
+        goal.updated_at = now
+        task.last_heartbeat_at = now
+        robot.last_heartbeat_at = now
+        session.add(
+            SystemEvent(
+                level="info",
+                code="goal_send_claimed",
+                message="one Nav2 send was claimed; the task is not complete",
+                payload_json=json.dumps(
+                    {
+                        "task_id": task.id,
+                        "goal_id": goal.goal_id,
+                        "execution_id": task.execution_id,
+                        "owner_epoch": task.owner_epoch,
+                        "session_id": session_id,
+                        "send_navigate_to_pose": True,
+                        "completed": False,
+                    }
+                ),
+                created_at=now,
+            )
+        )
+        return {
+            "send_navigate_to_pose": True,
+            "reason": "claimed_once",
+            "goal_id": goal.goal_id,
+            "task_id": task.id,
+            "execution_id": task.execution_id,
+            "owner_epoch": task.owner_epoch,
+            "lease_id": task.lease_id,
+            "session_id": task.session_id,
+            "destination": {
+                "x": task.destination_x,
+                "y": task.destination_y,
+                "yaw": task.destination_yaw,
+                "frame_id": "map",
+            },
+            "nav2_action": "navigate_to_pose",
+            "navigation_goal_count": goals_before,
+        }
+
+    def note_nav2_accept(
+        self,
+        session: Session,
+        *,
+        task_id: str,
+        goal_id: str,
+        execution_id: str,
+        owner_epoch: int,
+        session_id: str,
+        nav2_action_goal_id: str | None,
+        now,
+    ) -> Task:
+        task = self._require(session, task_id)
+        goal = session.get(NavigationGoal, task.goal_id) if task.goal_id else None
+        robot = session.get(Robot, task.robot_id) if task.robot_id else None
+        if robot is not None:
+            self._require_external_agent(robot)
+        if (
+            goal is None
+            or robot is None
+            or task.owner_epoch != owner_epoch
+            or task.goal_id != goal_id
+            or task.execution_id != execution_id
+            or task.session_id != session_id
+            or goal.status != "send_claimed"
+        ):
+            self._reject_result(session, task, goal, "accepted", "rejected_accept_fence", now)
+            return task
+        if nav2_action_goal_id:
+            goal.nav2_action_goal_id = nav2_action_goal_id
+        return self.accept_goal(session, task, now)
+
+    def _require_external_agent(self, robot: Robot) -> None:
+        from app.core.errors import PhysicalControlBlocked
+
+        if robot.mode == "physical" or self.settings.execution_mode == "physical":
+            raise PhysicalControlBlocked("Physical motor control is blocked.")
+        if self.settings.execution_mode != "gazebo" or robot.mode != "gazebo":
+            raise PhysicalControlBlocked(
+                "The external agent API is closed unless execution mode and the robot are both gazebo."
+            )
+
+    def _apply_rejection(self, session, task, goal, robot, now) -> Task:
+        never_accepted = goal.status in {"pending", "send_claimed"} and task.status == TaskStatus.DISPATCHING.value
+        goal.last_result_outcome = "rejected"
+        goal.updated_at = now
+        if not never_accepted:
+            goal.last_result_disposition = "reject_after_accept"
+            self.enter_recovery(session, task, "nav2_reject_after_accept", now)
+            return task
+        goal.status = "rejected"
+        goal.last_result_disposition = "nav2_rejected_before_accept"
+
+        def mutate(row: Task) -> None:
+            row.failure_reason = "nav2_goal_rejected"
+            row.completed_at = now
+
+        transition(
+            session,
+            task,
+            TaskStatus.FAILED,
+            actor=task.owner_id or "fms",
+            now=now,
+            expected_epoch=task.owner_epoch,
+            reason="nav2_goal_rejected",
+            detail={"goal_sent_result": "rejected", "completed": False},
+            mutate=mutate,
+        )
+        refresh_robot(session, robot)
+        return task
+
+    def _apply_abort(self, session, task, goal, robot, now, source: str) -> Task:
+        reason = "mock_goal_aborted" if source.startswith("mock") else "nav2_goal_aborted"
+        goal.status = "aborted"
+        goal.last_result_outcome = "aborted"
+        goal.last_result_disposition = "accepted_abort"
+        goal.updated_at = now
+
+        def mutate(row: Task) -> None:
+            row.failure_reason = reason
+            row.completed_at = now
+
+        transition(
+            session,
+            task,
+            TaskStatus.FAILED,
+            actor=task.owner_id or "fms",
+            now=now,
+            expected_epoch=task.owner_epoch,
+            reason=reason,
+            mutate=mutate,
+        )
+        refresh_robot(session, robot)
+        return task
+
+    def _apply_cancel_result(self, session, task, goal, now, pose_trustworthy: bool) -> Task:
+        if task.status == TaskStatus.CANCEL_REQUESTED.value:
+            if not pose_trustworthy:
+                goal.last_result_outcome = "canceled"
+                goal.last_result_disposition = "cancel_without_trusted_pose"
+                goal.updated_at = now
+                self.enter_recovery(session, task, "cancel_ack_without_trusted_pose", now)
+                return task
+            return self.ack_cancel(session, task, now)
+        goal.status = "canceled_unsolicited"
+        goal.last_result_outcome = "canceled"
+        goal.last_result_disposition = "unsolicited_cancel"
+        goal.updated_at = now
+        self.enter_recovery(session, task, "nav2_cancel_without_request", now)
         return task
 
     def _reject_result(self, session, task, goal, outcome: str, disposition: str, now) -> None:

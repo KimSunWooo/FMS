@@ -29,9 +29,9 @@
 
 ## 실물 로봇
 
-Phase 1은 `mode=mock` 만 명령할 수 있습니다. `physical` 과 `gazebo` 등록, `FMS_PHYSICAL_CONTROL_ENABLED=true`, `FMS_ROS_BRIDGE_ENABLED=true` 는 프로세스가 뜨지 않거나 403을 반환합니다.
+기본 실행 모드는 `mock` 입니다. `physical` 등록, `FMS_PHYSICAL_CONTROL_ENABLED=true`, `FMS_ROS_BRIDGE_ENABLED=true`, `FMS_EXECUTION_MODE=physical` 은 프로세스가 뜨지 않거나 403을 반환합니다. `gazebo` 로봇 등록은 `FMS_EXECUTION_MODE=gazebo` 일 때만 열리고, 그 경우에도 API 프로세스는 Nav2 클라이언트를 만들지 않습니다. 에이전트는 preflight가 준비되지 않으면 goal을 보내지 않습니다.
 
-FMS는 `/cmd_vel` 을 발행하지 않습니다. 목적지 이동은 이후 단계의 Nav2 액션으로만 열 계획이고, 그 코드 경로는 `robot_agent/nav2_bridge.py` 에서 항상 예외를 냅니다.
+FMS는 `/cmd_vel` 을 발행하지 않습니다. `robot_agent/nav2_bridge.py` 의 `send_navigate_to_pose` 는 계속 예외를 냅니다. Gazebo 클라이언트는 모드, 도메인, preflight가 모두 맞을 때만 열리고, 액션 결과를 관측하지 못하면 SUCCEEDED를 만들지 않습니다.
 
 같은 Pinky의 주소, 모터 장치, SSH, GPIO를 이 세션에서 조사하지 못했습니다. 그 정보가 생기기 전에는 신규 FMS의 실물 제어권 인계를 하지 않습니다. 기존 프로젝트가 점유한 제어권을 해제하지 않습니다.
 

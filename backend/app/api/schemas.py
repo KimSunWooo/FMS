@@ -70,3 +70,47 @@ class ClearEstopIn(BaseModel):
 class ReleaseIn(BaseModel):
     reason: str = Field(min_length=3, max_length=300)
     position_observed_clear: bool = False
+
+
+class AgentSessionIn(BaseModel):
+    robot_id: str
+
+    @field_validator("robot_id")
+    @classmethod
+    def robot(cls, value: str) -> str:
+        if _ROBOT_ID.fullmatch(value) is None:
+            raise ValueError("invalid robot id")
+        return value
+
+
+class AgentHeartbeatIn(AgentSessionIn):
+    session_id: str = Field(min_length=8, max_length=64)
+
+
+class AgentStopIn(AgentHeartbeatIn):
+    pass
+
+
+class AgentClaimIn(AgentHeartbeatIn):
+    owner_epoch: int = Field(ge=0)
+    lease_id: str = Field(min_length=8, max_length=64)
+    goal_id: str = Field(min_length=8, max_length=64)
+
+
+class AgentGoalEventIn(AgentClaimIn):
+    task_id: str = Field(min_length=8, max_length=64)
+    execution_id: str = Field(min_length=8, max_length=64)
+    kind: str
+    outcome: str | None = None
+    pose_x: float | None = None
+    pose_y: float | None = None
+    pose_yaw: float | None = None
+    pose_trustworthy: bool = False
+    nav2_action_goal_id: str | None = Field(default=None, max_length=64)
+
+    @field_validator("kind")
+    @classmethod
+    def kind_ok(cls, value: str) -> str:
+        if value not in {"accepted", "result", "disconnected"}:
+            raise ValueError("kind must be accepted, result, or disconnected")
+        return value

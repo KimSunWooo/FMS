@@ -1,0 +1,29 @@
+{
+  "captured_at": "2026-10-23T14:11:51Z",
+  "host": "Ubuntu 24.04.5 LTS",
+  "note": "This is a preflight refusal, not a Gazebo driving log. nav2_goal_sent is false.",
+  "agent_exit_code": 2,
+  "robot_id": "pinky-sim",
+  "preflight": {
+    "ready": false,
+    "reasons": [
+      "ros_distro_not_jazzy",
+      "ros2_binary_missing",
+      "gazebo_binary_missing",
+      "nav2_interface_missing",
+      "pinky_simulation_package_missing",
+      "ros_domain_mismatch",
+      "rmw_implementation_unset"
+    ],
+    "ros_distro": null,
+    "ros_domain_id": null,
+    "rmw_implementation": null,
+    "ros2_binary": false,
+    "gazebo_binary": false,
+    "nav2_interface": false,
+    "pinky_packages": []
+  },
+  "nav2_goal_sent": false,
+  "task_completed": false,
+  "physical_control": "blocked"
+}

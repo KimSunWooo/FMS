@@ -17,7 +17,7 @@ from app.main import create_app
 FIXED = datetime(2026, 10, 23, 10, 0, tzinfo=timezone.utc)
 
 
-def make_settings(tmp_path: Path, *, seed_fleet: bool = True) -> Settings:
+def make_settings(tmp_path: Path, *, seed_fleet: bool = True, execution_mode: str = "mock") -> Settings:
     return Settings(
         env="development",
         environment_id="care-move-fms-test",
@@ -36,6 +36,7 @@ def make_settings(tmp_path: Path, *, seed_fleet: bool = True) -> Settings:
         lease_ttl_seconds=3600,
         physical_control_enabled=False,
         ros_bridge_enabled=False,
+        execution_mode=execution_mode,
         ros_domain_id=73,
     )
 

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.agent import router as agent_router
 from app.api.fleet import router as fleet_router
 from app.api.robots import install_error_handler
 from app.api.robots import router as robots_router
@@ -44,6 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.runtime = Runtime(settings)
     install_error_handler(app)
+    app.include_router(agent_router)
     app.include_router(robots_router)
     app.include_router(tasks_router)
     app.include_router(fleet_router)

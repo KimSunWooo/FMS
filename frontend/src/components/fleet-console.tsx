@@ -30,6 +30,8 @@ type Fleet = {
   physical_control: string;
   rmf: string;
   ros_bridge: string;
+  execution_mode?: string;
+  gazebo_preflight?: { status?: string };
   ros_domain_id: number;
   distance_model: string;
   gateway: { implementation: string; online: boolean; boot_id: string };
@@ -196,17 +198,19 @@ export function FleetConsole() {
     <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 px-4 py-5 md:px-6">
       <header className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs tracking-[0.18em] text-primary uppercase">Care ward · mock fleet</p>
+          <p className="text-xs tracking-[0.18em] text-primary uppercase">Care ward · {fleet?.execution_mode ?? "mock"} fleet</p>
           <h1 className="text-2xl font-semibold">Care-Move FMS</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Pinky #1–#3 관제 화면입니다. 조회는 작업 상태를 바꾸지 않습니다. 이 빌드는 실물 모터와 ROS 명령을
-            보내지 않습니다.
+            Pinky #1–#3 관제 화면입니다. 조회는 작업 상태를 바꾸지 않습니다. 실물 모터는 막혀 있고, Gazebo
+            주행은 이 화면의 완료 표시로 증명하지 않습니다.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
           <Badge variant="outline">RMF {fleet?.rmf ?? "…"}</Badge>
           <Badge variant="outline">실물 {fleet?.physical_control ?? "blocked"}</Badge>
           <Badge variant="outline">ROS {fleet?.ros_bridge ?? "disabled"}</Badge>
+          <Badge variant="outline">mode {fleet?.execution_mode ?? "mock"}</Badge>
+          <Badge variant="outline">Gazebo {fleet?.gazebo_preflight?.status ?? "not_ready"}</Badge>
           <Badge variant="outline">domain {fleet?.ros_domain_id ?? 73}</Badge>
           <Badge variant={health?.database === "ok" ? "default" : "destructive"}>
             DB {health?.database ?? "…"}

@@ -1,6 +1,6 @@
 # Care-Move FMS
 
-Pinky Pro 3대를 관제하기 위한 독립 Fleet Management System의 Phase 1입니다. 작업의 권위 있는 상태는 이 저장소의 데이터베이스에만 있고, Open-RMF 런타임에 연결하지 않습니다.
+Pinky Pro 3대를 관제하기 위한 독립 Fleet Management System입니다. 작업의 권위 있는 상태는 이 저장소의 데이터베이스에만 있고, Open-RMF 런타임에 연결하지 않습니다. 기본 실행은 Mock입니다. Gazebo Nav2 단일 로봇 E2E는 이 머신에서 실행하지 못했고, 그 상태를 PASS로 적지 않습니다. 기록은 [docs/phase2-report.md](docs/phase2-report.md)입니다.
 
 이 저장소는 기존 Care-Move / Open-RMF 프로젝트를 복제한 것이 아닙니다. 이 개발 머신에는 그 소스와 보고서가 없었고, 기존 비밀값도 복사하지 않았습니다.
 
@@ -8,7 +8,7 @@ Pinky Pro 3대를 관제하기 위한 독립 Fleet Management System의 Phase 1�
 
 `POST /api/tasks` 로 접수한 이동 작업이 스케줄러와 Mock 로봇 에이전트를 거쳐 `COMPLETED` 가 됩니다. 완료는 HTTP 응답이 아니라 Mock goal 결과, goal id, execution id, owner epoch, 위치 오차로 판정합니다.
 
-실물 모터 명령, `/cmd_vel`, Nav2 액션, Gazebo 실행은 이 빌드에서 거부됩니다.
+실물 모터 명령과 `/cmd_vel` 은 거부됩니다. Nav2 goal은 Gazebo 모드의 로봇 에이전트만 보낼 수 있고, 시뮬레이터 preflight가 실패하면 그 에이전트도 goal을 보내지 않습니다.
 
 ## 실행
 
@@ -30,6 +30,12 @@ python3 -m venv .venv
 
 `./scripts/run_api.sh` 는 `.env` 가 없으면 이 프로젝트용 lease secret 을 새로 만듭니다. 셸 설정 파일은 바꾸지 않습니다. 스크립트는 source 하지 마세요.
 
+한 대만 붙는 로봇 에이전트(이 환경에서는 preflight 실패로 종료 코드 2):
+
+```bash
+./scripts/run_agent.sh --robot-id pinky-sim
+```
+
 테스트:
 
 ```bash
@@ -48,7 +54,7 @@ cd backend && ../.venv/bin/pytest
 | Lock | `data/fms.lock` |
 | Environment ID | `care-move-fms-local` |
 
-Phase 2 이후의 Gazebo 연동과 Phase 5 실물 시험은 [docs/roadmap.md](docs/roadmap.md)에만 있습니다. 이 빌드는 그 단계를 실행하지 않습니다.
+Phase 2의 Gazebo 주행과 Phase 5 실물 시험은 실행되지 않았습니다. 상태는 [docs/phase2-report.md](docs/phase2-report.md)와 [docs/roadmap.md](docs/roadmap.md)에 있습니다.
 
 ## 문서
 

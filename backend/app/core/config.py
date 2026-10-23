@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     api_port: int = 8741
     physical_control_enabled: bool = False
     ros_bridge_enabled: bool = False
+    # mock: in-process agents only. gazebo: external agent may claim a Nav2
+    # send after preflight. physical: process refuses to start.
+    execution_mode: str = "mock"
     auto_tick: bool = True
     seed_fleet: bool = True
     process_lock: bool = True
@@ -83,6 +86,10 @@ class Settings(BaseSettings):
             raise ValueError(
                 "This Phase 1 build refuses to start with the ROS bridge enabled."
             )
+        if self.execution_mode not in {"mock", "gazebo", "physical"}:
+            raise ValueError("FMS_EXECUTION_MODE must be mock, gazebo, or physical.")
+        if self.execution_mode == "physical":
+            raise ValueError("This build refuses to start in physical execution mode.")
         if not self.database_url:
             self.database_url = f"sqlite:///{self.data_dir / 'fms.sqlite3'}"
         haystack = self.database_url.lower()
