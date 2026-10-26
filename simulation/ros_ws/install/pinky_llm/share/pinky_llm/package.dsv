@@ -1,0 +1,9 @@
+source;share/pinky_llm/hook/pythonpath.ps1
+source;share/pinky_llm/hook/pythonpath.dsv
+source;share/pinky_llm/hook/pythonpath.sh
+source;share/pinky_llm/hook/ament_prefix_path.ps1
+source;share/pinky_llm/hook/ament_prefix_path.dsv
+source;share/pinky_llm/hook/ament_prefix_path.sh
+source;../../build/pinky_llm/share/pinky_llm/hook/pythonpath_develop.ps1
+source;../../build/pinky_llm/share/pinky_llm/hook/pythonpath_develop.dsv
+source;../../build/pinky_llm/share/pinky_llm/hook/pythonpath_develop.sh

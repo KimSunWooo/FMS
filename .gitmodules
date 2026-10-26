@@ -1,0 +1,3 @@
+[submodule "simulation/ros_ws/src/pinky_pro"]
+	path = simulation/ros_ws/src/pinky_pro
+	url = https://github.com/pinklab-art/pinky_pro.git

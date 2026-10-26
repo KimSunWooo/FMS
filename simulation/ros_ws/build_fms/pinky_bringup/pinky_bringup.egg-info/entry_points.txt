@@ -1,0 +1,3 @@
+[console_scripts]
+battery_publisher = pinky_bringup.battery_publisher:main
+bringup = pinky_bringup.bringup:main

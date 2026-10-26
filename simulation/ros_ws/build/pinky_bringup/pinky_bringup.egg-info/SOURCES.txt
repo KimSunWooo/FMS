@@ -1,0 +1,17 @@
+package.xml
+setup.cfg
+setup.py
+config/pinky_params.yaml
+launch/bringup_robot.launch.xml
+pinky_bringup/__init__.py
+pinky_bringup/battery_publisher.py
+pinky_bringup/bringup.py
+pinky_bringup/dynamixel_driver.py
+pinky_bringup.egg-info/PKG-INFO
+pinky_bringup.egg-info/SOURCES.txt
+pinky_bringup.egg-info/dependency_links.txt
+pinky_bringup.egg-info/entry_points.txt
+pinky_bringup.egg-info/requires.txt
+pinky_bringup.egg-info/top_level.txt
+pinky_bringup.egg-info/zip-safe
+resource/pinky_bringup

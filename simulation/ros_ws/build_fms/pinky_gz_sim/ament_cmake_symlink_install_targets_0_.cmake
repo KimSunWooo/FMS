@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim/libgz-sim-lamp-control-system.so" "TARGETS" "gz-sim-lamp-control-system" "DESTINATION" "lib")

@@ -1,0 +1,72 @@
+[0.202s] Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation
+[0.251s] -- The C compiler identification is GNU 13.3.0
+[0.305s] -- The CXX compiler identification is GNU 13.3.0
+[0.320s] -- Detecting C compiler ABI info
+[0.409s] -- Detecting C compiler ABI info - done
+[0.416s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.416s] -- Detecting C compile features
+[0.416s] -- Detecting C compile features - done
+[0.424s] -- Detecting CXX compiler ABI info
+[0.522s] -- Detecting CXX compiler ABI info - done
+[0.530s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.531s] -- Detecting CXX compile features
+[0.531s] -- Detecting CXX compile features - done
+[0.536s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.686s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.752s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.811s] -- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[0.925s] -- Added test 'flake8' to check Python code syntax and style conventions
+[0.926s] -- Configured 'flake8' exclude dirs and/or files: 
+[0.926s] -- Added test 'lint_cmake' to check CMake code style
+[0.928s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[0.930s] -- Added test 'xmllint' to check XML markup files
+[0.931s] -- Configuring done (0.7s)
+[0.936s] -- Generating done (0.0s)
+[0.936s] -- Build files have been written to: /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation
+[0.942s] Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation
+[0.942s] Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation -- -j16 -l16
+[0.987s] Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation -- -j16 -l16
+[0.988s] Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation
+[0.996s] -- Install configuration: ""
+[0.996s] -- Execute custom install script
+[0.996s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/lib/pinky_navigation/nav2_web_server.py
+[1.005s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/lib/pinky_navigation/index.html
+[1.015s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/lib/pinky_navigation/pinklab_logo.png
+[1.024s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/bringup_launch.xml
+[1.035s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/gz_bringup_launch.xml
+[1.044s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/gz_map_building.launch.xml
+[1.054s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/gz_map_view.launch.xml
+[1.064s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/gz_nav2_view.launch.xml
+[1.073s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/gz_web_nav2.launch.xml
+[1.083s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/gz_web_slam.launch.xml
+[1.093s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/localization_launch.xml
+[1.103s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/map_building.launch.xml
+[1.112s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/map_view.launch.xml
+[1.122s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/nav2_view.launch.xml
+[1.133s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/navigation_launch.xml
+[1.143s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/web_nav2.launch.xml
+[1.153s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/launch/web_slam.launch.xml
+[1.163s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/params/mapper_params.yaml
+[1.173s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/params/nav2_params.yaml
+[1.183s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/map/my_map.pgm
+[1.193s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/map/my_map.yaml
+[1.203s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/map/pinklab.png
+[1.212s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/map/pinklab.yaml
+[1.223s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/rviz/map_building.rviz
+[1.232s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/rviz/nav2_view.rviz
+[1.243s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/ament_index/resource_index/package_run_dependencies/pinky_navigation
+[1.253s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/ament_index/resource_index/parent_prefix_path/pinky_navigation
+[1.262s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/environment/ament_prefix_path.sh
+[1.272s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/environment/ament_prefix_path.dsv
+[1.282s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/environment/path.sh
+[1.292s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/environment/path.dsv
+[1.301s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/local_setup.bash
+[1.311s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/local_setup.sh
+[1.321s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/local_setup.zsh
+[1.331s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/local_setup.dsv
+[1.343s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/package.dsv
+[1.351s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/ament_index/resource_index/packages/pinky_navigation
+[1.360s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/cmake/pinky_navigationConfig.cmake
+[1.370s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/cmake/pinky_navigationConfig-version.cmake
+[1.380s] -- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_navigation/share/pinky_navigation/package.xml
+[1.393s] Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PS1=\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_navigation
