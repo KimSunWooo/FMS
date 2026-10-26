@@ -1,0 +1,8 @@
+152:[component_container_isolated-1] [INFO] [1792991187.056528698] [lifecycle_manager_localization]: Managed nodes are active
+189:[component_container_isolated-1] [INFO] [1792991187.134503942] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+240:[component_container_isolated-1] [INFO] [1792991191.738819413] [lifecycle_manager_navigation]: Managed nodes are active
+263:[component_container_isolated-1] [INFO] [1792991579.665301161] [bt_navigator]: Goal succeeded
+283:[component_container_isolated-1] [INFO] [1792991845.485311573] [bt_navigator]: Goal succeeded
+286:[component_container_isolated-1] [WARN] [1792992100.162884957] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+287:[component_container_isolated-1] [WARN] [1792992100.191506784] [bt_navigator]: [navigate_to_pose] [ActionServer] Aborting handle.
+288:[component_container_isolated-1] [ERROR] [1792992100.192424067] [bt_navigator]: Goal failed

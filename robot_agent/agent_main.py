@@ -11,6 +11,8 @@ import argparse
 import json
 import os
 import sys
+import threading
+import time
 import urllib.error
 import urllib.request
 
@@ -63,13 +65,38 @@ def _run_one_assignment(base: str, robot_id: str, client: GazeboNav2Client, summ
     opened = _request("POST", f"{base}/api/agent/session", {"robot_id": robot_id})
     session_id = opened["session_id"]
     summary["session_id"] = session_id
-    assignment = _request(
-        "GET",
-        f"{base}/api/agent/assignment?robot_id={robot_id}&session_id={session_id}",
-        None,
-    )
-    task = assignment.get("assignment")
-    if not task or not assignment.get("send_navigate_to_pose"):
+    try:
+        return _run_attached(base, robot_id, session_id, client, summary)
+    finally:
+        # Drop the in-memory session when this process leaves. Do not send
+        # another Nav2 goal from here.
+        try:
+            _request(
+                "POST",
+                f"{base}/api/agent/stop",
+                {"robot_id": robot_id, "session_id": session_id},
+            )
+        except GazeboNav2Unavailable:
+            pass
+
+
+def _run_attached(base: str, robot_id: str, session_id: str, client: GazeboNav2Client, summary: dict) -> int:
+    # The scheduler will not assign until this session is alive. Wait for one
+    # pending goal. This is not a Nav2 resend: nothing has been claimed yet.
+    deadline = time.monotonic() + 30.0
+    task = None
+    while time.monotonic() < deadline:
+        assignment = _request(
+            "GET",
+            f"{base}/api/agent/assignment?robot_id={robot_id}&session_id={session_id}",
+            None,
+        )
+        candidate = assignment.get("assignment")
+        if candidate and assignment.get("send_navigate_to_pose"):
+            task = candidate
+            break
+        time.sleep(0.25)
+    if task is None:
         summary["error"] = "no pending goal to send"
         print(json.dumps(summary, ensure_ascii=False))
         return 0
@@ -89,6 +116,8 @@ def _run_one_assignment(base: str, robot_id: str, client: GazeboNav2Client, summ
         print(json.dumps(summary, ensure_ascii=False))
         return 0
     destination = claim["destination"]
+    frame_id = destination.get("frame_id") or "map"
+    heartbeats = _start_heartbeats(base, robot_id, session_id)
     try:
         observed = client.send_goal(
             robot_id=robot_id,
@@ -96,9 +125,12 @@ def _run_one_assignment(base: str, robot_id: str, client: GazeboNav2Client, summ
             x=destination["x"],
             y=destination["y"],
             yaw=destination["yaw"],
-            frame_id=destination.get("frame_id") or "map",
+            frame_id=frame_id,
+            action_name="/navigate_to_pose",
+            use_sim_time=True,
         )
     except GazeboNav2Unavailable:
+        heartbeats.set()
         _post_event(
             base,
             task,
@@ -112,12 +144,29 @@ def _run_one_assignment(base: str, robot_id: str, client: GazeboNav2Client, summ
         summary["error"] = "Nav2 result was not observed; FMS was told disconnected, not completed"
         print(json.dumps(summary, ensure_ascii=False))
         return 2
+    pose = observed.get("pose")
+    pose_ok = (
+        isinstance(pose, dict)
+        and pose.get("frame_id") == frame_id
+        and "x" in pose
+        and "y" in pose
+    )
     summary["nav2_goal_sent"] = True
     summary["nav2_outcome"] = observed["outcome"]
     summary["nav2_action_goal_id"] = observed.get("nav2_action_goal_id")
+    summary["nav2_action"] = observed.get("nav2_action")
+    summary["nav2_status"] = observed.get("nav2_status")
+    summary["goal_sent_at"] = observed.get("goal_sent_at")
+    summary["goal_accepted_at"] = observed.get("goal_accepted_at")
+    summary["goal_result_at"] = observed.get("goal_result_at")
+    summary["feedback_count"] = observed.get("feedback_count")
     summary["fms_goal_id"] = claim["goal_id"]
     summary["fms_task_id"] = claim["task_id"]
-    summary["pose_observed"] = False
+    summary["execution_id"] = claim.get("execution_id") or task.get("execution_id")
+    summary["owner_epoch"] = claim.get("owner_epoch") or task.get("owner_epoch")
+    summary["pose_observed"] = pose_ok
+    summary["pose"] = pose if pose_ok else None
+    summary["goal_frame_id"] = frame_id
     if observed["outcome"] == "succeeded":
         _post_event(
             base,
@@ -129,8 +178,8 @@ def _run_one_assignment(base: str, robot_id: str, client: GazeboNav2Client, summ
             pose_trustworthy=False,
             nav2_action_goal_id=observed.get("nav2_action_goal_id"),
         )
-    # The destination is not an observation. Without a measured pose the FMS
-    # must not treat a Nav2 status as arrival.
+    # The destination is not an observation. Without a measured pose in the
+    # goal frame the FMS must not treat a Nav2 status as arrival.
     posted = _post_event(
         base,
         task,
@@ -138,22 +187,49 @@ def _run_one_assignment(base: str, robot_id: str, client: GazeboNav2Client, summ
         robot_id,
         kind="result",
         outcome=observed["outcome"],
-        pose_trustworthy=False,
+        pose_trustworthy=pose_ok,
         nav2_action_goal_id=observed.get("nav2_action_goal_id"),
+        pose=pose if pose_ok else None,
     )
+    heartbeats.set()
     summary["fms_status"] = posted.get("status")
     summary["task_completed"] = posted.get("status") == "COMPLETED"
     if observed["outcome"] == "succeeded" and not summary["task_completed"]:
-        summary["error"] = (
-            "Nav2 status was observed without a trustworthy pose. "
-            "The FMS task was not marked COMPLETED."
-        )
+        if pose_ok:
+            summary["error"] = (
+                "Nav2 succeeded and a pose in the goal frame was observed, "
+                "but the FMS task was not marked COMPLETED."
+            )
+        else:
+            summary["error"] = (
+                "Nav2 status was observed without a trustworthy pose. "
+                "The FMS task was not marked COMPLETED."
+            )
     print(json.dumps(summary, ensure_ascii=False))
     if summary["task_completed"]:
         return 0
     if observed["outcome"] == "succeeded":
         return 2
     return 0
+
+
+def _start_heartbeats(base: str, robot_id: str, session_id: str) -> threading.Event:
+    """Renew the lease while a goal is in flight. Stop does not cancel the goal."""
+    stop = threading.Event()
+
+    def _loop() -> None:
+        while not stop.wait(5.0):
+            try:
+                _request(
+                    "POST",
+                    f"{base}/api/agent/heartbeat",
+                    {"robot_id": robot_id, "session_id": session_id},
+                )
+            except GazeboNav2Unavailable:
+                return
+
+    threading.Thread(target=_loop, name="fms-lease-heartbeat", daemon=True).start()
+    return stop
 
 
 def _post_event(base, task, session_id, robot_id, *, kind, outcome, pose_trustworthy, nav2_action_goal_id, pose=None):

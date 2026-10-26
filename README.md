@@ -1,6 +1,6 @@
 # Care-Move FMS
 
-Pinky Pro 3대를 관제하기 위한 독립 Fleet Management System입니다. 작업의 권위 있는 상태는 이 저장소의 데이터베이스에만 있고, Open-RMF 런타임에 연결하지 않습니다. 기본 실행은 Mock입니다. Gazebo Nav2 단일 로봇 E2E는 이 머신에서 실행하지 못했고, 그 상태를 PASS로 적지 않습니다. 기록은 [docs/phase2-report.md](docs/phase2-report.md)입니다.
+Pinky Pro 3대를 관제하기 위한 독립 Fleet Management System입니다. 작업의 권위 있는 상태는 이 저장소의 데이터베이스에만 있고, Open-RMF 런타임에 연결하지 않습니다. 기본 실행은 Mock입니다. 단일 Gazebo Pinky의 Nav2 주행 E2E는 [docs/phase2-1-e2e-report.md](docs/phase2-1-e2e-report.md)에 PASS로 기록되어 있습니다. Phase 2 계약 기록은 [docs/phase2-report.md](docs/phase2-report.md)입니다.
 
 이 저장소는 기존 Care-Move / Open-RMF 프로젝트를 복제한 것이 아닙니다. 이 개발 머신에는 그 소스와 보고서가 없었고, 기존 비밀값도 복사하지 않았습니다.
 
@@ -30,7 +30,7 @@ python3 -m venv .venv
 
 `./scripts/run_api.sh` 는 `.env` 가 없으면 이 프로젝트용 lease secret 을 새로 만듭니다. 셸 설정 파일은 바꾸지 않습니다. 스크립트는 source 하지 마세요.
 
-한 대만 붙는 로봇 에이전트(이 환경에서는 preflight 실패로 종료 코드 2):
+한 대만 붙는 로봇 에이전트. Jazzy, `ROS_DOMAIN_ID=73`, Cyclone DDS, Pinky overlay가 없는 셸에서는 preflight가 실패하고 종료 코드 2로 끝난다. 그 조건이 갖춰진 단일 Gazebo 주행 기록은 [docs/phase2-1-e2e-report.md](docs/phase2-1-e2e-report.md)에 있다.
 
 ```bash
 ./scripts/run_agent.sh --robot-id pinky-sim
@@ -46,7 +46,7 @@ cd backend && ../.venv/bin/pytest
 
 | 항목 | 값 |
 | --- | --- |
-| ROS_DOMAIN_ID (기록만, 노드 없음) | 73 |
+| ROS_DOMAIN_ID | 73. API 기본 기동은 DDS에 참여하지 않음. Gazebo 에이전트만 참여 |
 | API | 8741 |
 | Dashboard | 8742 |
 | 선택 Postgres | 55432, compose profile `postgres` |
@@ -54,7 +54,7 @@ cd backend && ../.venv/bin/pytest
 | Lock | `data/fms.lock` |
 | Environment ID | `care-move-fms-local` |
 
-Phase 2의 Gazebo 주행과 Phase 5 실물 시험은 실행되지 않았습니다. 상태는 [docs/phase2-report.md](docs/phase2-report.md)와 [docs/roadmap.md](docs/roadmap.md)에 있습니다.
+단일 Gazebo Pinky E2E는 [docs/phase2-1-e2e-report.md](docs/phase2-1-e2e-report.md)를 본다. 실물 시험은 실행하지 않았다. 계획은 [docs/roadmap.md](docs/roadmap.md)에 있다.
 
 ## 문서
 

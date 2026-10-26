@@ -8,6 +8,9 @@ Labels:
   so nothing here is allowed to report that tier as passed.
 """
 
+import shutil
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -15,7 +18,12 @@ from app.core.config import Settings
 from app.main import create_app
 from conftest import FIXED, make_settings, post_task
 from robot_agent.agent_main import main as agent_main
-from robot_agent.gazebo_nav2_client import GazeboNav2Client, GazeboNav2Unavailable
+from robot_agent.gazebo_nav2_client import (
+    GazeboNav2Client,
+    GazeboNav2Unavailable,
+    format_action_goal_id,
+    yaw_from_quaternion,
+)
 from robot_agent.nav2_bridge import Nav2BridgeDisabled, build_bridge, send_navigate_to_pose
 from robot_agent.preflight import evaluate, live_report
 
@@ -131,16 +139,39 @@ def _running(client, runtime, robot_id="pinky-sim", **dest):
 def test_unit_live_preflight_is_not_ready_and_client_fails_closed():
     report = live_report(expected_domain=73)
     assert report.ready is False
+    # This process is not a sourced ROS shell. Domain, RMW, and Pinky overlay stay closed.
+    assert "ros_distro_not_jazzy" in report.reasons
+    assert "ros_domain_mismatch" in report.reasons
+    assert "rmw_implementation_unset" in report.reasons
     assert "pinky_simulation_package_missing" in report.reasons
-    assert "ros2_binary_missing" in report.reasons
-    assert "gazebo_binary_missing" in report.reasons
     assert report.pinky_packages == ()
+    nav2_share = Path("/opt/ros/jazzy/share")
+    nav2_installed = (nav2_share / "nav2_msgs").is_dir() or (nav2_share / "nav2_bringup").is_dir()
+    if nav2_installed:
+        assert report.nav2_interface is True
+        assert "nav2_interface_missing" not in report.reasons
+    else:
+        assert "nav2_interface_missing" in report.reasons
+    if shutil.which("ros2") is None:
+        assert "ros2_binary_missing" in report.reasons
+    if not any(shutil.which(name) for name in ("gz", "gazebo", "ign")):
+        assert "gazebo_binary_missing" in report.reasons
     with pytest.raises(GazeboNav2Unavailable, match="not ready"):
         build_bridge("gazebo", report, expected_domain=73, observed_domain=report.ros_domain_id).send_goal(
             robot_id="pinky-sim", goal_id="goal", x=1, y=2, yaw=0
         )
     with pytest.raises(Nav2BridgeDisabled):
         send_navigate_to_pose("pinky-sim", 1, 2, 0)
+
+
+def test_unit_action_uuid_and_yaw_are_not_invented():
+    assert format_action_goal_id(None) is None
+    assert format_action_goal_id(object()) is None
+    blank = type("UUID", (), {"uuid": bytes(16)})()
+    assert format_action_goal_id(blank) is None
+    sample = bytes.fromhex("00112233445566778899aabbccddeeff")
+    assert format_action_goal_id(type("UUID", (), {"uuid": sample})()) == "00112233-4455-6677-8899-aabbccddeeff"
+    assert yaw_from_quaternion(0.0, 0.0, 0.0, 1.0) == 0.0
 
 
 def test_unit_preflight_predicate_requires_every_gate():
@@ -239,6 +270,14 @@ def test_mock_nav2_reject_abort_cancel_and_disconnect(gazebo):
     abort_result = _event(client, abort_task, kind="result", outcome="aborted")
     assert abort_result["status"] == "FAILED"
     assert abort_result["navigation_goal_count"] == 1
+
+    # An abort can arrive without a prior accept event. The action UUID is still stored.
+    direct = _dispatch(client, runtime, "pinky-sim", x=8.0, y=1.0, label="outside")
+    assert _claim(client, direct)["send_navigate_to_pose"] is True
+    direct_abort = _event(client, direct, kind="result", outcome="aborted", nav2_id="11111111-2222-3333-4444-555555555555")
+    assert direct_abort["status"] == "FAILED"
+    assert direct_abort["goal"]["nav2_action_goal_id"] == "11111111-2222-3333-4444-555555555555"
+    assert direct_abort["navigation_goal_count"] == 1
 
     cancel_task = _dispatch(client, runtime, "pinky-sim", x=5.5, y=6.8, label="east-open")
     assert _claim(client, cancel_task)["send_navigate_to_pose"] is True

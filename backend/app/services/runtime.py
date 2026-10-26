@@ -561,6 +561,7 @@ class Runtime:
                     pose_yaw=kwargs.get("pose_yaw") or 0.0,
                     pose_trustworthy=bool(kwargs.get("pose_trustworthy")),
                     source="gazebo-agent",
+                    nav2_action_goal_id=nav2_action_goal_id,
                 )
             else:
                 raise FmsError("goal event kind must be accepted, result, or disconnected")

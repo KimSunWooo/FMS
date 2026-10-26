@@ -39,14 +39,43 @@ class PreflightReport:
         }
 
 
+def share_directories() -> tuple[Path, ...]:
+    """Jazzy install plus any sourced overlay. Order is not a search path rank."""
+    found: list[Path] = []
+    seen: set[Path] = set()
+
+    def add(path: Path) -> None:
+        resolved = path.resolve() if path.exists() else path
+        if resolved in seen or not path.is_dir():
+            return
+        seen.add(resolved)
+        found.append(path)
+
+    add(Path("/opt/ros/jazzy/share"))
+    for key in ("AMENT_PREFIX_PATH", "COLCON_PREFIX_PATH"):
+        raw = os.environ.get(key) or ""
+        for prefix in raw.split(":"):
+            if prefix:
+                add(Path(prefix) / "share")
+    return tuple(found)
+
+
+def packages_named(fragment: str, shares: tuple[Path, ...] | None = None) -> tuple[str, ...]:
+    names: set[str] = set()
+    needle = fragment.lower()
+    for share in shares if shares is not None else share_directories():
+        for path in share.iterdir():
+            if path.is_dir() and needle in path.name.lower():
+                names.add(path.name)
+    return tuple(sorted(names))
+
+
 def live_probe() -> dict:
     domain_raw = os.environ.get("ROS_DOMAIN_ID")
     domain = int(domain_raw) if domain_raw is not None and domain_raw.isdigit() else None
-    share = Path("/opt/ros/jazzy/share")
-    nav2 = (share / "nav2_msgs").is_dir() or (share / "nav2_bringup").is_dir()
-    pinky: list[str] = []
-    if share.is_dir():
-        pinky = sorted(path.name for path in share.iterdir() if "pinky" in path.name.lower())
+    shares = share_directories()
+    nav2 = any((share / "nav2_msgs").is_dir() or (share / "nav2_bringup").is_dir() for share in shares)
+    pinky = packages_named("pinky", shares)
     return {
         "ros_distro": os.environ.get("ROS_DISTRO"),
         "ros_domain_id": domain,
@@ -54,7 +83,7 @@ def live_probe() -> dict:
         "ros2_binary": shutil.which("ros2") is not None,
         "gazebo_binary": any(shutil.which(name) for name in ("gz", "gazebo", "ign")),
         "nav2_interface": nav2,
-        "pinky_packages": pinky,
+        "pinky_packages": list(pinky),
         "opt_ros_jazzy": Path("/opt/ros/jazzy").is_dir(),
     }
 

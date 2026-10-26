@@ -1,10 +1,10 @@
 # Phase 2–5 실행 계획
 
-이 문서는 계획입니다. 아래 단계는 이번 빌드에서 실행하지 않았습니다. 상태를 성공으로 적지 않습니다.
+이 문서는 계획이다. Phase 2의 단일 Gazebo Pinky E2E만 실행되어 PASS다. 그 아래 단계는 실행하지 않았다.
 
 ## Phase 2 — Gazebo / Nav2
 
-상태: **BLOCKED / GAZEBO_E2E NOT_RUN**. 계약과 실패 닫힘 경로는 코드와 UNIT/MOCK 테스트에 있다. Gazebo Pinky 주행 로그는 없다. 자세한 기록은 [phase2-report.md](phase2-report.md).
+상태: **단일 로봇 GAZEBO_E2E PASS**. 기록은 [phase2-1-e2e-report.md](phase2-1-e2e-report.md). 계약 테스트 기록은 [phase2-report.md](phase2-report.md). 다중 로봇 Gazebo와 실물은 이 단계에서 실행하지 않았다.
 
 목표: `FMS task → 로봇별 에이전트 → Nav2 NavigateToPose → Gazebo Pinky → SUCCEEDED → FMS COMPLETED`.
 

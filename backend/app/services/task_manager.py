@@ -468,6 +468,7 @@ class TaskManager:
         pose_trustworthy: bool,
         now,
         source: str,
+        nav2_action_goal_id: str | None = None,
     ) -> Task:
         task = self._require(session, task_id)
         goal = session.get(NavigationGoal, task.goal_id) if task.goal_id else None
@@ -497,6 +498,8 @@ class TaskManager:
         ):
             self.enter_recovery(session, task, "result_without_valid_lease", now)
             return task
+        if nav2_action_goal_id and goal.nav2_action_goal_id in {None, nav2_action_goal_id}:
+            goal.nav2_action_goal_id = nav2_action_goal_id
         if task.status == TaskStatus.CANCEL_REQUESTED.value and outcome != "canceled":
             goal.last_result_outcome = outcome
             goal.last_result_disposition = "cancel_race"
