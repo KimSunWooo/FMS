@@ -497,14 +497,6 @@ class TaskManager:
         ):
             self._reject_result(session, task, goal, outcome, "rejected_goal_mismatch", now)
             return task
-        if task.status in {
-            TaskStatus.RECOVERY_REQUIRED.value,
-            TaskStatus.CANCELED.value,
-            TaskStatus.FAILED.value,
-            TaskStatus.COMPLETED.value,
-        }:
-            self._reject_result(session, task, goal, outcome, "rejected_task_not_running", now)
-            return task
         if source == "gazebo-agent" and self._record_nav2_identity(
             goal,
             nav2_action_goal_id,
@@ -512,6 +504,14 @@ class TaskManager:
             or _absent_reason_for(outcome, nav2_action_goal_id, goal.nav2_action_goal_id),
         ) == "conflict":
             self._reject_result(session, task, goal, outcome, "rejected_nav2_uuid_conflict", now)
+            return task
+        if task.status in {
+            TaskStatus.RECOVERY_REQUIRED.value,
+            TaskStatus.CANCELED.value,
+            TaskStatus.FAILED.value,
+            TaskStatus.COMPLETED.value,
+        }:
+            self._reject_result(session, task, goal, outcome, "rejected_task_not_running", now)
             return task
         lease = session.get(ControlLease, task.lease_id) if task.lease_id else None
         robot = session.get(Robot, task.robot_id) if task.robot_id else None

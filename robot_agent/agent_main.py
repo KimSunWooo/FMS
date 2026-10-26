@@ -166,6 +166,24 @@ def _run_attached(base: str, robot_id: str, session_id: str, summary: dict) -> i
                 name="fms-cancel-watch",
                 daemon=True,
             ).start()
+            def _on_accepted(nav2_id: str, accepted_at: str) -> None:
+                summary["nav2_goal_sent"] = True
+                summary["nav2_action_goal_id"] = nav2_id
+                summary["goal_accepted_at"] = accepted_at
+                try:
+                    _post_event(
+                        base,
+                        task,
+                        session_id,
+                        robot_id,
+                        kind="accepted",
+                        outcome=None,
+                        pose_trustworthy=False,
+                        nav2_action_goal_id=nav2_id,
+                    )
+                except GazeboNav2Unavailable as exc:
+                    summary["accept_post_error"] = str(exc)
+
             try:
                 observed = nav.send_goal(
                     goal_id=claim["goal_id"],
@@ -175,6 +193,7 @@ def _run_attached(base: str, robot_id: str, session_id: str, summary: dict) -> i
                     frame_id=frame_id,
                     action_name="/navigate_to_pose",
                     cancel_event=cancel_event,
+                    on_accepted=_on_accepted,
                 )
             except GazeboNav2Unavailable:
                 _post_event(
@@ -223,18 +242,6 @@ def _publish_observation(base, task, session_id, robot_id, claim, frame_id, obse
     summary["pose_observed"] = pose_ok
     summary["pose"] = pose if pose_ok else None
     summary["goal_frame_id"] = frame_id
-    if observed["outcome"] == "succeeded":
-        _post_event(
-            base,
-            task,
-            session_id,
-            robot_id,
-            kind="accepted",
-            outcome=None,
-            pose_trustworthy=False,
-            nav2_action_goal_id=observed.get("nav2_action_goal_id"),
-            absent_reason=observed.get("nav2_action_goal_id_absent_reason"),
-        )
     posted = _post_event(
         base,
         task,

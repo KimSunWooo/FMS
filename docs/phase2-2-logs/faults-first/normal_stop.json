@@ -1,0 +1,70 @@
+{
+  "agent_rc": 0,
+  "posed": true,
+  "agent": {
+    "robot_id": "pinky-sim",
+    "preflight": {
+      "ready": true,
+      "reasons": [],
+      "ros_distro": "jazzy",
+      "ros_domain_id": 73,
+      "rmw_implementation": "rmw_cyclonedds_cpp",
+      "ros2_binary": true,
+      "gazebo_binary": true,
+      "nav2_interface": true,
+      "pinky_packages": [
+        "pinky_description",
+        "pinky_gz_sim",
+        "pinky_navigation"
+      ]
+    },
+    "nav2_goal_sent": false,
+    "task_completed": false,
+    "physical_control": "blocked",
+    "session_id": "686bcdb4-06e1-48bc-9258-077a9ddec80d",
+    "start_pose": {
+      "x": -0.26394513711839707,
+      "y": -0.2838664183246873,
+      "z": 0.0,
+      "yaw": 0.011455832900405515,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 1736,
+      "stamp_nanosec": 660000000
+    },
+    "error": "no pending goal to send"
+  },
+  "robot_after": {
+    "robot_id": "pinky-sim",
+    "name": "Pinky sim",
+    "mode": "gazebo",
+    "connection_status": "online",
+    "operational_state": "busy",
+    "battery_percent": 90.0,
+    "controller_ready": true,
+    "controller_kind": "nav2",
+    "pose": {
+      "x": -0.26394513711839707,
+      "y": -0.2838664183246873,
+      "yaw": 0.011455832900405515
+    },
+    "pose_trustworthy": false,
+    "pose_source": "agent_lost",
+    "fault_code": null,
+    "estop_latched": false,
+    "agent_online": false,
+    "active_task_id": null,
+    "last_heartbeat_at": "2026-10-26T06:17:47.928071+00:00",
+    "updated_at": "2026-10-26T06:17:50.770926+00:00"
+  },
+  "followup_status": "PENDING",
+  "followup_task_id": "d0ba9343-25f6-4fd8-aefa-46a9e75c0463",
+  "verdict": "PASS",
+  "statuses_after": [
+    4,
+    4,
+    4,
+    4,
+    4
+  ]
+}

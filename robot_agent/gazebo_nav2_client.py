@@ -141,6 +141,7 @@ def _observe_navigate_to_pose(
     cancel_event=None,
     node=None,
     tf_buffer=None,
+    on_accepted=None,
 ) -> dict:
     """Return only a status the action server actually reported."""
     started = False
@@ -202,6 +203,8 @@ def _observe_navigate_to_pose(
             }
         goal_accepted_at = _utc_now()
         nav2_action_goal_id = format_action_goal_id(handle.goal_id)
+        if on_accepted is not None and nav2_action_goal_id:
+            on_accepted(nav2_action_goal_id, goal_accepted_at)
         result_future = handle.get_result_async()
         deadline = time.monotonic() + 180.0
         cancel_sent = False

@@ -1,0 +1,33 @@
+{
+  "api_pid": 28310,
+  "drive": {
+    "held_status": "RECOVERY_REQUIRED",
+    "held_reason": "lease_invalid",
+    "posted_status": "RECOVERY_REQUIRED",
+    "recovery_reason": "lease_invalid",
+    "disposition": "rejected_task_not_running",
+    "nav2": "05051264-19cd-44e5-a099-cb8ac2dd30ab",
+    "outcome": "succeeded",
+    "goal_nav2": "05051264-19cd-44e5-a099-cb8ac2dd30ab",
+    "evidence": null
+  },
+  "verdict": "PASS",
+  "statuses_after": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    6,
+    5,
+    4,
+    4
+  ]
+}

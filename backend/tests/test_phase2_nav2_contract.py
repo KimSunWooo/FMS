@@ -620,6 +620,61 @@ def test_mock_dead_session_is_not_given_another_goal(gazebo):
     assert blocked.status_code == 403
 
 
+def test_mock_uuid_is_stored_after_recovery_without_completing(gazebo):
+    client, runtime = gazebo
+    _register(client, "pinky-sim", 4.0, 1.5)
+    _arm(client, "pinky-sim")
+    task = _dispatch(client, runtime, "pinky-sim")
+    assert _claim(client, task)["send_navigate_to_pose"] is True
+    runtime.settings.heartbeat_timeout_seconds = 100000
+    runtime.clock.advance(runtime.settings.lease_ttl_seconds + 1)
+    runtime.tick()
+    held = client.get(f"/api/tasks/{task['task_id']}").json()
+    assert held["status"] == "RECOVERY_REQUIRED"
+    assert held["goal"]["nav2_action_goal_id"] is None
+    late = _event(
+        client,
+        task,
+        kind="result",
+        outcome="succeeded",
+        pose=(5.0, 6.5, 0.0),
+        trustworthy=True,
+        epoch=held["owner_epoch"],
+        nav2_id="abababab-cdcd-efef-1212-343434343434",
+    )
+    assert late["status"] == "RECOVERY_REQUIRED"
+    assert late["goal"]["nav2_action_goal_id"] == "abababab-cdcd-efef-1212-343434343434"
+    assert late["goal"]["last_result_disposition"] == "rejected_task_not_running"
+    assert late["completion_evidence"] is None
+    assert late["navigation_goal_count"] == 1
+
+
+def test_mock_pose_miss_then_session_stop_stays_a_pose_hold(gazebo):
+    client, runtime = gazebo
+    task = _running(client, runtime)
+    missed = _event(
+        client,
+        task,
+        kind="result",
+        outcome="succeeded",
+        pose=(0.0, 0.0, 0.0),
+        trustworthy=True,
+    )
+    assert missed["status"] == "RUNNING"
+    assert missed["goal"]["last_result_disposition"] == "observation_mismatch"
+    assert missed["goal"]["nav2_action_goal_id"] == "fixture-action-id"
+    stopped = client.post(
+        "/api/agent/stop",
+        json={"robot_id": "pinky-sim", "session_id": task["session_id"]},
+    )
+    assert stopped.status_code == 200
+    current = client.get(f"/api/tasks/{task['task_id']}").json()
+    assert current["status"] == "RECOVERY_REQUIRED"
+    assert current["recovery_reason"] == "pose_mismatch"
+    assert current["navigation_goal_count"] == 1
+    assert current["completion_evidence"] is None
+
+
 def test_mock_gazebo_pose_observation_allows_a_new_assignment(gazebo):
     client, runtime = gazebo
     _register(client, "pinky-sim", 4.0, 1.5)

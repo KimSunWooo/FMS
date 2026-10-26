@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.clock import as_utc
 from app.core.config import Settings
 from app.core.state_machine import IN_FLIGHT, TaskStatus
-from app.models.tables import ControlLease, Robot, Task
+from app.models.tables import ControlLease, NavigationGoal, Robot, Task
 from app.robot.mock_agent import MockFleet
 from app.robot.mock_gateway import MockGateway
 from app.services.task_manager import TaskManager
@@ -81,6 +81,9 @@ class ReconciliationWorker:
             and self.agent.session_id(robot.id) == task.session_id
         )
         if task.goal_may_be_in_flight and (not agent_alive or not same_session):
+            goal = session.get(NavigationGoal, task.goal_id) if task.goal_id else None
+            if goal is not None and goal.last_result_disposition == "observation_mismatch":
+                return "pose_mismatch"
             return "agent_session_lost"
         lease = session.get(ControlLease, task.lease_id) if task.lease_id else None
         if task.goal_may_be_in_flight and (

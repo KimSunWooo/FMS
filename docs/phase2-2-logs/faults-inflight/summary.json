@@ -1,0 +1,25 @@
+{
+  "idle_before": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    6,
+    5,
+    4,
+    4
+  ],
+  "cleanup_before": null,
+  "stale": "PASS",
+  "cancel": "PASS",
+  "kill": "PASS",
+  "restart": "PASS"
+}
