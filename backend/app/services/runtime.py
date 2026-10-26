@@ -117,6 +117,7 @@ class Runtime:
     def tick(self) -> None:
         now = self.clock.now()
         with self.db.write() as session:
+            self.agent.expire_stale(session, now, self.settings.heartbeat_timeout_seconds)
             self.reconciliation.run(session, now, process_restart=False)
             self.scheduler.schedule_pending(session, now)
         self._dispatch(now)
@@ -276,6 +277,10 @@ class Runtime:
         now = self.clock.now()
         with self.db.write() as session:
             robot = self._require_robot(session, robot_id)
+            if robot.mode != "mock":
+                raise PhysicalControlBlocked(
+                    "mock-observe is a mock snapshot. It does not unlock a Gazebo or physical robot."
+                )
             self.safety.assert_backend_allowed(robot.mode)
             blocking = session.scalar(
                 select(func.count())
@@ -463,9 +468,10 @@ class Runtime:
         with self.db.write() as session:
             robot = self._require_robot(session, robot_id)
             self.tasks._require_external_agent(robot)
+            self.agent.expire_stale(session, now, self.settings.heartbeat_timeout_seconds)
             if self.agent.is_alive(robot.id):
                 raise VersionConflictError("an agent session is already attached to this robot")
-            session_id = self.agent.start(session, robot, now)
+            session_id = self.agent.start(session, robot, now, external=True)
             robot.last_heartbeat_at = now
             return {"robot_id": robot.id, "session_id": session_id, "attached": True}
 
@@ -475,7 +481,7 @@ class Runtime:
             robot = self._require_robot(session, robot_id)
             self.tasks._require_external_agent(robot)
             self.agent.stop(session, robot, now)
-            session_id = self.agent.start(session, robot, now)
+            session_id = self.agent.start(session, robot, now, external=True)
             recovered = self.reconciliation.run(session, now, process_restart=False)
             return {
                 "robot_id": robot.id,
@@ -501,6 +507,8 @@ class Runtime:
             robot = self._require_robot(session, robot_id)
             self.tasks._require_external_agent(robot)
             if self.agent.session_id(robot.id) != session_id:
+                raise StaleOwnerError("agent session does not match this robot")
+            if not self.agent.touch(robot.id, session_id, now):
                 raise StaleOwnerError("agent session does not match this robot")
             robot.last_heartbeat_at = now
             robot.agent_online = True
@@ -562,10 +570,68 @@ class Runtime:
                     pose_trustworthy=bool(kwargs.get("pose_trustworthy")),
                     source="gazebo-agent",
                     nav2_action_goal_id=nav2_action_goal_id,
+                    nav2_action_goal_id_absent_reason=kwargs.get("nav2_action_goal_id_absent_reason"),
                 )
             else:
                 raise FmsError("goal event kind must be accepted, result, or disconnected")
             return task_out(session, task)
+
+    def agent_pose(
+        self,
+        robot_id: str,
+        session_id: str,
+        pose_x: float,
+        pose_y: float,
+        pose_yaw: float,
+        frame_id: str,
+    ) -> dict:
+        if frame_id != "map":
+            raise FmsError("pose frame must be map")
+        if any(value != value or value in (float("inf"), float("-inf")) for value in (pose_x, pose_y, pose_yaw)):
+            raise FmsError("pose values must be finite")
+        now = self.clock.now()
+        with self.db.write() as session:
+            robot = self._require_robot(session, robot_id)
+            self.tasks._require_external_agent(robot)
+            if self.agent.session_id(robot.id) != session_id:
+                raise StaleOwnerError("agent session does not match this robot")
+            blocking = session.scalar(
+                select(func.count())
+                .select_from(Task)
+                .where(
+                    Task.robot_id == robot.id,
+                    Task.status.in_(
+                        [TaskStatus.RECOVERY_REQUIRED.value] + [status.value for status in IN_FLIGHT]
+                    ),
+                )
+            )
+            if blocking:
+                raise FmsError("pose stays untrusted while a goal may still be in flight")
+            robot.pose_x = pose_x
+            robot.pose_y = pose_y
+            robot.pose_yaw = pose_yaw
+            robot.pose_trustworthy = True
+            robot.pose_source = "gazebo-tf"
+            robot.agent_online = True
+            robot.last_heartbeat_at = now
+            robot.updated_at = now
+            self.agent.touch(robot.id, session_id, now)
+            session.add(
+                RobotTelemetry(
+                    robot_id=robot.id,
+                    pose_x=pose_x,
+                    pose_y=pose_y,
+                    pose_yaw=pose_yaw,
+                    battery_percent=robot.battery_percent,
+                    source="gazebo-tf",
+                    trustworthy=True,
+                    observed_at=now,
+                )
+            )
+            traffic.sync_pose_occupancy(
+                session, robot, now, reservation_ttl=max(self.settings.lease_ttl_seconds * 4, 120)
+            )
+            return robot_out(session, robot)
 
     def agent_assignment(self, robot_id: str, session_id: str) -> dict:
         with self.db.read() as session:

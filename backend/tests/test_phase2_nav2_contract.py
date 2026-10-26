@@ -18,10 +18,12 @@ from app.core.config import Settings
 from app.main import create_app
 from conftest import FIXED, make_settings, post_task
 from robot_agent.agent_main import main as agent_main
+from robot_agent.agent_main import note_fms_failure
 from robot_agent.gazebo_nav2_client import (
     GazeboNav2Client,
     GazeboNav2Unavailable,
     format_action_goal_id,
+    goal_statuses_block_send,
     yaw_from_quaternion,
 )
 from robot_agent.nav2_bridge import Nav2BridgeDisabled, build_bridge, send_navigate_to_pose
@@ -172,6 +174,13 @@ def test_unit_action_uuid_and_yaw_are_not_invented():
     sample = bytes.fromhex("00112233445566778899aabbccddeeff")
     assert format_action_goal_id(type("UUID", (), {"uuid": sample})()) == "00112233-4455-6677-8899-aabbccddeeff"
     assert yaw_from_quaternion(0.0, 0.0, 0.0, 1.0) == 0.0
+    assert goal_statuses_block_send(None) is True
+    assert goal_statuses_block_send([4, 6]) is False
+    assert goal_statuses_block_send([4, 2]) is True
+    summary = {"nav2_goal_sent": True, "task_completed": True}
+    note_fms_failure(summary, RuntimeError("database write failed"))
+    assert summary["nav2_goal_sent"] is True
+    assert summary["task_completed"] is False
 
 
 def test_unit_preflight_predicate_requires_every_gate():
@@ -262,6 +271,8 @@ def test_mock_nav2_reject_abort_cancel_and_disconnect(gazebo):
     failed = _event(client, rejected, kind="result", outcome="rejected")
     assert failed["status"] == "FAILED"
     assert failed["failure_reason"] == "nav2_goal_rejected"
+    assert failed["goal"]["nav2_action_goal_id"] is None
+    assert failed["goal"]["nav2_action_goal_id_absent_reason"] == "action_server_rejected_before_goal_id"
     assert failed["navigation_goal_count"] == 1
 
     abort_task = _dispatch(client, runtime, "pinky-sim", x=6.0, y=7.0, label="north-bay")
@@ -461,3 +472,180 @@ def test_mock_unsolicited_cancel_is_recovery(gazebo):
     result = _event(client, task, kind="result", outcome="canceled", trustworthy=True)
     assert result["status"] == "RECOVERY_REQUIRED"
     assert result["navigation_goal_count"] == 1
+
+
+def test_mock_uuid_is_kept_on_timeout_conflict_and_expired_lease(gazebo):
+    client, runtime = gazebo
+    _register(client, "pinky-lease", 4.0, 1.5)
+    _arm(client, "pinky-lease")
+    late = _dispatch(client, runtime, "pinky-lease", x=6.0, y=7.0, label="lease-bay")
+    assert _claim(client, late)["send_navigate_to_pose"] is True
+    runtime.clock.advance(runtime.settings.lease_ttl_seconds + 1)
+    expired = _event(
+        client,
+        late,
+        kind="result",
+        outcome="succeeded",
+        pose=(6.0, 7.0, 0.0),
+        trustworthy=True,
+        nav2_id="12121212-3434-5656-7878-909090909090",
+    )
+    assert expired["status"] == "RECOVERY_REQUIRED"
+    assert expired["goal"]["nav2_action_goal_id"] == "12121212-3434-5656-7878-909090909090"
+    assert expired["completion_evidence"] is None
+    assert expired["navigation_goal_count"] == 1
+
+    _register(client, "pinky-sim", 4.0, 1.5)
+    session_id = _arm(client, "pinky-sim")
+    timed = _dispatch(client, runtime, "pinky-sim")
+    assert _claim(client, timed)["send_navigate_to_pose"] is True
+    held = _event(
+        client,
+        timed,
+        kind="result",
+        outcome="timed_out",
+        nav2_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    )
+    assert held["status"] == "RECOVERY_REQUIRED"
+    assert held["goal"]["nav2_action_goal_id"] == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    assert held["goal"]["nav2_action_goal_id_absent_reason"] is None
+    assert held["navigation_goal_count"] == 1
+    closed = client.post(
+        f"/api/tasks/{timed['task_id']}/resolve",
+        json={"outcome": "FAILED", "reason": "timeout hold closed", "acknowledge_position_unknown": True},
+    )
+    assert closed.status_code == 200, closed.text
+    posed = client.post(
+        "/api/agent/pose",
+        json={
+            "robot_id": "pinky-sim",
+            "session_id": session_id,
+            "pose_x": 4.0,
+            "pose_y": 1.5,
+            "pose_yaw": 0,
+            "frame_id": "map",
+        },
+    )
+    assert posed.status_code == 200, posed.text
+    task = _dispatch(client, runtime, "pinky-sim", x=5.0, y=6.5, label="open-bay")
+    assert _claim(client, task)["send_navigate_to_pose"] is True
+    accepted = _event(client, task, kind="accepted", nav2_id="fixture-action-id")
+    assert accepted["status"] == "RUNNING"
+    conflict = _event(
+        client,
+        task,
+        kind="result",
+        outcome="succeeded",
+        pose=(5.0, 6.5, 0.0),
+        trustworthy=True,
+        nav2_id="ffffffff-ffff-ffff-ffff-ffffffffffff",
+    )
+    assert conflict["status"] == "RUNNING"
+    assert conflict["goal"]["nav2_action_goal_id"] == "fixture-action-id"
+    assert conflict["goal"]["last_result_disposition"] == "rejected_nav2_uuid_conflict"
+    stale = _event(
+        client,
+        task,
+        kind="result",
+        outcome="succeeded",
+        pose=(5.0, 6.5, 0.0),
+        trustworthy=True,
+        epoch=0,
+        nav2_id="99999999-9999-9999-9999-999999999999",
+    )
+    assert stale["status"] == "RUNNING"
+    assert stale["goal"]["nav2_action_goal_id"] == "fixture-action-id"
+
+
+def test_mock_dead_session_is_not_given_another_goal(gazebo):
+    client, runtime = gazebo
+    _register(client, "pinky-sim", 4.0, 1.5)
+    session_id = _arm(client, "pinky-sim")
+    task = _dispatch(client, runtime, "pinky-sim")
+    assert _claim(client, task)["send_navigate_to_pose"] is True
+    runtime.settings.heartbeat_timeout_seconds = 5
+    runtime.clock.advance(6)
+    runtime.tick()
+    current = client.get(f"/api/tasks/{task['task_id']}").json()
+    assert current["status"] == "RECOVERY_REQUIRED"
+    assert current["navigation_goal_count"] == 1
+    assert runtime.agent.is_alive("pinky-sim") is False
+    late = client.post(
+        "/api/agent/goal-event",
+        json={
+            "robot_id": "pinky-sim",
+            "session_id": session_id,
+            "task_id": task["task_id"],
+            "goal_id": task["goal_id"],
+            "execution_id": task["execution_id"],
+            "owner_epoch": task["owner_epoch"],
+            "lease_id": task["lease_id"],
+            "kind": "result",
+            "outcome": "succeeded",
+            "pose_trustworthy": True,
+            "pose_x": 5.0,
+            "pose_y": 6.5,
+            "nav2_action_goal_id": "abababab-abab-abab-abab-abababababab",
+        },
+    )
+    assert late.status_code == 409
+    assert client.get(f"/api/tasks/{task['task_id']}").json()["status"] == "RECOVERY_REQUIRED"
+    opened = client.post("/api/agent/session", json={"robot_id": "pinky-sim"})
+    assert opened.status_code == 201
+    claim = client.post(
+        "/api/agent/claim",
+        json={
+            "robot_id": "pinky-sim",
+            "session_id": opened.json()["session_id"],
+            "owner_epoch": current["owner_epoch"],
+            "lease_id": task["lease_id"],
+            "goal_id": task["goal_id"],
+        },
+    )
+    assert claim.status_code == 200
+    assert claim.json()["send_navigate_to_pose"] is False
+    posed = client.post(
+        "/api/agent/pose",
+        json={
+            "robot_id": "pinky-sim",
+            "session_id": opened.json()["session_id"],
+            "pose_x": 1.0,
+            "pose_y": 1.0,
+            "pose_yaw": 0,
+            "frame_id": "map",
+        },
+    )
+    assert posed.status_code == 400
+    blocked = client.post("/api/robots/pinky-sim/mock-observe")
+    assert blocked.status_code == 403
+
+
+def test_mock_gazebo_pose_observation_allows_a_new_assignment(gazebo):
+    client, runtime = gazebo
+    _register(client, "pinky-sim", 4.0, 1.5)
+    session_id = _arm(client, "pinky-sim")
+    stopped = client.post("/api/agent/stop", json={"robot_id": "pinky-sim", "session_id": session_id})
+    assert stopped.status_code == 200
+    created = post_task(client, x=5.0, y=6.5, label="after-stop", robot_id="pinky-sim")
+    runtime.tick()
+    waiting = client.get(f"/api/tasks/{created.json()['task']['task_id']}").json()
+    assert waiting["status"] == "PENDING"
+    session_id = _arm(client, "pinky-sim")
+    posed = client.post(
+        "/api/agent/pose",
+        json={
+            "robot_id": "pinky-sim",
+            "session_id": session_id,
+            "pose_x": 0.2,
+            "pose_y": -0.1,
+            "pose_yaw": 0.3,
+            "frame_id": "map",
+        },
+    )
+    assert posed.status_code == 200, posed.text
+    assert posed.json()["pose_source"] == "gazebo-tf"
+    assert posed.json()["pose_trustworthy"] is True
+    runtime.tick()
+    assigned = client.get(f"/api/tasks/{waiting['task_id']}").json()
+    assert assigned["status"] == "DISPATCHING"
+    assert assigned["navigation_goal_count"] == 1

@@ -107,6 +107,7 @@ class AgentGoalEventIn(AgentClaimIn):
     pose_yaw: float | None = None
     pose_trustworthy: bool = False
     nav2_action_goal_id: str | None = Field(default=None, max_length=64)
+    nav2_action_goal_id_absent_reason: str | None = Field(default=None, max_length=128)
 
     @field_validator("kind")
     @classmethod
@@ -114,3 +115,10 @@ class AgentGoalEventIn(AgentClaimIn):
         if value not in {"accepted", "result", "disconnected"}:
             raise ValueError("kind must be accepted, result, or disconnected")
         return value
+
+
+class AgentPoseIn(AgentHeartbeatIn):
+    pose_x: float
+    pose_y: float
+    pose_yaw: float = 0.0
+    frame_id: str = "map"

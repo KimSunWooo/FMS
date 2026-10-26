@@ -114,6 +114,7 @@ def task_out(session: Session, task: Task) -> dict:
             "last_result_outcome": goal.last_result_outcome,
             "last_result_disposition": goal.last_result_disposition,
             "nav2_action_goal_id": goal.nav2_action_goal_id,
+            "nav2_action_goal_id_absent_reason": goal.nav2_action_goal_id_absent_reason,
             "observation_failures": goal.observation_failures,
         },
         "completion_evidence": evidence,

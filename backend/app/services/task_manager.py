@@ -37,6 +37,19 @@ def _same_request(task: Task, *, x: float, y: float, yaw: float, label: str, pri
     )
 
 
+def _absent_reason_for(outcome: str, incoming: str | None, stored: str | None) -> str | None:
+    if incoming or stored:
+        return None
+    return {
+        "rejected": "action_server_rejected_before_goal_id",
+        "aborted": "aborted_without_goal_id",
+        "canceled": "canceled_without_goal_id",
+        "timed_out": "nav2_timeout_without_goal_id",
+        "disconnected": "disconnect_without_goal_id",
+        "succeeded": "succeeded_without_goal_id",
+    }.get(outcome)
+
+
 def refresh_robot(session: Session, robot: Robot) -> None:
     rows = list(
         session.scalars(
@@ -469,6 +482,7 @@ class TaskManager:
         now,
         source: str,
         nav2_action_goal_id: str | None = None,
+        nav2_action_goal_id_absent_reason: str | None = None,
     ) -> Task:
         task = self._require(session, task_id)
         goal = session.get(NavigationGoal, task.goal_id) if task.goal_id else None
@@ -491,6 +505,14 @@ class TaskManager:
         }:
             self._reject_result(session, task, goal, outcome, "rejected_task_not_running", now)
             return task
+        if source == "gazebo-agent" and self._record_nav2_identity(
+            goal,
+            nav2_action_goal_id,
+            nav2_action_goal_id_absent_reason
+            or _absent_reason_for(outcome, nav2_action_goal_id, goal.nav2_action_goal_id),
+        ) == "conflict":
+            self._reject_result(session, task, goal, outcome, "rejected_nav2_uuid_conflict", now)
+            return task
         lease = session.get(ControlLease, task.lease_id) if task.lease_id else None
         robot = session.get(Robot, task.robot_id) if task.robot_id else None
         if lease is None or robot is None or not self.gateway.verify(
@@ -498,8 +520,6 @@ class TaskManager:
         ):
             self.enter_recovery(session, task, "result_without_valid_lease", now)
             return task
-        if nav2_action_goal_id and goal.nav2_action_goal_id in {None, nav2_action_goal_id}:
-            goal.nav2_action_goal_id = nav2_action_goal_id
         if task.status == TaskStatus.CANCEL_REQUESTED.value and outcome != "canceled":
             goal.last_result_outcome = outcome
             goal.last_result_disposition = "cancel_race"
@@ -519,6 +539,12 @@ class TaskManager:
             goal.updated_at = now
             self.enter_recovery(session, task, "nav2_action_server_disconnected", now)
             return task
+        if outcome == "timed_out":
+            goal.last_result_outcome = outcome
+            goal.last_result_disposition = "nav2_result_not_terminal"
+            goal.updated_at = now
+            self.enter_recovery(session, task, "nav2_result_timeout", now)
+            return task
         if outcome != "succeeded":
             self._reject_result(session, task, goal, outcome, "rejected_outcome", now)
             return task
@@ -527,6 +553,9 @@ class TaskManager:
             goal.last_result_disposition = "success_before_running"
             goal.updated_at = now
             self.enter_recovery(session, task, "success_before_running", now)
+            return task
+        if source == "gazebo-agent" and not goal.nav2_action_goal_id:
+            self.enter_recovery(session, task, "success_without_nav2_goal_id", now)
             return task
         if not pose_trustworthy:
             self.enter_recovery(session, task, "success_report_without_trustworthy_pose", now)
@@ -797,9 +826,26 @@ class TaskManager:
         ):
             self._reject_result(session, task, goal, "accepted", "rejected_accept_fence", now)
             return task
-        if nav2_action_goal_id:
-            goal.nav2_action_goal_id = nav2_action_goal_id
+        if self._record_nav2_identity(
+            goal,
+            nav2_action_goal_id,
+            "accept_without_goal_uuid",
+        ) == "conflict":
+            self._reject_result(session, task, goal, "accepted", "rejected_nav2_uuid_conflict", now)
+            return task
         return self.accept_goal(session, task, now)
+
+    def _record_nav2_identity(self, goal, nav2_action_goal_id: str | None, absent_reason: str | None) -> str:
+        """Store a real Nav2 UUID. A second, different UUID is not written over the first."""
+        if nav2_action_goal_id:
+            if goal.nav2_action_goal_id not in {None, nav2_action_goal_id}:
+                return "conflict"
+            goal.nav2_action_goal_id = nav2_action_goal_id
+            goal.nav2_action_goal_id_absent_reason = None
+            return "stored"
+        if goal.nav2_action_goal_id is None and absent_reason and not goal.nav2_action_goal_id_absent_reason:
+            goal.nav2_action_goal_id_absent_reason = absent_reason
+        return "absent"
 
     def _require_external_agent(self, robot: Robot) -> None:
         from app.core.errors import PhysicalControlBlocked

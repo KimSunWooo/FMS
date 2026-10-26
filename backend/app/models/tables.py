@@ -141,6 +141,7 @@ class NavigationGoal(Base):
     last_result_outcome: Mapped[str | None] = mapped_column(String(32), nullable=True)
     last_result_disposition: Mapped[str | None] = mapped_column(String(64), nullable=True)
     nav2_action_goal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    nav2_action_goal_id_absent_reason: Mapped[str | None] = mapped_column(String(128), nullable=True)
     auto_complete_at: Mapped[datetime | None] = mapped_column(_dt(), nullable=True)
     created_at: Mapped[datetime] = mapped_column(_dt())
     updated_at: Mapped[datetime] = mapped_column(_dt())

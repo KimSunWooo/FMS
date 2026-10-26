@@ -12,7 +12,7 @@ from sqlalchemy.pool import NullPool
 from app.models.base import Base
 from app.models.tables import SchemaMigration
 
-LATEST_SCHEMA = 2
+LATEST_SCHEMA = 3
 
 _PARTIAL_INDEXES = (
     """
@@ -78,6 +78,10 @@ class Database:
             if "nav2_action_goal_id" not in columns:
                 connection.exec_driver_sql(
                     "ALTER TABLE navigation_goals ADD COLUMN nav2_action_goal_id VARCHAR(64)"
+                )
+            if "nav2_action_goal_id_absent_reason" not in columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE navigation_goals ADD COLUMN nav2_action_goal_id_absent_reason VARCHAR(128)"
                 )
             current = connection.execute(
                 text("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")

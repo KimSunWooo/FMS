@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
-from app.api.schemas import AgentClaimIn, AgentGoalEventIn, AgentHeartbeatIn, AgentSessionIn, AgentStopIn
+from app.api.schemas import (
+    AgentClaimIn,
+    AgentGoalEventIn,
+    AgentHeartbeatIn,
+    AgentPoseIn,
+    AgentSessionIn,
+    AgentStopIn,
+)
 from app.core.errors import FmsError
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
@@ -66,4 +73,17 @@ def goal_event(body: AgentGoalEventIn, request: Request):
         pose_yaw=body.pose_yaw,
         pose_trustworthy=body.pose_trustworthy,
         nav2_action_goal_id=body.nav2_action_goal_id,
+        nav2_action_goal_id_absent_reason=body.nav2_action_goal_id_absent_reason,
+    )
+
+
+@router.post("/pose")
+def pose(body: AgentPoseIn, request: Request):
+    return _runtime(request).agent_pose(
+        robot_id=body.robot_id,
+        session_id=body.session_id,
+        pose_x=body.pose_x,
+        pose_y=body.pose_y,
+        pose_yaw=body.pose_yaw,
+        frame_id=body.frame_id,
     )
