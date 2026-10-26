@@ -1,0 +1,612 @@
+[0.000000] (-) TimerEvent: {}
+[0.000363] (-) JobUnselected: {'identifier': 'pinky_emotion'}
+[0.000424] (-) JobUnselected: {'identifier': 'pinky_imu_bno055'}
+[0.000452] (-) JobUnselected: {'identifier': 'pinky_interfaces'}
+[0.000490] (-) JobUnselected: {'identifier': 'pinky_lamp_control'}
+[0.000527] (-) JobUnselected: {'identifier': 'pinky_led'}
+[0.000560] (-) JobUnselected: {'identifier': 'pinky_sensor_adc'}
+[0.000582] (pinky_bringup) JobQueued: {'identifier': 'pinky_bringup', 'dependencies': OrderedDict()}
+[0.000606] (pinky_description) JobQueued: {'identifier': 'pinky_description', 'dependencies': OrderedDict()}
+[0.000673] (pinky_gz_sim) JobQueued: {'identifier': 'pinky_gz_sim', 'dependencies': OrderedDict()}
+[0.000699] (pinky_navigation) JobQueued: {'identifier': 'pinky_navigation', 'dependencies': OrderedDict()}
+[0.000722] (pinky_bringup) JobStarted: {'identifier': 'pinky_bringup'}
+[0.006278] (pinky_description) JobStarted: {'identifier': 'pinky_description'}
+[0.008989] (pinky_gz_sim) JobStarted: {'identifier': 'pinky_gz_sim'}
+[0.011951] (pinky_navigation) JobStarted: {'identifier': 'pinky_navigation'}
+[0.099570] (-) TimerEvent: {}
+[0.199893] (-) TimerEvent: {}
+[0.204269] (pinky_description) JobProgress: {'identifier': 'pinky_description', 'progress': 'cmake'}
+[0.204734] (pinky_description) Command: {'cmd': ['/usr/bin/cmake', '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_description', '-DAMENT_CMAKE_SYMLINK_INSTALL=1', '-DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.206436] (pinky_gz_sim) JobProgress: {'identifier': 'pinky_gz_sim', 'progress': 'cmake'}
+[0.206937] (pinky_gz_sim) Command: {'cmd': ['/usr/bin/cmake', '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_gz_sim', '-DAMENT_CMAKE_SYMLINK_INSTALL=1', '-DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.209001] (pinky_navigation) JobProgress: {'identifier': 'pinky_navigation', 'progress': 'cmake'}
+[0.209466] (pinky_navigation) Command: {'cmd': ['/usr/bin/cmake', '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation', '-DAMENT_CMAKE_SYMLINK_INSTALL=1', '-DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.254141] (pinky_gz_sim) StdoutLine: {'line': b'-- The C compiler identification is GNU 13.3.0\n'}
+[0.254320] (pinky_navigation) StdoutLine: {'line': b'-- The C compiler identification is GNU 13.3.0\n'}
+[0.254632] (pinky_description) StdoutLine: {'line': b'-- The C compiler identification is GNU 13.3.0\n'}
+[0.299972] (-) TimerEvent: {}
+[0.300158] (pinky_navigation) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 13.3.0\n'}
+[0.300401] (pinky_gz_sim) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 13.3.0\n'}
+[0.300514] (pinky_description) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 13.3.0\n'}
+[0.313752] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.314816] (pinky_navigation) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.315618] (pinky_description) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.395449] (pinky_description) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.395577] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.396024] (pinky_navigation) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.400049] (-) TimerEvent: {}
+[0.402167] (pinky_gz_sim) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.402390] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.402536] (pinky_description) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.402706] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.402866] (pinky_description) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.403035] (pinky_description) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.403186] (pinky_navigation) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.403321] (pinky_navigation) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.403604] (pinky_navigation) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.410748] (pinky_navigation) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.410965] (pinky_description) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.411357] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.500147] (-) TimerEvent: {}
+[0.502761] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.503134] (pinky_navigation) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.503381] (pinky_description) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.509996] (pinky_gz_sim) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.510220] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.510358] (pinky_navigation) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.510456] (pinky_description) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.510568] (pinky_gz_sim) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.510662] (pinky_navigation) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.510765] (pinky_description) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.510938] (pinky_navigation) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.511017] (pinky_description) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.515317] (pinky_navigation) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[0.515535] (pinky_description) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[0.515706] (pinky_gz_sim) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[0.600272] (-) TimerEvent: {}
+[0.649829] (pinky_description) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[0.651801] (pinky_navigation) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[0.652943] (pinky_gz_sim) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[0.700375] (-) TimerEvent: {}
+[0.710900] (pinky_description) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.714443] (pinky_navigation) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.714688] (pinky_gz_sim) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.763305] (pinky_description) StdoutLine: {'line': b'-- Found xacro: 2.1.1 (/opt/ros/jazzy/share/xacro/cmake)\n'}
+[0.766271] (pinky_navigation) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)\n'}
+[0.766700] (pinky_description) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)\n'}
+[0.767616] (pinky_gz_sim) StdoutLine: {'line': b'-- Found ros_gz: 1.0.24 (/opt/ros/jazzy/share/ros_gz/cmake)\n'}
+[0.771232] (pinky_gz_sim) StdoutLine: {'line': b'-- Found gz_ros2_control: 1.2.20 (/opt/ros/jazzy/share/gz_ros2_control/cmake)\n'}
+[0.800464] (-) TimerEvent: {}
+[0.851176] (pinky_gz_sim) StdoutLine: {'line': b'-- Found rosidl_generator_c: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)\n'}
+[0.867197] (pinky_navigation) StdoutLine: {'line': b"-- Added test 'flake8' to check Python code syntax and style conventions\n"}
+[0.867508] (pinky_navigation) StdoutLine: {'line': b"-- Configured 'flake8' exclude dirs and/or files: \n"}
+[0.867674] (pinky_gz_sim) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)\n'}
+[0.868037] (pinky_navigation) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[0.868720] (pinky_navigation) StdoutLine: {'line': b"-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257\n"}
+[0.869873] (pinky_description) StdoutLine: {'line': b"-- Added test 'flake8' to check Python code syntax and style conventions\n"}
+[0.869954] (pinky_description) StdoutLine: {'line': b"-- Configured 'flake8' exclude dirs and/or files: \n"}
+[0.870641] (pinky_navigation) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[0.870823] (pinky_description) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[0.871462] (pinky_description) StdoutLine: {'line': b"-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257\n"}
+[0.872239] (pinky_navigation) StdoutLine: {'line': b'-- Configuring done (0.7s)\n'}
+[0.873578] (pinky_description) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[0.875018] (pinky_navigation) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[0.875140] (pinky_description) StdoutLine: {'line': b'-- Configuring done (0.7s)\n'}
+[0.876339] (pinky_navigation) StdoutLine: {'line': b'-- Build files have been written to: /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation\n'}
+[0.877811] (pinky_description) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[0.879126] (pinky_description) StdoutLine: {'line': b'-- Build files have been written to: /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description\n'}
+[0.880933] (pinky_navigation) CommandEnded: {'returncode': 0}
+[0.881482] (pinky_navigation) JobProgress: {'identifier': 'pinky_navigation', 'progress': 'build'}
+[0.882228] (pinky_navigation) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', '--', '-j16', '-l16'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.883199] (pinky_description) CommandEnded: {'returncode': 0}
+[0.883482] (pinky_description) JobProgress: {'identifier': 'pinky_description', 'progress': 'build'}
+[0.883714] (pinky_description) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', '--', '-j16', '-l16'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.886465] (pinky_gz_sim) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.900556] (-) TimerEvent: {}
+[0.907361] (pinky_gz_sim) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.922075] (pinky_description) CommandEnded: {'returncode': 0}
+[0.922588] (pinky_description) JobProgress: {'identifier': 'pinky_description', 'progress': 'install'}
+[0.931106] (pinky_description) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.932114] (pinky_navigation) CommandEnded: {'returncode': 0}
+[0.932510] (pinky_navigation) JobProgress: {'identifier': 'pinky_navigation', 'progress': 'install'}
+[0.932730] (pinky_navigation) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.938325] (pinky_description) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[0.938663] (pinky_description) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[0.939051] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/launch/upload_robot.launch.py\n'}
+[0.939930] (pinky_navigation) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[0.940294] (pinky_navigation) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[0.940500] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib/pinky_navigation/nav2_web_server.py\n'}
+[0.947950] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/launch/view_robot.launch.py\n'}
+[0.948497] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib/pinky_navigation/index.html\n'}
+[0.956721] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib/pinky_navigation/pinklab_logo.png\n'}
+[0.957364] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/base_link.stl\n'}
+[0.965252] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/camera_assy.stl\n'}
+[0.965931] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/bringup_launch.xml\n'}
+[0.973897] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/gz_bringup_launch.xml\n'}
+[0.974935] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/caster_mount.stl\n'}
+[0.982560] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/caster_rotate.stl\n'}
+[0.982763] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/gz_map_building.launch.xml\n'}
+[0.988689] (pinky_gz_sim) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 7.3.4 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)\n'}
+[0.991413] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/gz_map_view.launch.xml\n'}
+[0.991598] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/front_camera_mount.stl\n'}
+[0.993103] (pinky_gz_sim) StdoutLine: {'line': b'-- Found rmw_cyclonedds_cpp: 2.2.4 (/opt/ros/jazzy/share/rmw_cyclonedds_cpp/cmake)\n'}
+[0.999905] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/gz_nav2_view.launch.xml\n'}
+[1.000222] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/main_wheel.stl\n'}
+[1.000616] (-) TimerEvent: {}
+[1.009588] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/robot_lamp.stl\n'}
+[1.009785] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/gz_web_nav2.launch.xml\n'}
+[1.018496] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/gz_web_slam.launch.xml\n'}
+[1.018659] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/rplidar_c1.stl\n'}
+[1.026151] (pinky_gz_sim) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_cyclonedds_cpp' as default\n"}
+[1.027258] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/collision/screen_assy.stl\n'}
+[1.027389] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/localization_launch.xml\n'}
+[1.035950] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/map_building.launch.xml\n'}
+[1.036162] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/base_link.dae\n'}
+[1.044447] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/map_view.launch.xml\n'}
+[1.044612] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/camera_assy.dae\n'}
+[1.053169] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/caster_mount.dae\n'}
+[1.054015] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/nav2_view.launch.xml\n'}
+[1.062512] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/navigation_launch.xml\n'}
+[1.062677] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/caster_rotate.dae\n'}
+[1.071246] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/web_nav2.launch.xml\n'}
+[1.071711] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/caster_wheel.dae\n'}
+[1.079991] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/launch/web_slam.launch.xml\n'}
+[1.080218] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/front_camera_mount.dae\n'}
+[1.089052] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/main_wheel.dae\n'}
+[1.089289] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/params/mapper_params.yaml\n'}
+[1.098414] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/robot_lamp.dae\n'}
+[1.098682] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/params/nav2_params.yaml\n'}
+[1.099207] (pinky_bringup) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', '-W', 'ignore:easy_install command is deprecated', 'setup.py', 'develop', '--editable', '--build-directory', '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/build', '--no-deps', 'symlink_data'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup', 'PYTHONPATH': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor'}), 'shell': False}
+[1.100683] (-) TimerEvent: {}
+[1.107439] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/rplidar_c1.dae\n'}
+[1.107738] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/map/my_map.pgm\n'}
+[1.116146] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/map/my_map.yaml\n'}
+[1.116328] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/meshes/visual/screen_assy.dae\n'}
+[1.122732] (pinky_gz_sim) StderrLine: {'line': b'\x1b[0mCMake Deprecation Warning at /opt/ros/jazzy/share/tl_expected/cmake/tl_expectedConfig.cmake:37 (message):\n'}
+[1.122957] (pinky_gz_sim) StderrLine: {'line': b"  Package 'tl_expected' is deprecated (This package will be removed in ROS 2\n"}
+[1.123056] (pinky_gz_sim) StderrLine: {'line': b'  Lyrical Luth.\n'}
+[1.123141] (pinky_gz_sim) StderrLine: {'line': b'\n'}
+[1.123236] (pinky_gz_sim) StderrLine: {'line': b'        Use tl/expected.hpp from libexpected-dev,\n'}
+[1.123324] (pinky_gz_sim) StderrLine: {'line': b'        or rcpputils/tl_expected/expected.hpp if the system header is not available)\n'}
+[1.123401] (pinky_gz_sim) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[1.123477] (pinky_gz_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/parameter_traits/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)\n'}
+[1.123552] (pinky_gz_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/parameter_traits/cmake/parameter_traitsConfig.cmake:41 (include)\n'}
+[1.123628] (pinky_gz_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/controller_manager/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)\n'}
+[1.123702] (pinky_gz_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/controller_manager/cmake/controller_managerConfig.cmake:41 (include)\n'}
+[1.123775] (pinky_gz_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/gz_ros2_control/cmake/ament_cmake_export_dependencies-extras.cmake:21 (find_package)\n'}
+[1.123863] (pinky_gz_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/gz_ros2_control/cmake/gz_ros2_controlConfig.cmake:41 (include)\n'}
+[1.123938] (pinky_gz_sim) StderrLine: {'line': b'  CMakeLists.txt:14 (find_package)\n'}
+[1.124011] (pinky_gz_sim) StderrLine: {'line': b'\n'}
+[1.124082] (pinky_gz_sim) StderrLine: {'line': b'\x1b[0m\n'}
+[1.125389] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/map/pinklab.png\n'}
+[1.125547] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/rviz/view_robot.rviz\n'}
+[1.134573] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/urdf/common/insert_inertia.urdf.xacro\n'}
+[1.134821] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/map/pinklab.yaml\n'}
+[1.144494] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/urdf/pinky.urdf.xacro\n'}
+[1.144834] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/rviz/map_building.rviz\n'}
+[1.154314] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/urdf/pinky_gz.urdf.xacro\n'}
+[1.154526] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/rviz/nav2_view.rviz\n'}
+[1.163235] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/urdf/robot.urdf.xacro\n'}
+[1.163510] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/ament_index/resource_index/package_run_dependencies/pinky_navigation\n'}
+[1.172292] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/ament_index/resource_index/parent_prefix_path/pinky_navigation\n'}
+[1.172511] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/ament_index/resource_index/package_run_dependencies/pinky_description\n'}
+[1.181348] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/environment/ament_prefix_path.sh\n'}
+[1.181624] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/ament_index/resource_index/parent_prefix_path/pinky_description\n'}
+[1.190283] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/environment/ament_prefix_path.dsv\n'}
+[1.190456] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/environment/ament_prefix_path.sh\n'}
+[1.198878] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/environment/ament_prefix_path.dsv\n'}
+[1.199011] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/environment/path.sh\n'}
+[1.200745] (-) TimerEvent: {}
+[1.208103] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/environment/path.sh\n'}
+[1.208319] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/environment/path.dsv\n'}
+[1.216862] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/local_setup.bash\n'}
+[1.217338] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/environment/path.dsv\n'}
+[1.225602] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/local_setup.bash\n'}
+[1.225859] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/local_setup.sh\n'}
+[1.234069] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/local_setup.zsh\n'}
+[1.234284] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/local_setup.sh\n'}
+[1.242868] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/local_setup.dsv\n'}
+[1.243200] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/local_setup.zsh\n'}
+[1.252873] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.dsv\n'}
+[1.253026] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/local_setup.dsv\n'}
+[1.261792] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.dsv\n'}
+[1.262011] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/ament_index/resource_index/packages/pinky_navigation\n'}
+[1.270756] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/ament_index/resource_index/packages/pinky_description\n'}
+[1.270962] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/cmake/pinky_navigationConfig.cmake\n'}
+[1.279414] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/cmake/pinky_navigationConfig-version.cmake\n'}
+[1.279618] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/cmake/pinky_descriptionConfig.cmake\n'}
+[1.288184] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/cmake/pinky_descriptionConfig-version.cmake\n'}
+[1.288424] (pinky_navigation) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.xml\n'}
+[1.297530] (pinky_description) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.xml\n'}
+[1.299029] (pinky_navigation) CommandEnded: {'returncode': 0}
+[1.300874] (-) TimerEvent: {}
+[1.321573] (pinky_navigation) JobEnded: {'identifier': 'pinky_navigation', 'rc': 0}
+[1.322649] (pinky_description) CommandEnded: {'returncode': 0}
+[1.331531] (pinky_description) JobEnded: {'identifier': 'pinky_description', 'rc': 0}
+[1.341063] (pinky_gz_sim) StdoutLine: {'line': b'-- Found TinyXML2 via Config file: /usr/lib/x86_64-linux-gnu/cmake/tinyxml2\n'}
+[1.355794] (pinky_gz_sim) StdoutLine: {'line': b'-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.83.0/BoostConfig.cmake (found version "1.83.0")  \n'}
+[1.401000] (-) TimerEvent: {}
+[1.402879] (pinky_bringup) StdoutLine: {'line': b'running develop\n'}
+[1.501082] (-) TimerEvent: {}
+[1.587591] (pinky_bringup) StderrLine: {'line': b'/usr/lib/python3/dist-packages/setuptools/command/easy_install.py:363: UserWarning: Unbuilt egg for pytest-repeat [unknown version] (/usr/lib/python3/dist-packages)\n'}
+[1.587791] (pinky_bringup) StderrLine: {'line': b'  self.local_index = Environment(self.shadow_path + sys.path)\n'}
+[1.601206] (-) TimerEvent: {}
+[1.630873] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sim8 -- found version 8.15.0\n'}
+[1.638523] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sim8\n'}
+[1.639082] (pinky_bringup) StdoutLine: {'line': b'running egg_info\n'}
+[1.639202] (pinky_bringup) StdoutLine: {'line': b'creating pinky_bringup.egg-info\n'}
+[1.639636] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for sdformat14 -- found version 14.9.0\n'}
+[1.639754] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of sdformat14\n'}
+[1.646200] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'tinyxml2'\n"}
+[1.664232] (pinky_bringup) StdoutLine: {'line': b'writing pinky_bringup.egg-info/PKG-INFO\n'}
+[1.664564] (pinky_bringup) StdoutLine: {'line': b'writing dependency_links to pinky_bringup.egg-info/dependency_links.txt\n'}
+[1.664770] (pinky_bringup) StdoutLine: {'line': b'writing entry points to pinky_bringup.egg-info/entry_points.txt\n'}
+[1.664923] (pinky_bringup) StdoutLine: {'line': b'writing requirements to pinky_bringup.egg-info/requires.txt\n'}
+[1.665064] (pinky_bringup) StdoutLine: {'line': b'writing top-level names to pinky_bringup.egg-info/top_level.txt\n'}
+[1.665198] (pinky_bringup) StdoutLine: {'line': b"writing manifest file 'pinky_bringup.egg-info/SOURCES.txt'\n"}
+[1.667275] (pinky_gz_sim) StdoutLine: {'line': b'--   Found tinyxml2, version 10.0.0\n'}
+[1.701257] (-) TimerEvent: {}
+[1.707166] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[1.707459] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-math7\n'}
+[1.707681] (pinky_bringup) StdoutLine: {'line': b"reading manifest file 'pinky_bringup.egg-info/SOURCES.txt'\n"}
+[1.708136] (pinky_bringup) StdoutLine: {'line': b"writing manifest file 'pinky_bringup.egg-info/SOURCES.txt'\n"}
+[1.709120] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[1.709258] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-utils2\n'}
+[1.710259] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[1.710405] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-utils2\n'}
+[1.710534] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-utils2> component [cli]\n'}
+[1.712180] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2-cli -- found version 2.2.1\n'}
+[1.712358] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-utils2-cli\n'}
+[1.714399] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2 -- found version 2.0.4\n'}
+[1.714573] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-plugin2\n'}
+[1.715046] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[1.715357] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-plugin2> component [loader]\n'}
+[1.716641] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2-loader -- found version 2.0.4\n'}
+[1.716760] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-plugin2-loader\n'}
+[1.717086] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-plugin2> component [register]\n'}
+[1.718412] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2-register -- found version 2.0.4\n'}
+[1.718552] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-plugin2-register\n'}
+[1.720246] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-transport13 -- found version 13.6.0\n'}
+[1.720414] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-transport13\n'}
+[1.728980] (pinky_bringup) StdoutLine: {'line': b'running build_ext\n'}
+[1.729108] (pinky_bringup) StdoutLine: {'line': b'Creating /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/python3.12/site-packages/pinky-bringup.egg-link (link to .)\n'}
+[1.729550] (pinky_bringup) StdoutLine: {'line': b'Installing battery_publisher script to /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/pinky_bringup\n'}
+[1.729716] (pinky_bringup) StdoutLine: {'line': b'Installing bringup script to /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/pinky_bringup\n'}
+[1.729875] (pinky_bringup) StdoutLine: {'line': b'\n'}
+[1.729947] (pinky_bringup) StdoutLine: {'line': b'Installed /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup\n'}
+[1.730047] (pinky_bringup) StdoutLine: {'line': b'running symlink_data\n'}
+[1.730112] (pinky_bringup) StdoutLine: {'line': b'creating /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/ament_index\n'}
+[1.730181] (pinky_bringup) StdoutLine: {'line': b'creating /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/ament_index/resource_index\n'}
+[1.730302] (pinky_bringup) StdoutLine: {'line': b'creating /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/ament_index/resource_index/packages\n'}
+[1.730383] (pinky_bringup) StdoutLine: {'line': b'symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/resource/pinky_bringup -> /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/ament_index/resource_index/packages\n'}
+[1.730461] (pinky_bringup) StdoutLine: {'line': b'symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/package.xml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup\n'}
+[1.730532] (pinky_bringup) StdoutLine: {'line': b'creating /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/launch\n'}
+[1.730621] (pinky_bringup) StdoutLine: {'line': b'symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/launch/bringup_robot.launch.xml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/launch\n'}
+[1.730684] (pinky_bringup) StdoutLine: {'line': b'creating /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/config\n'}
+[1.730741] (pinky_bringup) StdoutLine: {'line': b'symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/config/pinky_params.yaml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/config\n'}
+[1.749335] (pinky_gz_sim) StdoutLine: {'line': b'-- Found Protobuf: /usr/lib/x86_64-linux-gnu/libprotobuf.so (found version "3.21.12") \n'}
+[1.755637] (pinky_bringup) CommandEnded: {'returncode': 0}
+[1.760892] (pinky_bringup) JobEnded: {'identifier': 'pinky_bringup', 'rc': 0}
+[1.761896] (pinky_gz_sim) StdoutLine: {'line': b'-- Config-file not installed for ZeroMQ -- checking for pkg-config\n'}
+[1.768298] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'libzmq >= 4'\n"}
+[1.784304] (pinky_gz_sim) StdoutLine: {'line': b'--   Found libzmq, version 4.3.5\n'}
+[1.801335] (-) TimerEvent: {}
+[1.832296] (pinky_gz_sim) StdoutLine: {'line': b'-- Found ZeroMQ: TRUE (Required is at least version "4") \n'}
+[1.838340] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'uuid'\n"}
+[1.854985] (pinky_gz_sim) StdoutLine: {'line': b'--   Found uuid, version 2.39.3\n'}
+[1.895092] (pinky_gz_sim) StdoutLine: {'line': b'-- Found UUID: TRUE  \n'}
+[1.895477] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[1.897065] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-msgs10 -- found version 10.4.0\n'}
+[1.897313] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-msgs10\n'}
+[1.901400] (-) TimerEvent: {}
+[1.917495] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[1.917796] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[1.924440] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-transport13> component [log]\n'}
+[1.925650] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-transport13-log -- found version 13.6.0\n'}
+[1.925839] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-transport13-log\n'}
+[1.926202] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-transport13> component [parameters]\n'}
+[1.927372] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-transport13-parameters -- found version 13.6.0\n'}
+[1.927530] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-transport13-parameters\n'}
+[1.928327] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-msgs10 -- found version 10.4.0\n'}
+[1.929954] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[1.930104] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5\n'}
+[1.930418] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[1.930782] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for dlfcn.h - found\n'}
+[1.932402] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for libdl - found\n'}
+[1.933412] (pinky_gz_sim) StdoutLine: {'line': b'-- Found DL: TRUE  \n'}
+[1.940085] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [av]\n'}
+[1.941701] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5-av -- found version 5.9.0\n'}
+[1.941879] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5-av\n'}
+[1.946810] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'libswscale'\n"}
+[1.963667] (pinky_gz_sim) StdoutLine: {'line': b'--   Found libswscale, version 7.5.100\n'}
+[2.001498] (-) TimerEvent: {}
+[2.007069] (pinky_gz_sim) StdoutLine: {'line': b'-- Found SWSCALE: TRUE  \n'}
+[2.013098] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'libavdevice >= 56.4.100'\n"}
+[2.030868] (pinky_gz_sim) StdoutLine: {'line': b'--   Found libavdevice, version 60.3.100\n'}
+[2.086505] (pinky_gz_sim) StdoutLine: {'line': b'-- Found AVDEVICE: TRUE (Required is at least version "56.4.100") \n'}
+[2.092379] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'libavformat'\n"}
+[2.101582] (-) TimerEvent: {}
+[2.110734] (pinky_gz_sim) StdoutLine: {'line': b'--   Found libavformat, version 60.16.100\n'}
+[2.157061] (pinky_gz_sim) StdoutLine: {'line': b'-- Found AVFORMAT: TRUE  \n'}
+[2.162420] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'libavcodec'\n"}
+[2.180833] (pinky_gz_sim) StdoutLine: {'line': b'--   Found libavcodec, version 60.31.102\n'}
+[2.201669] (-) TimerEvent: {}
+[2.229282] (pinky_gz_sim) StdoutLine: {'line': b'-- Found AVCODEC: TRUE  \n'}
+[2.234424] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'libavutil'\n"}
+[2.251318] (pinky_gz_sim) StdoutLine: {'line': b'--   Found libavutil, version 58.29.100\n'}
+[2.295932] (pinky_gz_sim) StdoutLine: {'line': b'-- Found AVUTIL: TRUE  \n'}
+[2.296367] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [events]\n'}
+[2.297987] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5-events -- found version 5.9.0\n'}
+[2.298149] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5-events\n'}
+[2.298424] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.298774] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [graphics]\n'}
+[2.300265] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5-graphics -- found version 5.9.0\n'}
+[2.300384] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5-graphics\n'}
+[2.300631] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.301728] (-) TimerEvent: {}
+[2.305199] (pinky_gz_sim) StdoutLine: {'line': b'-- Found GzAssimp: TRUE (found version "5.3.0") \n'}
+[2.305570] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [io]\n'}
+[2.307098] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5-io -- found version 5.9.0\n'}
+[2.307276] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5-io\n'}
+[2.307536] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [profiler]\n'}
+[2.309031] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5-profiler -- found version 5.9.0\n'}
+[2.309146] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5-profiler\n'}
+[2.310941] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-fuel_tools9 -- found version 9.1.1\n'}
+[2.311061] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-fuel_tools9\n'}
+[2.401818] (-) TimerEvent: {}
+[2.411708] (pinky_gz_sim) StdoutLine: {'line': b'-- Found CURL: /usr/lib/x86_64-linux-gnu/libcurl.so (found version "8.5.0")  \n'}
+[2.421514] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'jsoncpp'\n"}
+[2.439761] (pinky_gz_sim) StdoutLine: {'line': b'--   Found jsoncpp, version 1.9.5\n'}
+[2.486095] (pinky_gz_sim) StdoutLine: {'line': b'-- Found JSONCPP: TRUE  \n'}
+[2.501898] (-) TimerEvent: {}
+[2.502527] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'yaml-0.1'\n"}
+[2.519035] (pinky_gz_sim) StdoutLine: {'line': b'--   Found yaml-0.1, version 0.2.5\n'}
+[2.563975] (pinky_gz_sim) StdoutLine: {'line': b'-- Found YAML: TRUE  \n'}
+[2.569281] (pinky_gz_sim) StdoutLine: {'line': b"-- Checking for module 'libzip'\n"}
+[2.588611] (pinky_gz_sim) StdoutLine: {'line': b'--   Found libzip, version 1.7.3\n'}
+[2.601966] (-) TimerEvent: {}
+[2.631180] (pinky_gz_sim) StdoutLine: {'line': b'-- Found ZIP: TRUE  \n'}
+[2.631535] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.631848] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.632017] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5\n'}
+[2.632288] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.632450] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for dlfcn.h - found\n'}
+[2.632540] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for libdl - found\n'}
+[2.639358] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [testing]\n'}
+[2.641099] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5-testing -- found version 5.9.0\n'}
+[2.641291] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5-testing\n'}
+[2.642092] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.642460] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-msgs10 -- found version 10.4.0\n'}
+[2.643984] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-gui8 -- found version 8.4.0\n'}
+[2.644138] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-gui8\n'}
+[2.670235] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.670583] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.670941] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.671310] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2 -- found version 2.0.4\n'}
+[2.671723] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-transport13 -- found version 13.6.0\n'}
+[2.673011] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-rendering8 -- found version 8.2.3\n'}
+[2.673185] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-rendering8\n'}
+[2.673527] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.673712] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-math7\n'}
+[2.674042] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.674180] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-math7> component [eigen3]\n'}
+[2.675883] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7-eigen3 -- found version 7.7.0\n'}
+[2.676018] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-math7-eigen3\n'}
+[2.677189] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.677348] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5\n'}
+[2.677653] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.677822] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for dlfcn.h - found\n'}
+[2.677910] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for libdl - found\n'}
+[2.686134] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [graphics]\n'}
+[2.686255] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [events]\n'}
+[2.686351] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-common5> component [geospatial]\n'}
+[2.687875] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5-geospatial -- found version 5.9.0\n'}
+[2.688057] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-common5-geospatial\n'}
+[2.688436] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.688808] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.689600] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2 -- found version 2.0.4\n'}
+[2.689767] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-plugin2\n'}
+[2.690108] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.690253] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-plugin2> component [all]\n'}
+[2.691549] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for all libraries of gz-plugin2 -- found version 2.0.4\n'}
+[2.691984] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2 -- found version 2.0.4\n'}
+[2.692683] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.701919] (pinky_gz_sim) StdoutLine: {'line': b'-- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so  found components: OpenGL \n'}
+[2.702050] (-) TimerEvent: {}
+[2.703002] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-msgs10 -- found version 10.4.0\n'}
+[2.728525] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-physics7 -- found version 7.8.0\n'}
+[2.728786] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-physics7\n'}
+[2.728952] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.729151] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.729452] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2 -- found version 2.0.4\n'}
+[2.729767] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.730566] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-physics7> component [heightmap]\n'}
+[2.731436] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-physics7-heightmap -- found version 7.8.0\n'}
+[2.731514] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-physics7-heightmap\n'}
+[2.731761] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.732069] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-physics7> component [mesh]\n'}
+[2.732891] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-physics7-mesh -- found version 7.8.0\n'}
+[2.733042] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-physics7-mesh\n'}
+[2.733251] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.733588] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-physics7> component [sdf]\n'}
+[2.734391] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-physics7-sdf -- found version 7.8.0\n'}
+[2.734518] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-physics7-sdf\n'}
+[2.734771] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for sdformat14 -- found version 14.9.0\n'}
+[2.735874] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.735983] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8\n'}
+[2.755305] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.755668] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.756034] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-transport13 -- found version 13.6.0\n'}
+[2.756391] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-rendering8 -- found version 8.2.3\n'}
+[2.756719] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-msgs10 -- found version 10.4.0\n'}
+[2.757057] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for sdformat14 -- found version 14.9.0\n'}
+[2.757509] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [air_pressure]\n'}
+[2.758334] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-air_pressure -- found version 8.2.2\n'}
+[2.758531] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-air_pressure\n'}
+[2.758932] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [air_speed]\n'}
+[2.759707] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-air_speed -- found version 8.2.2\n'}
+[2.759865] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-air_speed\n'}
+[2.760264] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [altimeter]\n'}
+[2.761615] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-altimeter -- found version 8.2.2\n'}
+[2.761734] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-altimeter\n'}
+[2.762041] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [imu]\n'}
+[2.762770] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-imu -- found version 8.2.2\n'}
+[2.762918] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-imu\n'}
+[2.763182] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [force_torque]\n'}
+[2.763882] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-force_torque -- found version 8.2.2\n'}
+[2.763996] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-force_torque\n'}
+[2.764334] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [logical_camera]\n'}
+[2.765026] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-logical_camera -- found version 8.2.2\n'}
+[2.765143] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-logical_camera\n'}
+[2.765481] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [magnetometer]\n'}
+[2.766183] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-magnetometer -- found version 8.2.2\n'}
+[2.766405] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-magnetometer\n'}
+[2.767177] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [navsat]\n'}
+[2.767982] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-navsat -- found version 8.2.2\n'}
+[2.768099] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-navsat\n'}
+[2.768465] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [dvl]\n'}
+[2.769151] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-dvl -- found version 8.2.2\n'}
+[2.769284] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-dvl\n'}
+[2.769538] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.769651] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8\n'}
+[2.788962] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.789267] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-common5 -- found version 5.9.0\n'}
+[2.789545] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-transport13 -- found version 13.6.0\n'}
+[2.789870] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-rendering8 -- found version 8.2.3\n'}
+[2.790170] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-msgs10 -- found version 10.4.0\n'}
+[2.790488] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for sdformat14 -- found version 14.9.0\n'}
+[2.790621] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [rendering]\n'}
+[2.791341] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-rendering -- found version 8.2.2\n'}
+[2.791477] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-rendering\n'}
+[2.792289] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [rendering]\n'}
+[2.792370] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [lidar]\n'}
+[2.793028] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-lidar -- found version 8.2.2\n'}
+[2.793149] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-lidar\n'}
+[2.793426] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.793795] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [gpu_lidar]\n'}
+[2.794517] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-gpu_lidar -- found version 8.2.2\n'}
+[2.794630] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-gpu_lidar\n'}
+[2.794887] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.795278] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [camera]\n'}
+[2.795980] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-camera -- found version 8.2.2\n'}
+[2.796096] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-camera\n'}
+[2.796366] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.796744] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [boundingbox_camera]\n'}
+[2.797459] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-boundingbox_camera -- found version 8.2.2\n'}
+[2.797577] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-boundingbox_camera\n'}
+[2.797923] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [segmentation_camera]\n'}
+[2.798650] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-segmentation_camera -- found version 8.2.2\n'}
+[2.798789] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-segmentation_camera\n'}
+[2.799121] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [depth_camera]\n'}
+[2.799814] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-depth_camera -- found version 8.2.2\n'}
+[2.799927] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-depth_camera\n'}
+[2.800193] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.801095] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [rgbd_camera]\n'}
+[2.802112] (-) TimerEvent: {}
+[2.802384] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-rgbd_camera -- found version 8.2.2\n'}
+[2.802549] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-rgbd_camera\n'}
+[2.802766] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.803156] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [thermal_camera]\n'}
+[2.803880] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-thermal_camera -- found version 8.2.2\n'}
+[2.804041] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-thermal_camera\n'}
+[2.804355] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8 -- found version 8.2.2\n'}
+[2.804748] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for <gz-sensors8> component [wide_angle_camera]\n'}
+[2.805811] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-sensors8-wide_angle_camera -- found version 8.2.2\n'}
+[2.805913] (pinky_gz_sim) StdoutLine: {'line': b'-- Searching for dependencies of gz-sensors8-wide_angle_camera\n'}
+[2.806670] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-rendering8 -- found version 8.2.3\n'}
+[2.806958] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-math7 -- found version 7.7.0\n'}
+[2.807290] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-utils2 -- found version 2.2.1\n'}
+[2.827202] (pinky_gz_sim) StdoutLine: {'line': b'-- Looking for gz-plugin2 -- found version 2.0.4\n'}
+[2.831040] (pinky_gz_sim) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)\n'}
+[2.902251] (-) TimerEvent: {}
+[2.924348] (pinky_gz_sim) StdoutLine: {'line': b"-- Added test 'cppcheck' to perform static code analysis on C / C++ code\n"}
+[2.924637] (pinky_gz_sim) StdoutLine: {'line': b'-- Configured cppcheck include dirs: /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_gz_sim/plugins\n'}
+[2.924780] (pinky_gz_sim) StdoutLine: {'line': b'-- Configured cppcheck exclude dirs and/or files: \n'}
+[2.925549] (pinky_gz_sim) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[2.927552] (pinky_gz_sim) StdoutLine: {'line': b"-- Added test 'uncrustify' to check C / C++ code style\n"}
+[2.927640] (pinky_gz_sim) StdoutLine: {'line': b'-- Configured uncrustify additional arguments: \n'}
+[2.928227] (pinky_gz_sim) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[2.929765] (pinky_gz_sim) StdoutLine: {'line': b'-- Configuring done (2.7s)\n'}
+[2.944090] (pinky_gz_sim) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[2.947601] (pinky_gz_sim) StdoutLine: {'line': b'-- Build files have been written to: /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim\n'}
+[2.961875] (pinky_gz_sim) CommandEnded: {'returncode': 0}
+[2.962791] (pinky_gz_sim) JobProgress: {'identifier': 'pinky_gz_sim', 'progress': 'build'}
+[2.963647] (pinky_gz_sim) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', '--', '-j16', '-l16'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[3.002371] (-) TimerEvent: {}
+[3.021895] (pinky_gz_sim) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object CMakeFiles/gz-sim-lamp-control-system.dir/plugins/gz_lamp_control_plugin.cpp.o\x1b[0m\n'}
+[3.102494] (-) TimerEvent: {}
+[3.202786] (-) TimerEvent: {}
+[3.303084] (-) TimerEvent: {}
+[3.403456] (-) TimerEvent: {}
+[3.503739] (-) TimerEvent: {}
+[3.604029] (-) TimerEvent: {}
+[3.704293] (-) TimerEvent: {}
+[3.804589] (-) TimerEvent: {}
+[3.904877] (-) TimerEvent: {}
+[4.005154] (-) TimerEvent: {}
+[4.105454] (-) TimerEvent: {}
+[4.205746] (-) TimerEvent: {}
+[4.306039] (-) TimerEvent: {}
+[4.406344] (-) TimerEvent: {}
+[4.506642] (-) TimerEvent: {}
+[4.606953] (-) TimerEvent: {}
+[4.707321] (-) TimerEvent: {}
+[4.807613] (-) TimerEvent: {}
+[4.907899] (-) TimerEvent: {}
+[5.008192] (-) TimerEvent: {}
+[5.108575] (-) TimerEvent: {}
+[5.208863] (-) TimerEvent: {}
+[5.309157] (-) TimerEvent: {}
+[5.409446] (-) TimerEvent: {}
+[5.509689] (-) TimerEvent: {}
+[5.609971] (-) TimerEvent: {}
+[5.710247] (-) TimerEvent: {}
+[5.810537] (-) TimerEvent: {}
+[5.910819] (-) TimerEvent: {}
+[5.998612] (pinky_gz_sim) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking CXX shared library libgz-sim-lamp-control-system.so\x1b[0m\n'}
+[6.010930] (-) TimerEvent: {}
+[6.111202] (-) TimerEvent: {}
+[6.162904] (pinky_gz_sim) StdoutLine: {'line': b'[100%] Built target gz-sim-lamp-control-system\n'}
+[6.174422] (pinky_gz_sim) CommandEnded: {'returncode': 0}
+[6.175174] (pinky_gz_sim) JobProgress: {'identifier': 'pinky_gz_sim', 'progress': 'install'}
+[6.175776] (pinky_gz_sim) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim'], 'cwd': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib:/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_GUI_PLUGIN_PATH': '/opt/ros/jazzy/lib/rmf_robot_sim_gz_plugins/:/opt/ros/jazzy/lib/rmf_building_sim_gz_plugins/', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'sw', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/sw', 'OLDPWD': '/home/sw/DevSpace/FMS/simulation/ros_ws', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm-256color', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/bin:/usr/bin:/bin', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'ROS_DOMAIN_ID': '73', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', 'PYTHONPATH': '/opt/ros/jazzy/lib/python/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[6.183733] (pinky_gz_sim) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[6.184124] (pinky_gz_sim) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[6.184409] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/lib/libgz-sim-lamp-control-system.so\n'}
+[6.193712] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/worlds/default.sdf\n'}
+[6.201688] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/worlds/empty.world\n'}
+[6.210559] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/worlds/pinky_factory.world\n'}
+[6.211245] (-) TimerEvent: {}
+[6.221356] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/worlds/pinky_map.world\n'}
+[6.231945] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/PLACE_GZ_MODELS\n'}
+[6.240372] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/img/pinklab.jpg\n'}
+[6.250380] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/img/pinklab_half.jpg\n'}
+[6.257989] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/robot/jetcobot.dae\n'}
+[6.267203] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/shelf/meshes/Box_paper_04_1_Base_Color.png\n'}
+[6.276436] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/shelf/meshes/shelf_big_movai.dae\n'}
+[6.284321] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/shelf/model.config\n'}
+[6.293350] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/shelf/model.sdf\n'}
+[6.302561] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/shelf/original_modl.sdf\n'}
+[6.311329] (-) TimerEvent: {}
+[6.311930] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/models/shelf/thumbnails/1.png\n'}
+[6.321801] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/launch/launch_sim.launch.xml\n'}
+[6.331599] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/params/pinky_bridge.yaml\n'}
+[6.340835] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/ament_index/resource_index/package_run_dependencies/pinky_gz_sim\n'}
+[6.350004] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/ament_index/resource_index/parent_prefix_path/pinky_gz_sim\n'}
+[6.359206] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/environment/ament_prefix_path.sh\n'}
+[6.368137] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/environment/ament_prefix_path.dsv\n'}
+[6.377240] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/environment/path.sh\n'}
+[6.385340] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/environment/path.dsv\n'}
+[6.394284] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/local_setup.bash\n'}
+[6.403599] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/local_setup.sh\n'}
+[6.411439] (-) TimerEvent: {}
+[6.413194] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/local_setup.zsh\n'}
+[6.423069] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/local_setup.dsv\n'}
+[6.432050] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.dsv\n'}
+[6.440908] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/ament_index/resource_index/packages/pinky_gz_sim\n'}
+[6.450494] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/cmake/pinky_gz_simConfig.cmake\n'}
+[6.459839] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/cmake/pinky_gz_simConfig-version.cmake\n'}
+[6.469901] (pinky_gz_sim) StdoutLine: {'line': b'-- Symlinking: /home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.xml\n'}
+[6.482447] (pinky_gz_sim) CommandEnded: {'returncode': 0}
+[6.492635] (pinky_gz_sim) JobEnded: {'identifier': 'pinky_gz_sim', 'rc': 0}
+[6.493526] (-) EventReactorShutdown: {}

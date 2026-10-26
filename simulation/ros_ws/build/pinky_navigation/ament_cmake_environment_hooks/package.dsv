@@ -1,0 +1,4 @@
+source;share/pinky_navigation/local_setup.bash
+source;share/pinky_navigation/local_setup.dsv
+source;share/pinky_navigation/local_setup.sh
+source;share/pinky_navigation/local_setup.zsh

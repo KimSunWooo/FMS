@@ -1,0 +1,36 @@
+running develop
+/usr/lib/python3/dist-packages/setuptools/command/easy_install.py:363: UserWarning: Unbuilt egg for pytest-repeat [unknown version] (/usr/lib/python3/dist-packages)
+  self.local_index = Environment(self.shadow_path + sys.path)
+running egg_info
+creating pinky_llm.egg-info
+writing pinky_llm.egg-info/PKG-INFO
+writing dependency_links to pinky_llm.egg-info/dependency_links.txt
+writing entry points to pinky_llm.egg-info/entry_points.txt
+writing requirements to pinky_llm.egg-info/requires.txt
+writing top-level names to pinky_llm.egg-info/top_level.txt
+writing manifest file 'pinky_llm.egg-info/SOURCES.txt'
+reading manifest file 'pinky_llm.egg-info/SOURCES.txt'
+writing manifest file 'pinky_llm.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/lib/python3.12/site-packages/pinky-llm.egg-link (link to .)
+Installing agent_client script to /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/lib/pinky_llm
+Installing agent_service script to /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/lib/pinky_llm
+
+Installed /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm
+running symlink_data
+creating /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/ament_index
+creating /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/ament_index/resource_index
+creating /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/ament_index/resource_index/packages
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/resource/pinky_llm -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/ament_index/resource_index/packages
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/package.xml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/pinky_llm/.env -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/pinky_llm/robot_tools.py -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm
+creating /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/launch
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/launch/bringup_launch.xml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/launch
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/launch/launch_sim.launch.xml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/launch
+creating /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/map
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/map/map.pgm -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/map
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/map/map.yaml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/map
+creating /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/params
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/params/prompt.yaml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/params
+symbolically linking /home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/params/points.yaml -> /home/sw/DevSpace/FMS/simulation/ros_ws/install/pinky_llm/share/pinky_llm/params

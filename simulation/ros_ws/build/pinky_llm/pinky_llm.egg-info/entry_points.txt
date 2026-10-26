@@ -1,0 +1,3 @@
+[console_scripts]
+agent_client = pinky_llm.agent_client:main
+agent_service = pinky_llm.agent_service:main

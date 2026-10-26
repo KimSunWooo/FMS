@@ -1,0 +1,440 @@
+[0.113s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', '--log-base', 'log_fms', 'build', '--symlink-install', '--build-base', 'build_fms', '--install-base', 'install_fms', '--packages-up-to', 'pinky_description', 'pinky_gz_sim', 'pinky_navigation', 'pinky_bringup']
+[0.113s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base='log_fms', log_level=None, verb_name='build', build_base='/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms', install_base='/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms', merge_install=False, symlink_install=True, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=16, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=['pinky_description', 'pinky_gz_sim', 'pinky_navigation', 'pinky_bringup'], packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x7fd5c57cd250>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7fd5c61581a0>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7fd5c61581a0>>, mixin_verb=('build',))
+[0.142s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.143s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.143s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.143s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.143s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.143s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.143s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/sw/DevSpace/FMS/simulation/ros_ws'
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.143s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(build_fms) by extensions ['ignore', 'ignore_ament_install']
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(build_fms) by extension 'ignore'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(build_fms) ignored
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(install_fms) by extensions ['ignore', 'ignore_ament_install']
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(install_fms) by extension 'ignore'
+[0.161s] Level 1:colcon.colcon_core.package_identification:_identify(install_fms) ignored
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(log_fms) by extensions ['ignore', 'ignore_ament_install']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(log_fms) by extension 'ignore'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(log_fms) ignored
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ignore', 'ignore_ament_install']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore_ament_install'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_pkg']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_pkg'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_meta']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_meta'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ros']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ros'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['cmake', 'python']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'cmake'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['python_setup_py']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python_setup_py'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extensions ['ignore', 'ignore_ament_install']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'ignore'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'ignore_ament_install'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extensions ['colcon_pkg']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'colcon_pkg'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extensions ['colcon_meta']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'colcon_meta'
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extensions ['ros']
+[0.162s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'ros'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extensions ['cmake', 'python']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'cmake'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'python'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extensions ['python_setup_py']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro) by extension 'python_setup_py'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extensions ['ignore', 'ignore_ament_install']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'ignore'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'ignore_ament_install'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extensions ['colcon_pkg']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'colcon_pkg'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extensions ['colcon_meta']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'colcon_meta'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extensions ['ros']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'ros'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extensions ['cmake', 'python']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'cmake'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'python'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extensions ['python_setup_py']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/doc) by extension 'python_setup_py'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extensions ['ignore', 'ignore_ament_install']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extension 'ignore'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extension 'ignore_ament_install'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extensions ['colcon_pkg']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extension 'colcon_pkg'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extensions ['colcon_meta']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extension 'colcon_meta'
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extensions ['ros']
+[0.163s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_bringup) by extension 'ros'
+[0.165s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_bringup' with type 'ros.ament_python' and name 'pinky_bringup'
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extensions ['ignore', 'ignore_ament_install']
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extension 'ignore'
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extension 'ignore_ament_install'
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extensions ['colcon_pkg']
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extension 'colcon_pkg'
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extensions ['colcon_meta']
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extension 'colcon_meta'
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extensions ['ros']
+[0.165s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_description) by extension 'ros'
+[0.166s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_description' with type 'ros.ament_cmake' and name 'pinky_description'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extensions ['ignore', 'ignore_ament_install']
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extension 'ignore'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extension 'ignore_ament_install'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extensions ['colcon_pkg']
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extension 'colcon_pkg'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extensions ['colcon_meta']
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extension 'colcon_meta'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extensions ['ros']
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_emotion) by extension 'ros'
+[0.166s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_emotion' with type 'ros.ament_python' and name 'pinky_emotion'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extensions ['ignore', 'ignore_ament_install']
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extension 'ignore'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extension 'ignore_ament_install'
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extensions ['colcon_pkg']
+[0.166s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extension 'colcon_pkg'
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extensions ['colcon_meta']
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extension 'colcon_meta'
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extensions ['ros']
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_gz_sim) by extension 'ros'
+[0.167s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_gz_sim' with type 'ros.ament_cmake' and name 'pinky_gz_sim'
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extensions ['ignore', 'ignore_ament_install']
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extension 'ignore'
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extension 'ignore_ament_install'
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extensions ['colcon_pkg']
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extension 'colcon_pkg'
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extensions ['colcon_meta']
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extension 'colcon_meta'
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extensions ['ros']
+[0.167s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_imu_bno055) by extension 'ros'
+[0.168s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_imu_bno055' with type 'ros.ament_cmake' and name 'pinky_imu_bno055'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extensions ['ignore', 'ignore_ament_install']
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extension 'ignore'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extension 'ignore_ament_install'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extensions ['colcon_pkg']
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extension 'colcon_pkg'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extensions ['colcon_meta']
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extension 'colcon_meta'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extensions ['ros']
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_interfaces) by extension 'ros'
+[0.168s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_interfaces' with type 'ros.ament_cmake' and name 'pinky_interfaces'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extensions ['ignore', 'ignore_ament_install']
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extension 'ignore'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extension 'ignore_ament_install'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extensions ['colcon_pkg']
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extension 'colcon_pkg'
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extensions ['colcon_meta']
+[0.168s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extension 'colcon_meta'
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extensions ['ros']
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_lamp_control) by extension 'ros'
+[0.169s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_lamp_control' with type 'ros.ament_cmake' and name 'pinky_lamp_control'
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extensions ['ignore', 'ignore_ament_install']
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extension 'ignore'
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extension 'ignore_ament_install'
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extensions ['colcon_pkg']
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extension 'colcon_pkg'
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extensions ['colcon_meta']
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extension 'colcon_meta'
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extensions ['ros']
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_led) by extension 'ros'
+[0.169s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_led' with type 'ros.ament_python' and name 'pinky_led'
+[0.169s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extensions ['ignore', 'ignore_ament_install']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extension 'ignore'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extension 'ignore_ament_install'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extensions ['colcon_pkg']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extension 'colcon_pkg'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extensions ['colcon_meta']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extension 'colcon_meta'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extensions ['ros']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_navigation) by extension 'ros'
+[0.170s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_navigation' with type 'ros.ament_cmake' and name 'pinky_navigation'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extensions ['ignore', 'ignore_ament_install']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extension 'ignore'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extension 'ignore_ament_install'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extensions ['colcon_pkg']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extension 'colcon_pkg'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extensions ['colcon_meta']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extension 'colcon_meta'
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extensions ['ros']
+[0.170s] Level 1:colcon.colcon_core.package_identification:_identify(src/pinky_pro/pinky_sensor_adc) by extension 'ros'
+[0.171s] DEBUG:colcon.colcon_core.package_identification:Package 'src/pinky_pro/pinky_sensor_adc' with type 'ros.ament_cmake' and name 'pinky_sensor_adc'
+[0.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.185s] INFO:colcon.colcon_core.package_selection:Skipping package 'pinky_lamp_control' in 'src/pinky_pro/pinky_lamp_control'
+[0.185s] INFO:colcon.colcon_core.package_selection:Skipping package 'pinky_sensor_adc' in 'src/pinky_pro/pinky_sensor_adc'
+[0.185s] INFO:colcon.colcon_core.package_selection:Skipping package 'pinky_led' in 'src/pinky_pro/pinky_led'
+[0.185s] INFO:colcon.colcon_core.package_selection:Skipping package 'pinky_interfaces' in 'src/pinky_pro/pinky_interfaces'
+[0.185s] INFO:colcon.colcon_core.package_selection:Skipping package 'pinky_imu_bno055' in 'src/pinky_pro/pinky_imu_bno055'
+[0.185s] INFO:colcon.colcon_core.package_selection:Skipping package 'pinky_emotion' in 'src/pinky_pro/pinky_emotion'
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.188s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 446 installed packages in /opt/ros/jazzy
+[0.189s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'cmake_target' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'cmake_clean_cache' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'cmake_clean_first' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'cmake_force_configure' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'ament_cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'catkin_cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_bringup' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.233s] DEBUG:colcon.colcon_core.verb:Building package 'pinky_bringup' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup', 'merge_install': False, 'path': '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_bringup', 'symlink_install': True, 'test_result_base': None}
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'cmake_target' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'cmake_clean_cache' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'cmake_clean_first' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'cmake_force_configure' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'ament_cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'catkin_cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_description' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.233s] DEBUG:colcon.colcon_core.verb:Building package 'pinky_description' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description', 'merge_install': False, 'path': '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_description', 'symlink_install': True, 'test_result_base': None}
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'cmake_target' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'cmake_clean_cache' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'cmake_clean_first' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'cmake_force_configure' from command line to 'False'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'ament_cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'catkin_cmake_args' from command line to 'None'
+[0.233s] Level 5:colcon.colcon_core.verb:set package 'pinky_gz_sim' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.233s] DEBUG:colcon.colcon_core.verb:Building package 'pinky_gz_sim' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim', 'merge_install': False, 'path': '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_gz_sim', 'symlink_install': True, 'test_result_base': None}
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'cmake_args' from command line to 'None'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'cmake_target' from command line to 'None'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'cmake_clean_cache' from command line to 'False'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'cmake_clean_first' from command line to 'False'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'cmake_force_configure' from command line to 'False'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'ament_cmake_args' from command line to 'None'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'catkin_cmake_args' from command line to 'None'
+[0.234s] Level 5:colcon.colcon_core.verb:set package 'pinky_navigation' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.234s] DEBUG:colcon.colcon_core.verb:Building package 'pinky_navigation' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation', 'merge_install': False, 'path': '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation', 'symlink_install': True, 'test_result_base': None}
+[0.234s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.234s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.235s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_bringup' with build type 'ament_python'
+[0.235s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_bringup', 'ament_prefix_path')
+[0.237s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.237s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/hook/ament_prefix_path.ps1'
+[0.237s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/hook/ament_prefix_path.dsv'
+[0.238s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/hook/ament_prefix_path.sh'
+[0.238s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.238s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.241s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_description' with build type 'ament_cmake'
+[0.241s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_description'
+[0.241s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.241s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.243s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_gz_sim' with build type 'ament_cmake'
+[0.243s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_gz_sim'
+[0.244s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.244s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.246s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation' with build type 'ament_cmake'
+[0.246s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation'
+[0.247s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.247s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.435s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_bringup'
+[0.435s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.436s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.441s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_description -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description
+[0.442s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_gz_sim -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim
+[0.445s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation
+[1.024s] DEBUG:colcon.colcon_core.task.python.build:Available setuptools commands: setopt, develop, alias, saveopts, build_ext, ptr, install_egg_info, dist_info, compile_catalog, pytest, bdist_dumb, extract_messages, build, editable_wheel, symlink_data, test, check, install_scripts, upload, rotate, install_data, build_scripts, install, sdist, install_headers, register, egg_info, upload_docs, init_catalog, easy_install, install_lib, build_py, bdist_rpm, update_catalog, clean, bdist_wheel, bdist, bdist_egg, build_clib
+[1.116s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation
+[1.117s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation -- -j16 -l16
+[1.118s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_description -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description
+[1.119s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description -- -j16 -l16
+[1.157s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description -- -j16 -l16
+[1.166s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description
+[1.167s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation -- -j16 -l16
+[1.168s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation
+[1.333s] DEBUG:colcon.colcon_core.task.python.build:Available setuptools 'develop' options: --index-url, --editable, --zip-ok, --dry-run, --no-find-links, --exclude-scripts, --egg-path, --always-copy, --local-snapshots-ok, --help, --version, --no-user-cfg, --quiet, --script-dir, --no-deps, --multi-version, --allow-hosts, --always-unzip, --install-layout, --optimize, --user, --uninstall, --upgrade, --build-directory, --verbose, --install-dir, --find-links, --site-dirs, --record, --prefix, --force-installation-into-system-dir
+[1.335s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup': PYTHONPATH=/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/build --no-deps symlink_data
+[1.534s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(pinky_navigation)
+[1.534s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_navigation
+[1.535s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation' for CMake module files
+[1.536s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation' for CMake config files
+[1.536s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_navigation', 'cmake_prefix_path')
+[1.536s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/hook/cmake_prefix_path.ps1'
+[1.537s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/hook/cmake_prefix_path.dsv'
+[1.538s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/hook/cmake_prefix_path.sh'
+[1.538s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib'
+[1.538s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/bin'
+[1.538s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib/pkgconfig/pinky_navigation.pc'
+[1.538s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib/python3.12/site-packages'
+[1.539s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/bin'
+[1.539s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.ps1'
+[1.540s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.dsv'
+[1.540s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.sh'
+[1.540s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.bash'
+[1.541s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.zsh'
+[1.552s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/colcon-core/packages/pinky_navigation)
+[1.552s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(pinky_navigation)
+[1.552s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation' for CMake module files
+[1.553s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation' for CMake config files
+[1.553s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_navigation', 'cmake_prefix_path')
+[1.553s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/hook/cmake_prefix_path.ps1'
+[1.553s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/hook/cmake_prefix_path.dsv'
+[1.554s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/hook/cmake_prefix_path.sh'
+[1.554s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib'
+[1.554s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/bin'
+[1.554s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib/pkgconfig/pinky_navigation.pc'
+[1.554s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/lib/python3.12/site-packages'
+[1.555s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/bin'
+[1.555s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.ps1'
+[1.555s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.dsv'
+[1.555s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.sh'
+[1.556s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.bash'
+[1.556s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/pinky_navigation/package.zsh'
+[1.556s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_navigation/share/colcon-core/packages/pinky_navigation)
+[1.557s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(pinky_description)
+[1.557s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description' for CMake module files
+[1.558s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_description
+[1.558s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description' for CMake config files
+[1.558s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_description', 'cmake_prefix_path')
+[1.559s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/hook/cmake_prefix_path.ps1'
+[1.559s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/hook/cmake_prefix_path.dsv'
+[1.559s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/hook/cmake_prefix_path.sh'
+[1.559s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/bin'
+[1.560s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/lib/pkgconfig/pinky_description.pc'
+[1.560s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/lib/python3.12/site-packages'
+[1.560s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/bin'
+[1.560s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.ps1'
+[1.560s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.dsv'
+[1.561s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.sh'
+[1.561s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.bash'
+[1.561s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.zsh'
+[1.561s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/colcon-core/packages/pinky_description)
+[1.562s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(pinky_description)
+[1.562s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description' for CMake module files
+[1.562s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description' for CMake config files
+[1.563s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_description', 'cmake_prefix_path')
+[1.563s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/hook/cmake_prefix_path.ps1'
+[1.563s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/hook/cmake_prefix_path.dsv'
+[1.564s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/hook/cmake_prefix_path.sh'
+[1.564s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/bin'
+[1.564s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/lib/pkgconfig/pinky_description.pc'
+[1.564s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/lib/python3.12/site-packages'
+[1.565s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/bin'
+[1.565s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.ps1'
+[1.565s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.dsv'
+[1.565s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.sh'
+[1.566s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.bash'
+[1.566s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/pinky_description/package.zsh'
+[1.566s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_description/share/colcon-core/packages/pinky_description)
+[1.990s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_bringup', 'pythonpath_develop')
+[1.991s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/share/pinky_bringup/hook/pythonpath_develop.ps1'
+[1.991s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup' returned '0': PYTHONPATH=/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/build --no-deps symlink_data
+[1.991s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/share/pinky_bringup/hook/pythonpath_develop.dsv'
+[1.991s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_bringup/share/pinky_bringup/hook/pythonpath_develop.sh'
+[1.992s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup' for CMake module files
+[1.992s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup' for CMake config files
+[1.993s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib'
+[1.993s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/bin'
+[1.993s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/pkgconfig/pinky_bringup.pc'
+[1.993s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/lib/python3.12/site-packages'
+[1.993s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_bringup', 'pythonpath')
+[1.993s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/hook/pythonpath.ps1'
+[1.993s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/hook/pythonpath.dsv'
+[1.993s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/hook/pythonpath.sh'
+[1.994s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/bin'
+[1.994s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(pinky_bringup)
+[1.994s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/package.ps1'
+[1.994s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/package.dsv'
+[1.995s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/package.sh'
+[1.995s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/package.bash'
+[1.995s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/pinky_bringup/package.zsh'
+[1.995s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_bringup/share/colcon-core/packages/pinky_bringup)
+[3.197s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_gz_sim -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim
+[3.198s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim -- -j16 -l16
+[6.409s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim -- -j16 -l16
+[6.411s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim
+[6.716s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(pinky_gz_sim)
+[6.717s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim' for CMake module files
+[6.717s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/sw/DevSpace/FMS/simulation/ros_ws/build_fms/pinky_gz_sim
+[6.718s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim' for CMake config files
+[6.718s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_gz_sim', 'cmake_prefix_path')
+[6.718s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/cmake_prefix_path.ps1'
+[6.719s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/cmake_prefix_path.dsv'
+[6.719s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/cmake_prefix_path.sh'
+[6.719s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/lib'
+[6.719s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_gz_sim', 'ld_library_path_lib')
+[6.719s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/ld_library_path_lib.ps1'
+[6.719s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/ld_library_path_lib.dsv'
+[6.720s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/ld_library_path_lib.sh'
+[6.720s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/bin'
+[6.720s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/lib/pkgconfig/pinky_gz_sim.pc'
+[6.720s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/lib/python3.12/site-packages'
+[6.720s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/bin'
+[6.720s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.ps1'
+[6.721s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.dsv'
+[6.721s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.sh'
+[6.721s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.bash'
+[6.722s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.zsh'
+[6.722s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/colcon-core/packages/pinky_gz_sim)
+[6.722s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(pinky_gz_sim)
+[6.722s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim' for CMake module files
+[6.723s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim' for CMake config files
+[6.723s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_gz_sim', 'cmake_prefix_path')
+[6.723s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/cmake_prefix_path.ps1'
+[6.723s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/cmake_prefix_path.dsv'
+[6.723s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/cmake_prefix_path.sh'
+[6.724s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/lib'
+[6.724s] Level 1:colcon.colcon_core.shell:create_environment_hook('pinky_gz_sim', 'ld_library_path_lib')
+[6.724s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/ld_library_path_lib.ps1'
+[6.724s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/ld_library_path_lib.dsv'
+[6.724s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/hook/ld_library_path_lib.sh'
+[6.725s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/bin'
+[6.725s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/lib/pkgconfig/pinky_gz_sim.pc'
+[6.725s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/lib/python3.12/site-packages'
+[6.725s] Level 1:colcon.colcon_core.environment:checking '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/bin'
+[6.726s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.ps1'
+[6.726s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.dsv'
+[6.726s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.sh'
+[6.727s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.bash'
+[6.727s] INFO:colcon.colcon_core.shell:Creating package script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/pinky_gz_sim/package.zsh'
+[6.727s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/pinky_gz_sim/share/colcon-core/packages/pinky_gz_sim)
+[6.727s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[6.728s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[6.728s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[6.728s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[6.733s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[6.733s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[6.733s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[6.733s] DEBUG:colcon.colcon_notification.desktop_notification.notify2:Failed to initialize notify2: org.freedesktop.DBus.Error.NotSupported: Unable to autolaunch a dbus-daemon without a $DISPLAY for X11
+[6.733s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[6.733s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/local_setup.ps1'
+[6.734s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/_local_setup_util_ps1.py'
+[6.735s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/setup.ps1'
+[6.735s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/local_setup.sh'
+[6.735s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/_local_setup_util_sh.py'
+[6.736s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/setup.sh'
+[6.737s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/local_setup.bash'
+[6.737s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/setup.bash'
+[6.738s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/local_setup.zsh'
+[6.738s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/sw/DevSpace/FMS/simulation/ros_ws/install_fms/setup.zsh'

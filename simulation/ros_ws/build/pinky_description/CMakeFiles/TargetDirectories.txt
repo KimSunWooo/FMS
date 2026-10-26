@@ -1,0 +1,9 @@
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/uninstall.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/pinky_description_uninstall.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/test.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/edit_cache.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/rebuild_cache.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/list_install_components.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/install.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/install/local.dir
+/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/CMakeFiles/install/strip.dir
