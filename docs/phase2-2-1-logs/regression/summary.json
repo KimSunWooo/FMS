@@ -1,0 +1,30 @@
+{
+  "idle_before": [
+    5,
+    4,
+    4,
+    4,
+    4,
+    6,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+  ],
+  "cleanup_before": null,
+  "blocks": "PASS",
+  "normal_stop": "PASS",
+  "heartbeat": "PASS",
+  "dead_session": "PASS",
+  "stale": "PASS",
+  "cancel": "PASS",
+  "abort": "PASS",
+  "kill": "PASS",
+  "restart": "PASS",
+  "lease": "PASS",
+  "network_partition": "NOT_RUN",
+  "forced_db_write_failure": "NOT_RUN"
+}

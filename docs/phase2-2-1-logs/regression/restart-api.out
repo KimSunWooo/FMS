@@ -1,0 +1,5 @@
+INFO:     127.0.0.1:51694 - "GET /api/tasks/dbdfac9b-19fd-44a1-987f-f7d9a9779f71 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51708 - "GET /api/system/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51716 - "GET /api/robots/pinky-sim HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51728 - "POST /api/tasks/dbdfac9b-19fd-44a1-987f-f7d9a9779f71/resolve HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49730 - "GET /api/system/health HTTP/1.1" 200 OK

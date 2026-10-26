@@ -1,0 +1,12 @@
+{
+  "physical_http": 403,
+  "physical_code": "PHYSICAL_CONTROL_BLOCKED",
+  "cmd_vel_http": 404,
+  "mock_observe_http": 403,
+  "mock_observe_code": "PHYSICAL_CONTROL_BLOCKED",
+  "health_physical": "blocked",
+  "health_ros_bridge": "disabled",
+  "health_preflight": "not_ready",
+  "execution_mode": "gazebo",
+  "verdict": "PASS"
+}

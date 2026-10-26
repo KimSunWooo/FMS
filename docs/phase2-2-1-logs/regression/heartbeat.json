@@ -1,0 +1,7 @@
+{
+  "open_http": 201,
+  "late_heartbeat_http": 409,
+  "late_heartbeat_code": "STALE_OWNER",
+  "next_session_http": 201,
+  "verdict": "PASS"
+}

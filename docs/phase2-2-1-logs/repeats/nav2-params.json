@@ -1,0 +1,49 @@
+{
+  "ok": true,
+  "map_pose": {
+    "x": -1.0259455983481625,
+    "y": -0.01091264229851997,
+    "z": 0.0,
+    "yaw": 1.2229416629577028,
+    "frame_id": "map",
+    "child_frame_id": "base_footprint",
+    "stamp_sec": 4177,
+    "stamp_nanosec": 500000000
+  },
+  "odom_pose": {
+    "x": -1.0932247177671952,
+    "y": 0.23931470898242838,
+    "z": 0.0,
+    "yaw": 0.999371958129886,
+    "frame_id": "odom",
+    "child_frame_id": "base_footprint",
+    "stamp_sec": 4176,
+    "stamp_nanosec": 500000000
+  },
+  "map_base_link": {
+    "x": -1.0259455983481625,
+    "y": -0.01091264229851997,
+    "z": 0.028,
+    "yaw": 1.2229416629577028,
+    "frame_id": "map",
+    "child_frame_id": "base_link",
+    "stamp_sec": 4177,
+    "stamp_nanosec": 500000000
+  },
+  "statuses": null,
+  "twist": {
+    "vx": 0.0,
+    "vy": 0.0,
+    "wz": 0.0
+  },
+  "params": {
+    "stateful": false,
+    "xy_goal_tolerance": 0.12,
+    "yaw_goal_tolerance": 0.25,
+    "planner_tolerance": 0.15,
+    "rotate_to_heading_angular_vel": 0.5,
+    "min_approach_linear_velocity": 0.03,
+    "set_initial_pose": false
+  },
+  "returncode": 0
+}

@@ -1,0 +1,342 @@
+{
+  "index": 3,
+  "cohort": "baseline-rerun",
+  "label": "baseline-3-north",
+  "goal_xyyaw": [
+    -0.2,
+    0.8,
+    0.0
+  ],
+  "scored": true,
+  "before": {
+    "ok": true,
+    "map_pose": {
+      "x": 0.09446724318747704,
+      "y": -0.8846209243059533,
+      "z": 0.0,
+      "yaw": 0.15946206052758735,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4221,
+      "stamp_nanosec": 200000000
+    },
+    "odom_pose": {
+      "x": -0.19423423162937264,
+      "y": -0.9059679625903801,
+      "z": 0.0,
+      "yaw": -0.10341340929856004,
+      "frame_id": "odom",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4220,
+      "stamp_nanosec": 160000000
+    },
+    "map_base_link": {
+      "x": 0.09446724318747704,
+      "y": -0.8846209243059533,
+      "z": 0.028,
+      "yaw": 0.15946206052758735,
+      "frame_id": "map",
+      "child_frame_id": "base_link",
+      "stamp_sec": 4221,
+      "stamp_nanosec": 200000000
+    },
+    "statuses": [
+      5,
+      4,
+      4
+    ],
+    "twist": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "wz": 0.0
+    },
+    "returncode": 0
+  },
+  "plan": {
+    "ok": true,
+    "map_pose": {
+      "x": 0.09446724318747704,
+      "y": -0.8846209243059533,
+      "z": 0.0,
+      "yaw": 0.15946206052758735,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4222,
+      "stamp_nanosec": 700000000
+    },
+    "odom_pose": {
+      "x": -0.19423423162937264,
+      "y": -0.9059679625903801,
+      "z": 0.0,
+      "yaw": -0.10341340929856004,
+      "frame_id": "odom",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4221,
+      "stamp_nanosec": 720000000
+    },
+    "map_base_link": {
+      "x": 0.09446724318747704,
+      "y": -0.8846209243059533,
+      "z": 0.028,
+      "yaw": 0.15946206052758735,
+      "frame_id": "map",
+      "child_frame_id": "base_link",
+      "stamp_sec": 4222,
+      "stamp_nanosec": 700000000
+    },
+    "statuses": [
+      5,
+      4,
+      4
+    ],
+    "twist": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "wz": 0.0
+    },
+    "path": {
+      "ok": true,
+      "pose_count": 67,
+      "end_x": -0.2,
+      "end_y": 0.8,
+      "end_error_m": 0.0,
+      "status": 4
+    },
+    "returncode": 0
+  },
+  "create_status": 202,
+  "task_id": "ea464d92-d087-47f6-b6cb-4535454d5caf",
+  "agent_rc": 0,
+  "agent": {
+    "robot_id": "pinky-sim",
+    "preflight": {
+      "ready": true,
+      "reasons": [],
+      "ros_distro": "jazzy",
+      "ros_domain_id": 73,
+      "rmw_implementation": "rmw_cyclonedds_cpp",
+      "ros2_binary": true,
+      "gazebo_binary": true,
+      "nav2_interface": true,
+      "pinky_packages": [
+        "pinky_description",
+        "pinky_gz_sim",
+        "pinky_navigation"
+      ]
+    },
+    "nav2_goal_sent": true,
+    "task_completed": true,
+    "physical_control": "blocked",
+    "session_id": "6fb42d7b-da99-4842-bf62-6e9df7309816",
+    "start_pose": {
+      "x": 0.09446724318747705,
+      "y": -0.8846209243059533,
+      "z": 0.0,
+      "yaw": 0.15946206052758735,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4225,
+      "stamp_nanosec": 320000000
+    },
+    "nav2_status_list": [
+      5,
+      4,
+      4
+    ],
+    "nav2_action_goal_id": "e04f1736-00c1-4581-b394-10ec30dde8b2",
+    "goal_accepted_at": "2026-10-26T08:13:26.416038+00:00",
+    "nav2_outcome": "succeeded",
+    "nav2_action_goal_id_absent_reason": null,
+    "nav2_action": "/navigate_to_pose",
+    "nav2_status": 4,
+    "goal_sent_at": "2026-10-26T08:13:26.411244+00:00",
+    "goal_result_at": "2026-10-26T08:14:42.689565+00:00",
+    "feedback_count": 7424,
+    "fms_goal_id": "c96dfe82-e212-4a75-8f14-23a5af5876bb",
+    "fms_task_id": "ea464d92-d087-47f6-b6cb-4535454d5caf",
+    "execution_id": "82c3a998-4a2e-4ddc-ab64-f8f161448637",
+    "owner_epoch": 1,
+    "pose_observed": true,
+    "pose": {
+      "x": -0.12122763381799775,
+      "y": 0.7240983552578526,
+      "z": 0.0,
+      "yaw": 0.16716455322803767,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4260,
+      "stamp_nanosec": 600000000
+    },
+    "goal_frame_id": "map",
+    "fms_status": "COMPLETED"
+  },
+  "task": {
+    "task_id": "ea464d92-d087-47f6-b6cb-4535454d5caf",
+    "task_type": "navigate",
+    "status": "COMPLETED",
+    "robot_id": "pinky-sim",
+    "requested_robot_id": "pinky-sim",
+    "destination": {
+      "x": -0.2,
+      "y": 0.8,
+      "yaw": 0.0,
+      "label": "baseline-3-north"
+    },
+    "priority": 0,
+    "owner_id": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+    "owner_epoch": 1,
+    "lease_id": "beb4d92f-a22e-4395-bd9d-9931766e4d1a",
+    "lease_expires_at": "2026-10-26T08:15:11.898105+00:00",
+    "execution_id": "82c3a998-4a2e-4ddc-ab64-f8f161448637",
+    "goal_id": "c96dfe82-e212-4a75-8f14-23a5af5876bb",
+    "session_id": "6fb42d7b-da99-4842-bf62-6e9df7309816",
+    "state_version": 5,
+    "failure_reason": null,
+    "recovery_reason": null,
+    "goal_may_be_in_flight": true,
+    "dispatch_attempts": 0,
+    "navigation_goal_count": 1,
+    "created_at": "2026-10-26T08:13:19.771929+00:00",
+    "updated_at": "2026-10-26T08:14:42.712190+00:00",
+    "last_heartbeat_at": "2026-10-26T08:14:42.712190+00:00",
+    "cancel_requested_at": null,
+    "completed_at": "2026-10-26T08:14:42.712190+00:00",
+    "goal": {
+      "goal_id": "c96dfe82-e212-4a75-8f14-23a5af5876bb",
+      "status": "succeeded",
+      "execution_id": "82c3a998-4a2e-4ddc-ab64-f8f161448637",
+      "owner_epoch": 1,
+      "last_result_outcome": "succeeded",
+      "last_result_disposition": "matched_pose_lease_and_owner",
+      "nav2_action_goal_id": "e04f1736-00c1-4581-b394-10ec30dde8b2",
+      "nav2_action_goal_id_absent_reason": null,
+      "observation_failures": 0
+    },
+    "completion_evidence": {
+      "goal_status": "succeeded",
+      "goal_id": "c96dfe82-e212-4a75-8f14-23a5af5876bb",
+      "execution_id": "82c3a998-4a2e-4ddc-ab64-f8f161448637",
+      "owner_epoch": 1,
+      "session_id": "6fb42d7b-da99-4842-bf62-6e9df7309816",
+      "lease_id": "beb4d92f-a22e-4395-bd9d-9931766e4d1a",
+      "distance_m": 0.10938987772401344,
+      "observation_source": "recorded_on_goal",
+      "disposition": "matched_pose_lease_and_owner"
+    },
+    "events": [
+      {
+        "from_status": null,
+        "to_status": "CREATED",
+        "actor": "api",
+        "owner_epoch": 0,
+        "execution_id": null,
+        "goal_id": null,
+        "reason": "accepted",
+        "created_at": "2026-10-26T08:13:19.771929+00:00"
+      },
+      {
+        "from_status": "CREATED",
+        "to_status": "PENDING",
+        "actor": "api",
+        "owner_epoch": 0,
+        "execution_id": null,
+        "goal_id": null,
+        "reason": "queued",
+        "created_at": "2026-10-26T08:13:19.771929+00:00"
+      },
+      {
+        "from_status": "PENDING",
+        "to_status": "ASSIGNED",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": null,
+        "goal_id": null,
+        "reason": "scheduled",
+        "created_at": "2026-10-26T08:13:26.346845+00:00"
+      },
+      {
+        "from_status": "ASSIGNED",
+        "to_status": "DISPATCHING",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": "82c3a998-4a2e-4ddc-ab64-f8f161448637",
+        "goal_id": "c96dfe82-e212-4a75-8f14-23a5af5876bb",
+        "reason": "goal_handed_to_robot_agent",
+        "created_at": "2026-10-26T08:13:26.346845+00:00"
+      },
+      {
+        "from_status": "DISPATCHING",
+        "to_status": "RUNNING",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": "82c3a998-4a2e-4ddc-ab64-f8f161448637",
+        "goal_id": "c96dfe82-e212-4a75-8f14-23a5af5876bb",
+        "reason": "nav2_goal_accepted_not_completed",
+        "created_at": "2026-10-26T08:13:26.417657+00:00"
+      },
+      {
+        "from_status": "RUNNING",
+        "to_status": "COMPLETED",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": "82c3a998-4a2e-4ddc-ab64-f8f161448637",
+        "goal_id": "c96dfe82-e212-4a75-8f14-23a5af5876bb",
+        "reason": "nav_result_succeeded_pose_matched",
+        "created_at": "2026-10-26T08:14:42.712190+00:00"
+      }
+    ]
+  },
+  "distance_m": 0.10938987772401344,
+  "final_tf_stamp": {
+    "sec": 4260,
+    "nanosec": 600000000,
+    "frame_id": "map",
+    "child_frame_id": "base_footprint"
+  },
+  "after_stop": {
+    "map_pose": {
+      "x": -0.12510899333927777,
+      "y": 0.7159155382734376,
+      "z": 0.0,
+      "yaw": 0.1696261485663513,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4262,
+      "stamp_nanosec": 200000000
+    },
+    "odom_pose": {
+      "x": 0.014690720797411867,
+      "y": 0.7655002619180167,
+      "z": 0.0,
+      "yaw": -0.08440861273979192,
+      "frame_id": "odom",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4261,
+      "stamp_nanosec": 220000000
+    },
+    "twist": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "wz": 0.0
+    },
+    "statuses": [
+      5,
+      4,
+      4,
+      4
+    ],
+    "distance_m": 0.11260044219496694
+  },
+  "nav2_action_goal_id": "e04f1736-00c1-4581-b394-10ec30dde8b2",
+  "uuid_matches_db": true,
+  "navigation_goal_count": 1,
+  "nav2_status": 4,
+  "nav2_outcome": "succeeded",
+  "fms_status_at_result": "COMPLETED",
+  "fms_status": "COMPLETED",
+  "recovery_reason": null,
+  "goal_sent_at": "2026-10-26T08:13:26.411244+00:00",
+  "goal_result_at": "2026-10-26T08:14:42.689565+00:00",
+  "verdict": "PASS",
+  "resolve": null
+}

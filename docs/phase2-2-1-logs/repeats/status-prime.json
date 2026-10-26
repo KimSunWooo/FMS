@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "scored": false,
+  "purpose": "publish one terminal goal status",
+  "accepted": true,
+  "status": 5,
+  "start_pose": {
+    "x": -1.0259455983481625,
+    "y": -0.01091264229851997,
+    "z": 0.0,
+    "yaw": 1.2229416629577028,
+    "frame_id": "map",
+    "child_frame_id": "base_footprint",
+    "stamp_sec": 4179,
+    "stamp_nanosec": 700000000
+  }
+}

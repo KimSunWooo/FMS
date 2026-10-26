@@ -1,0 +1,28 @@
+{
+  "pose_http": 200,
+  "dispatched_status": "DISPATCHING",
+  "stop_http": 200,
+  "final_status": "RECOVERY_REQUIRED",
+  "recovery_reason": "agent_session_lost",
+  "dead_http": 409,
+  "reassign_http": 409,
+  "reassign_code": "STALE_OWNER",
+  "resolved_status": "FAILED",
+  "goal_count": 1,
+  "verdict": "PASS",
+  "statuses_after": [
+    5,
+    4,
+    4,
+    4,
+    4,
+    6,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+  ]
+}

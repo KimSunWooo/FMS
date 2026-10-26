@@ -1,0 +1,28 @@
+{
+  "task_id": "de558446-2f6c-4aba-87bd-079cc2c91c0a",
+  "final_status": "FAILED",
+  "failure_reason": "nav2_goal_aborted",
+  "uuid": "bdaaa2ae-8e6f-4eeb-a53e-d35f108fed3f",
+  "agent_uuid": "bdaaa2ae-8e6f-4eeb-a53e-d35f108fed3f",
+  "goal_count": 1,
+  "agent_rc": 0,
+  "verdict": "PASS",
+  "statuses_after": [
+    5,
+    4,
+    4,
+    4,
+    4,
+    6,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    5,
+    6
+  ]
+}

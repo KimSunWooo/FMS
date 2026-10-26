@@ -1,0 +1,12 @@
+INFO:     Started server process [47707]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8743 (Press CTRL+C to quit)
+{"ts": "2026-10-26T08:29:00.543163+00:00", "level": "INFO", "logger": "care_move_fms", "message": "task_transition CREATED -> PENDING (queued)", "task_id": "eb8cd9ef-1f67-45d1-b772-a4a78029bfb0", "owner_epoch": 0, "event": "task_transition"}
+{"ts": "2026-10-26T08:29:00.770596+00:00", "level": "INFO", "logger": "care_move_fms", "message": "task_transition PENDING -> ASSIGNED (scheduled)", "task_id": "eb8cd9ef-1f67-45d1-b772-a4a78029bfb0", "robot_id": "pinky-sim", "owner_epoch": 1, "event": "task_transition"}
+{"ts": "2026-10-26T08:29:00.782749+00:00", "level": "INFO", "logger": "care_move_fms", "message": "task_transition ASSIGNED -> DISPATCHING (goal_handed_to_robot_agent)", "task_id": "eb8cd9ef-1f67-45d1-b772-a4a78029bfb0", "robot_id": "pinky-sim", "execution_id": "5c1b8e8c-f920-4de8-8e87-837e6604bb55", "goal_id": "93fb530f-484d-478b-a2f5-87a60417536d", "owner_epoch": 1, "event": "task_transition"}
+{"ts": "2026-10-26T08:29:08.934308+00:00", "level": "INFO", "logger": "care_move_fms", "message": "task_transition DISPATCHING -> RECOVERY_REQUIRED (lease_invalid)", "task_id": "eb8cd9ef-1f67-45d1-b772-a4a78029bfb0", "robot_id": "pinky-sim", "execution_id": "5c1b8e8c-f920-4de8-8e87-837e6604bb55", "goal_id": "93fb530f-484d-478b-a2f5-87a60417536d", "owner_epoch": 2, "event": "task_transition"}
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [47707]

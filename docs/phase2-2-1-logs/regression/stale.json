@@ -1,0 +1,33 @@
+{
+  "create_http": 202,
+  "task_id": "c0e28417-4b90-4444-9393-61c5099a5ca8",
+  "running_status": "RUNNING",
+  "running_uuid": "6b6347fd-5324-4128-ac67-9d6eeb5f1f4f",
+  "second_session_http": 409,
+  "duplicate_claim_send": false,
+  "duplicate_claim_reason": "fence_mismatch",
+  "stale_http": 200,
+  "stale_status": "RUNNING",
+  "stale_disposition": "rejected_stale_owner",
+  "final_status": "COMPLETED",
+  "final_uuid": "6b6347fd-5324-4128-ac67-9d6eeb5f1f4f",
+  "goal_count": 1,
+  "agent_rc": 0,
+  "verdict": "PASS",
+  "statuses_after": [
+    5,
+    4,
+    4,
+    4,
+    4,
+    6,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+  ]
+}

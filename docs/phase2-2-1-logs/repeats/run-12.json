@@ -1,0 +1,378 @@
+{
+  "index": 12,
+  "cohort": "independent",
+  "label": "open-7-se",
+  "goal_xyyaw": [
+    0.6,
+    -0.5,
+    0.3
+  ],
+  "scored": true,
+  "before": {
+    "ok": true,
+    "map_pose": {
+      "x": -0.2322177096829471,
+      "y": 0.2460827851387241,
+      "z": 0.0,
+      "yaw": 2.1582367454883102,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4443,
+      "stamp_nanosec": 0
+    },
+    "odom_pose": {
+      "x": -0.21360906874919733,
+      "y": 0.2862985309326377,
+      "z": 0.0,
+      "yaw": 1.8473631242998763,
+      "frame_id": "odom",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4442,
+      "stamp_nanosec": 20000000
+    },
+    "map_base_link": {
+      "x": -0.2322177096829471,
+      "y": 0.2460827851387241,
+      "z": 0.028000000000000004,
+      "yaw": 2.1582367454883102,
+      "frame_id": "map",
+      "child_frame_id": "base_link",
+      "stamp_sec": 4443,
+      "stamp_nanosec": 0
+    },
+    "statuses": [
+      5,
+      4,
+      4,
+      4,
+      4,
+      6,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "twist": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "wz": 0.0
+    },
+    "returncode": 0
+  },
+  "plan": {
+    "ok": true,
+    "map_pose": {
+      "x": -0.2322177096829471,
+      "y": 0.2460827851387241,
+      "z": 0.0,
+      "yaw": 2.1582367454883102,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4444,
+      "stamp_nanosec": 600000000
+    },
+    "odom_pose": {
+      "x": -0.21360906874919733,
+      "y": 0.2862985309326377,
+      "z": 0.0,
+      "yaw": 1.8473631242998763,
+      "frame_id": "odom",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4443,
+      "stamp_nanosec": 520000000
+    },
+    "map_base_link": {
+      "x": -0.2322177096829471,
+      "y": 0.2460827851387241,
+      "z": 0.028000000000000004,
+      "yaw": 2.1582367454883102,
+      "frame_id": "map",
+      "child_frame_id": "base_link",
+      "stamp_sec": 4444,
+      "stamp_nanosec": 600000000
+    },
+    "statuses": [
+      5,
+      4,
+      4,
+      4,
+      4,
+      6,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "twist": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "wz": 0.0
+    },
+    "path": {
+      "ok": true,
+      "pose_count": 43,
+      "end_x": 0.6000000022351741,
+      "end_y": -0.4499999970197678,
+      "end_error_m": 0.050000002980232265,
+      "status": 4
+    },
+    "returncode": 0
+  },
+  "create_status": 202,
+  "task_id": "38017360-e692-44c9-96fa-b801b204fa6f",
+  "agent_rc": 0,
+  "agent": {
+    "robot_id": "pinky-sim",
+    "preflight": {
+      "ready": true,
+      "reasons": [],
+      "ros_distro": "jazzy",
+      "ros_domain_id": 73,
+      "rmw_implementation": "rmw_cyclonedds_cpp",
+      "ros2_binary": true,
+      "gazebo_binary": true,
+      "nav2_interface": true,
+      "pinky_packages": [
+        "pinky_description",
+        "pinky_gz_sim",
+        "pinky_navigation"
+      ]
+    },
+    "nav2_goal_sent": true,
+    "task_completed": true,
+    "physical_control": "blocked",
+    "session_id": "aaca2151-17f1-4ad0-9ae1-3ead311ddda7",
+    "start_pose": {
+      "x": -0.2322177096829471,
+      "y": 0.2460827851387241,
+      "z": 0.0,
+      "yaw": 2.1582367454883102,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4447,
+      "stamp_nanosec": 280000000
+    },
+    "nav2_status_list": [
+      5,
+      4,
+      4,
+      4,
+      4,
+      6,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "nav2_action_goal_id": "fbeda576-05ea-4bf7-bd91-bd8c16c55129",
+    "goal_accepted_at": "2026-10-26T08:22:13.260959+00:00",
+    "nav2_outcome": "succeeded",
+    "nav2_action_goal_id_absent_reason": null,
+    "nav2_action": "/navigate_to_pose",
+    "nav2_status": 4,
+    "goal_sent_at": "2026-10-26T08:22:13.259583+00:00",
+    "goal_result_at": "2026-10-26T08:23:15.157204+00:00",
+    "feedback_count": 5988,
+    "fms_goal_id": "ed9269de-95a2-4ed7-99fc-919259e24e4c",
+    "fms_task_id": "38017360-e692-44c9-96fa-b801b204fa6f",
+    "execution_id": "33d46ad4-f8d8-4360-8625-9ce0adb13b9b",
+    "owner_epoch": 1,
+    "pose_observed": true,
+    "pose": {
+      "x": 0.5731970399587102,
+      "y": -0.3323696374759263,
+      "z": 0.0,
+      "yaw": 0.10883386629437683,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4469,
+      "stamp_nanosec": 460000000
+    },
+    "goal_frame_id": "map",
+    "fms_status": "COMPLETED"
+  },
+  "task": {
+    "task_id": "38017360-e692-44c9-96fa-b801b204fa6f",
+    "task_type": "navigate",
+    "status": "COMPLETED",
+    "robot_id": "pinky-sim",
+    "requested_robot_id": "pinky-sim",
+    "destination": {
+      "x": 0.6,
+      "y": -0.5,
+      "yaw": 0.3,
+      "label": "open-7-se"
+    },
+    "priority": 0,
+    "owner_id": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+    "owner_epoch": 1,
+    "lease_id": "64849efd-093d-4517-b72d-72045479246c",
+    "lease_expires_at": "2026-10-26T08:23:43.602483+00:00",
+    "execution_id": "33d46ad4-f8d8-4360-8625-9ce0adb13b9b",
+    "goal_id": "ed9269de-95a2-4ed7-99fc-919259e24e4c",
+    "session_id": "aaca2151-17f1-4ad0-9ae1-3ead311ddda7",
+    "state_version": 5,
+    "failure_reason": null,
+    "recovery_reason": null,
+    "goal_may_be_in_flight": true,
+    "dispatch_attempts": 0,
+    "navigation_goal_count": 1,
+    "created_at": "2026-10-26T08:22:06.470025+00:00",
+    "updated_at": "2026-10-26T08:23:15.179457+00:00",
+    "last_heartbeat_at": "2026-10-26T08:23:15.179457+00:00",
+    "cancel_requested_at": null,
+    "completed_at": "2026-10-26T08:23:15.179457+00:00",
+    "goal": {
+      "goal_id": "ed9269de-95a2-4ed7-99fc-919259e24e4c",
+      "status": "succeeded",
+      "execution_id": "33d46ad4-f8d8-4360-8625-9ce0adb13b9b",
+      "owner_epoch": 1,
+      "last_result_outcome": "succeeded",
+      "last_result_disposition": "matched_pose_lease_and_owner",
+      "nav2_action_goal_id": "fbeda576-05ea-4bf7-bd91-bd8c16c55129",
+      "nav2_action_goal_id_absent_reason": null,
+      "observation_failures": 0
+    },
+    "completion_evidence": {
+      "goal_status": "succeeded",
+      "goal_id": "ed9269de-95a2-4ed7-99fc-919259e24e4c",
+      "execution_id": "33d46ad4-f8d8-4360-8625-9ce0adb13b9b",
+      "owner_epoch": 1,
+      "session_id": "aaca2151-17f1-4ad0-9ae1-3ead311ddda7",
+      "lease_id": "64849efd-093d-4517-b72d-72045479246c",
+      "distance_m": 0.1697596451072143,
+      "observation_source": "recorded_on_goal",
+      "disposition": "matched_pose_lease_and_owner"
+    },
+    "events": [
+      {
+        "from_status": null,
+        "to_status": "CREATED",
+        "actor": "api",
+        "owner_epoch": 0,
+        "execution_id": null,
+        "goal_id": null,
+        "reason": "accepted",
+        "created_at": "2026-10-26T08:22:06.470025+00:00"
+      },
+      {
+        "from_status": "CREATED",
+        "to_status": "PENDING",
+        "actor": "api",
+        "owner_epoch": 0,
+        "execution_id": null,
+        "goal_id": null,
+        "reason": "queued",
+        "created_at": "2026-10-26T08:22:06.470025+00:00"
+      },
+      {
+        "from_status": "PENDING",
+        "to_status": "ASSIGNED",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": null,
+        "goal_id": null,
+        "reason": "scheduled",
+        "created_at": "2026-10-26T08:22:13.129999+00:00"
+      },
+      {
+        "from_status": "ASSIGNED",
+        "to_status": "DISPATCHING",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": "33d46ad4-f8d8-4360-8625-9ce0adb13b9b",
+        "goal_id": "ed9269de-95a2-4ed7-99fc-919259e24e4c",
+        "reason": "goal_handed_to_robot_agent",
+        "created_at": "2026-10-26T08:22:13.129999+00:00"
+      },
+      {
+        "from_status": "DISPATCHING",
+        "to_status": "RUNNING",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": "33d46ad4-f8d8-4360-8625-9ce0adb13b9b",
+        "goal_id": "ed9269de-95a2-4ed7-99fc-919259e24e4c",
+        "reason": "nav2_goal_accepted_not_completed",
+        "created_at": "2026-10-26T08:22:13.262356+00:00"
+      },
+      {
+        "from_status": "RUNNING",
+        "to_status": "COMPLETED",
+        "actor": "fms:29d33f24-9d6c-4ae3-9ea4-aa6fb2c81fc4",
+        "owner_epoch": 1,
+        "execution_id": "33d46ad4-f8d8-4360-8625-9ce0adb13b9b",
+        "goal_id": "ed9269de-95a2-4ed7-99fc-919259e24e4c",
+        "reason": "nav_result_succeeded_pose_matched",
+        "created_at": "2026-10-26T08:23:15.179457+00:00"
+      }
+    ]
+  },
+  "distance_m": 0.1697596451072143,
+  "final_tf_stamp": {
+    "sec": 4469,
+    "nanosec": 460000000,
+    "frame_id": "map",
+    "child_frame_id": "base_footprint"
+  },
+  "after_stop": {
+    "map_pose": {
+      "x": 0.5708820565387817,
+      "y": -0.33108235856563983,
+      "z": 0.0,
+      "yaw": 0.11846214440330104,
+      "frame_id": "map",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4471,
+      "stamp_nanosec": 100000000
+    },
+    "odom_pose": {
+      "x": 0.354040154724405,
+      "y": -0.5735028185007361,
+      "z": 0.0,
+      "yaw": -0.2506476822174073,
+      "frame_id": "odom",
+      "child_frame_id": "base_footprint",
+      "stamp_sec": 4470,
+      "stamp_nanosec": 60000000
+    },
+    "twist": {
+      "vx": 0.0,
+      "vy": 0.0,
+      "wz": 0.0
+    },
+    "statuses": [
+      5,
+      4,
+      4,
+      4,
+      4,
+      6,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "distance_m": 0.17140893856260173
+  },
+  "nav2_action_goal_id": "fbeda576-05ea-4bf7-bd91-bd8c16c55129",
+  "uuid_matches_db": true,
+  "navigation_goal_count": 1,
+  "nav2_status": 4,
+  "nav2_outcome": "succeeded",
+  "fms_status_at_result": "COMPLETED",
+  "fms_status": "COMPLETED",
+  "recovery_reason": null,
+  "goal_sent_at": "2026-10-26T08:22:13.259583+00:00",
+  "goal_result_at": "2026-10-26T08:23:15.157204+00:00",
+  "verdict": "PASS",
+  "resolve": null
+}

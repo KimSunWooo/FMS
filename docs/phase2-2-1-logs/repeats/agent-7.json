@@ -1,0 +1,67 @@
+{
+  "robot_id": "pinky-sim",
+  "preflight": {
+    "ready": true,
+    "reasons": [],
+    "ros_distro": "jazzy",
+    "ros_domain_id": 73,
+    "rmw_implementation": "rmw_cyclonedds_cpp",
+    "ros2_binary": true,
+    "gazebo_binary": true,
+    "nav2_interface": true,
+    "pinky_packages": [
+      "pinky_description",
+      "pinky_gz_sim",
+      "pinky_navigation"
+    ]
+  },
+  "nav2_goal_sent": true,
+  "task_completed": true,
+  "physical_control": "blocked",
+  "session_id": "ae3745dc-4b08-4f88-8a93-764f638c3363",
+  "start_pose": {
+    "x": 0.05358400448055623,
+    "y": -0.07046224482693715,
+    "z": 0.0,
+    "yaw": 1.3594802176266183,
+    "frame_id": "map",
+    "child_frame_id": "base_footprint",
+    "stamp_sec": 4329,
+    "stamp_nanosec": 520000000
+  },
+  "nav2_status_list": [
+    5,
+    4,
+    4,
+    4,
+    4,
+    6,
+    4
+  ],
+  "nav2_action_goal_id": "47a336f8-da0e-4fd4-bdcd-ea738829318f",
+  "goal_accepted_at": "2026-10-26T08:17:33.524477+00:00",
+  "nav2_outcome": "succeeded",
+  "nav2_action_goal_id_absent_reason": null,
+  "nav2_action": "/navigate_to_pose",
+  "nav2_status": 4,
+  "goal_sent_at": "2026-10-26T08:17:33.520997+00:00",
+  "goal_result_at": "2026-10-26T08:18:02.838005+00:00",
+  "feedback_count": 2728,
+  "fms_goal_id": "d3701803-3be5-4621-9dd2-52b30ff78dd9",
+  "fms_task_id": "a2388bef-8b3e-422e-95a0-d800636c990c",
+  "execution_id": "74d58b33-12e7-47ca-8621-0003423a956c",
+  "owner_epoch": 1,
+  "pose_observed": true,
+  "pose": {
+    "x": -0.31195642181330996,
+    "y": -0.14257450448842957,
+    "z": 0.0,
+    "yaw": -1.1604189492731098,
+    "frame_id": "map",
+    "child_frame_id": "base_footprint",
+    "stamp_sec": 4341,
+    "stamp_nanosec": 200000000
+  },
+  "goal_frame_id": "map",
+  "fms_status": "COMPLETED"
+}

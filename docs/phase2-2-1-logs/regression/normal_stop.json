@@ -1,0 +1,9 @@
+{
+  "open_http": 201,
+  "stop_http": 200,
+  "stopped": true,
+  "dead_assignment_http": 409,
+  "dead_assignment_code": "STALE_OWNER",
+  "next_session_http": 201,
+  "verdict": "PASS"
+}

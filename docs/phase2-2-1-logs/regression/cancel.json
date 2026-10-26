@@ -1,0 +1,28 @@
+{
+  "task_id": "e334f7da-5429-428b-936b-c27bd863e58b",
+  "running_status": "RUNNING",
+  "cancel_http": 202,
+  "final_status": "CANCELED",
+  "uuid": "14dc955c-96fd-45cd-b002-12b9da3713a8",
+  "goal_count": 1,
+  "agent_nav2_status": 5,
+  "agent_rc": 0,
+  "verdict": "PASS",
+  "statuses_after": [
+    5,
+    4,
+    4,
+    4,
+    4,
+    6,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    5
+  ]
+}

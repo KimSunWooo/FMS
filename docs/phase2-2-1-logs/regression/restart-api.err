@@ -1,0 +1,6 @@
+INFO:     Started server process [47666]
+INFO:     Waiting for application startup.
+{"ts": "2026-10-26T08:28:49.254901+00:00", "level": "INFO", "logger": "care_move_fms", "message": "task_transition RUNNING -> RECOVERY_REQUIRED (process_restart)", "task_id": "dbdfac9b-19fd-44a1-987f-f7d9a9779f71", "robot_id": "pinky-sim", "execution_id": "58c2e1cf-3086-40ce-9839-a37546ab8e46", "goal_id": "45855750-8b6b-44de-883e-0e3bc0d1bbea", "owner_epoch": 2, "event": "task_transition"}
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8741 (Press CTRL+C to quit)
+{"ts": "2026-10-26T08:28:54.167642+00:00", "level": "INFO", "logger": "care_move_fms", "message": "task_transition RECOVERY_REQUIRED -> FAILED (phase221 fault case closed; the goal was not sent again)", "task_id": "dbdfac9b-19fd-44a1-987f-f7d9a9779f71", "robot_id": "pinky-sim", "execution_id": "58c2e1cf-3086-40ce-9839-a37546ab8e46", "goal_id": "45855750-8b6b-44de-883e-0e3bc0d1bbea", "owner_epoch": 3, "event": "task_transition"}
