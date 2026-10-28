@@ -1,65 +1,68 @@
-# Care-Move FMS
+# Care-Move FMS — Full dashboard restoration (real Pinky + original site map)
 
-Pinky Pro 3대를 관제하기 위한 독립 Fleet Management System입니다. 작업의 권위 있는 상태는 이 저장소의 데이터베이스에만 있고, Open-RMF 런타임에 연결하지 않습니다. 기본 실행은 Mock입니다. 단일 Gazebo Pinky의 Nav2 주행 E2E는 [docs/phase2-1-e2e-report.md](docs/phase2-1-e2e-report.md)에 PASS로 기록되어 있습니다. Phase 2 계약 기록은 [docs/phase2-report.md](docs/phase2-report.md)입니다.
+This patch **restores all original dashboard sections** (robot cards, map, task input,
+queue, zones, history, events). It **does not display legacy mock robots, mock positions,
+mock tasks, fake ward zone geometry, or artificial completed results**. It shows only
+robots that pass noninteractive SSH authentication.
 
-이 저장소는 기존 Care-Move / Open-RMF 프로젝트를 복제한 것이 아닙니다. 이 개발 머신에는 그 소스와 보고서가 없었고, 기존 비밀값도 복사하지 않았습니다.
+The physical-site map is loaded from:
+`<FMS root>/config/maps/physical_site/1f_map.yaml`, with its `.pgm` image. The backend
+converts the actual PGM bytes to browser-readable PNG. No replacement/demo map is created.
 
-## 지금 되는 것
-
-`POST /api/tasks` 로 접수한 이동 작업이 스케줄러와 Mock 로봇 에이전트를 거쳐 `COMPLETED` 가 됩니다. 완료는 HTTP 응답이 아니라 Mock goal 결과, goal id, execution id, owner epoch, 위치 오차로 판정합니다.
-
-실물 모터 명령과 `/cmd_vel` 은 거부됩니다. Nav2 goal은 Gazebo 모드의 로봇 에이전트만 보낼 수 있고, 시뮬레이터 preflight가 실패하면 그 에이전트도 goal을 보내지 않습니다.
-
-## 실행
+## Apply on swPC
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e "backend[dev]"
+python3 /path/to/extracted/fms_restore_full_dashboard_patch/apply_update.py /home/sw/DevSpace/FMS
+```
+
+The script backs up modified files using a `.backup_before_real_fleet_...` suffix.
+It does **not** delete database rows, reset Git, touch Nav2/map files, or modify `.env`.
+
+## Backend terminal
+
+```bash
+cd /home/sw/DevSpace/FMS
+export FMS_PHYSICAL_SSH_TARGETS='pinky-1=pinky@192.168.0.83'
+export FMS_PHYSICAL_MAP_YAML='/home/sw/DevSpace/FMS/config/maps/physical_site/1f_map.yaml'
+export FMS_SEED_FLEET=false
+export FMS_AUTO_TICK=false
 ./scripts/run_api.sh
 ```
 
-다른 터미널에서 관제 화면:
+SSH must already work noninteractively from the account **running the backend**:
 
 ```bash
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes pinky@192.168.0.83 true
+```
+
+## Frontend terminal
+
+```bash
+cd /home/sw/DevSpace/FMS
 ./scripts/run_dashboard.sh
 ```
 
-- API: http://127.0.0.1:8741
-- 관제 화면: http://127.0.0.1:8742
-- 헬스: http://127.0.0.1:8741/api/system/health
+No need to reinstall packages if the existing frontend is running.
 
-`./scripts/run_api.sh` 는 `.env` 가 없으면 이 프로젝트용 lease secret 을 새로 만듭니다. 셸 설정 파일은 바꾸지 않습니다. 스크립트는 source 하지 마세요.
-
-한 대만 붙는 로봇 에이전트. Jazzy, `ROS_DOMAIN_ID=73`, Cyclone DDS, Pinky overlay가 없는 셸에서는 preflight가 실패하고 종료 코드 2로 끝난다. 그 조건이 갖춰진 단일 Gazebo 주행 기록은 [docs/phase2-1-e2e-report.md](docs/phase2-1-e2e-report.md)에 있다.
+## Verify
 
 ```bash
-./scripts/run_agent.sh --robot-id pinky-sim
+curl -fsS http://127.0.0.1:8741/api/physical/robots | python3 -m json.tool
+curl -fsS http://127.0.0.1:8741/api/physical/map | python3 -m json.tool
+curl -fsS http://127.0.0.1:8741/api/physical/map/image -o /tmp/fms_actual_map.png
+file /tmp/fms_actual_map.png
 ```
 
-테스트:
+The dashboard is on http://localhost:8742.
 
-```bash
-cd backend && ../.venv/bin/pytest
-```
+## Important boundaries
 
-## 격리 기본값
-
-| 항목 | 값 |
-| --- | --- |
-| ROS_DOMAIN_ID | 73. API 기본 기동은 DDS에 참여하지 않음. Gazebo 에이전트만 참여 |
-| API | 8741 |
-| Dashboard | 8742 |
-| 선택 Postgres | 55432, compose profile `postgres` |
-| Task DB | `data/fms.sqlite3` |
-| Lock | `data/fms.lock` |
-| Environment ID | `care-move-fms-local` |
-
-단일 Gazebo Pinky E2E는 [docs/phase2-1-e2e-report.md](docs/phase2-1-e2e-report.md)를 본다. 실물 시험은 실행하지 않았다. 계획은 [docs/roadmap.md](docs/roadmap.md)에 있다.
-
-## 문서
-
-- [docs/architecture.md](docs/architecture.md)
-- [docs/migration-analysis.md](docs/migration-analysis.md)
-- [docs/isolation-plan.md](docs/isolation-plan.md)
-- [docs/risk-register.md](docs/risk-register.md)
-- [docs/verification-report.md](docs/verification-report.md)
+- SSH login is not ROS / Nav2 / physical motor readiness.
+- No fake pose or battery values are fabricated. Robot markers are hidden until
+  verified live `map`-frame pose telemetry is integrated.
+- Task input and stop controls retain their places in the UI, but are **disabled**
+  until a real Nav2 action bridge and a real hardware-stop API are implemented.
+  This avoids accidentally submitting jobs to the legacy mock scheduler.
+- Existing task/zone/history panels are preserved, but mock content is not read.
+- Map pixels are original Nav2 PGM pixel data; selecting a point only fills the X/Y inputs.
+- This patch does not alter your ROS_DOMAIN_ID, Nav2 launch, AMCL, or the loaded map.

@@ -56,6 +56,31 @@ class Settings(BaseSettings):
     # mock: in-process agents only. gazebo: external agent may claim a Nav2
     # send after preflight. physical: process refuses to start.
     execution_mode: str = "mock"
+    physical_ssh_targets: str = ""
+    physical_ssh_password: str = ""
+    physical_nav2_auto_start: bool = False
+    physical_nav2_poll_seconds: float = 6.0
+    physical_nav2_robot_id: str = "pinky-1"
+    physical_map_yaml: Path = Field(
+        default_factory=lambda: ROOT / "config/maps/physical_site/1f_map_f.yaml"
+    )
+    physical_fleet_path: Path = Field(
+        default_factory=lambda: ROOT / "config" / "physical_fleet.json"
+    )
+    planning_resolution_m: float = 0.05
+    planning_robot_radius_m: float = 0.06
+    planning_max_candidates: int = 3
+    planning_allow_diagonal: bool = True
+    # Planning speed is a schedule estimate, not a measured Pinky velocity.
+    planning_speed_m_s: float = 0.15
+    planning_max_depart_slots: int = 8
+    planning_goal_dwell_s: float = 0.5
+    fleet_dispatch_mode: str = "ssh"
+    facilities_path: Path = Field(default_factory=lambda: ROOT / "config" / "facilities.json")
+    physical_5cm_test_enabled: bool = False
+    physical_5cm_test_token: str = ""
+    physical_initial_pose_yaw_deg: float = 0.0
+    physical_ssh_timeout_seconds: float = 3.0
     auto_tick: bool = True
     seed_fleet: bool = True
     process_lock: bool = True

@@ -4,6 +4,7 @@ app/main.py
 app/api/__init__.py
 app/api/agent.py
 app/api/fleet.py
+app/api/physical.py
 app/api/robots.py
 app/api/schemas.py
 app/api/system.py

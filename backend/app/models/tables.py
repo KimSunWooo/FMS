@@ -208,6 +208,77 @@ class RobotTelemetry(Base):
     observed_at: Mapped[datetime] = mapped_column(_dt())
 
 
+class FleetTaskRecord(Base):
+    """Planned fleet task. Separate from the mock Task table and its state machine."""
+
+    __tablename__ = "fleet_tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    task_type: Mapped[str] = mapped_column(String(32), default="navigate")
+    priority: Mapped[int] = mapped_column(Integer, default=1)
+    assignment_mode: Mapped[str] = mapped_column(String(16))
+    requested_robot_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    assigned_robot_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    start_x: Mapped[float | None] = mapped_column(Float, nullable=True)
+    start_y: Mapped[float | None] = mapped_column(Float, nullable=True)
+    start_source: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    goal_x: Mapped[float] = mapped_column(Float)
+    goal_y: Mapped[float] = mapped_column(Float)
+    goal_label: Mapped[str] = mapped_column(String(80), default="")
+    map_id: Mapped[str] = mapped_column(String(64))
+    map_revision: Mapped[str] = mapped_column(String(64))
+    selected_path_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    planned_path_json: Mapped[str] = mapped_column(Text, default="[]")
+    candidate_paths_json: Mapped[str] = mapped_column(Text, default="[]")
+    schedule_json: Mapped[str] = mapped_column(Text, default="{}")
+    estimated_start_time: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    estimated_arrival_time: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    delivery_status: Mapped[str] = mapped_column(String(32), default="NOT_SENT")
+    ack_status: Mapped[str] = mapped_column(String(32), default="NOT_RECEIVED")
+    ack_channel: Mapped[str] = mapped_column(String(32), default="none")
+    ack_json: Mapped[str] = mapped_column(Text, default="")
+    payload_hash: Mapped[str] = mapped_column(String(64), default="")
+    assignment_reason: Mapped[str] = mapped_column(Text, default="")
+    failure_reason: Mapped[str] = mapped_column(Text, default="")
+    cancellation_json: Mapped[str] = mapped_column(Text, default="", server_default="")
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    archived_at: Mapped[datetime | None] = mapped_column(_dt(), nullable=True)
+    archived_by: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(_dt())
+    updated_at: Mapped[datetime] = mapped_column(_dt())
+
+
+class FleetTaskEventRecord(Base):
+    __tablename__ = "fleet_task_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey("fleet_tasks.id"), index=True)
+    from_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    to_status: Mapped[str] = mapped_column(String(32))
+    reason: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(_dt())
+
+
+class FleetReservationRecord(Base):
+    __tablename__ = "fleet_reservations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey("fleet_tasks.id"), index=True)
+    robot_id: Mapped[str] = mapped_column(String(64), index=True)
+    resource_kind: Mapped[str] = mapped_column(String(16))
+    resource_id: Mapped[str] = mapped_column(String(80), index=True)
+    x: Mapped[float] = mapped_column(Float, default=0)
+    y: Mapped[float] = mapped_column(Float, default=0)
+    t_start: Mapped[float] = mapped_column(Float)
+    t_end: Mapped[float] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    occupancy_class: Mapped[str] = mapped_column(String(24), default="planned")
+    map_revision: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(_dt())
+
+
 class SystemEvent(Base):
     __tablename__ = "system_events"
 

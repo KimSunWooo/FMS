@@ -6,153 +6,139 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FleetTaskPanel, type RouteOverlay } from "@/components/fleet-task-panel";
+import { insidePixel, pixelToWorld, worldToGrid, worldToPixel, type GridPoint } from "@/lib/map-frame";
 
-type Pose = { x: number; y: number; yaw: number };
-type Robot = {
+type Pose = { x: number; y: number; yaw: number; grid?: GridPoint | null };
+type RobotHome = {
+  frame_id: "map";
+  x: number;
+  y: number;
+  yaw: number;
+  grid: GridPoint | null;
+  pixel: { x: number; y: number } | null;
+  inside_map: boolean | null;
+  source: "registry_home";
+};
+type PhysicalRobot = {
   robot_id: string;
   name: string;
-  mode: string;
+  kind: "physical" | "virtual";
+  host: string | null;
   connection_status: string;
-  operational_state: string;
-  battery_percent: number;
-  controller_kind: string;
-  controller_ready: boolean;
-  pose: Pose;
-  pose_trustworthy: boolean;
-  pose_source: string;
-  fault_code: string | null;
-  estop_latched: boolean;
-  agent_online: boolean;
-  active_task_id: string | null;
+  connection_kind: string;
+  ssh_online: boolean;
+  pose: Pose | null;
+  pose_checked_at?: string | null;
+  pose_source?: string | null;
+  nav2_ready: boolean | null;
+  ros_online?: boolean;
+  nav2_state?: string | null;
+  nav2_detail?: string | null;
+  controller_ready: boolean | null;
+  home?: RobotHome | null;
 };
-type Fleet = {
-  environment_id: string;
-  physical_control: string;
-  rmf: string;
-  ros_bridge: string;
-  execution_mode?: string;
-  gazebo_preflight?: { status?: string };
-  ros_domain_id: number;
-  distance_model: string;
-  gateway: { implementation: string; online: boolean; boot_id: string };
-  robots: Robot[];
-  task_counts: Record<string, number>;
+type PhysicalFleet = {
+  robots: PhysicalRobot[];
+  configured_count: number;
+  connected_count: number;
+  physical_count: number;
+  virtual_count: number;
+  checked_at: string;
+  data_source: "fleet_registry";
 };
+type PhysicalMap = {
+  frame_id: "map";
+  width_px: number;
+  height_px: number;
+  width_m: number;
+  height_m: number;
+  resolution: number;
+  origin: { x: number; y: number; yaw: number };
+  image_url: string;
+  source: string;
+  data_source: "physical_site_map_files";
+  grid?: { width: number; height: number; convention: string; row_origin: string };
+};
+
 type Task = {
   task_id: string;
   status: string;
   robot_id: string | null;
   destination: { x: number; y: number; yaw: number; label: string };
   owner_epoch: number;
-  goal_id: string | null;
-  execution_id: string | null;
-  state_version: number;
-  failure_reason: string | null;
-  recovery_reason: string | null;
   navigation_goal_count: number;
-  completion_evidence: { goal_status: string; distance_m: number; goal_id: string } | null;
+  recovery_reason: string | null;
+  failure_reason: string | null;
+  completion_evidence: { goal_status: string; distance_m: number } | null;
 };
 type Zone = {
   zone_id: string;
   name: string;
   kind: string;
   bounds: { x: number; y: number; w: number; h: number };
-  reservation: {
-    reservation_id: string;
-    robot_id: string;
-    reservation_status: string;
-    hold_reason: string;
-  } | null;
+  reservation: { reservation_status: string; robot_id: string } | null;
 };
-type Floor = { width_m: number; height_m: number; note: string };
-type FeedEvent = { kind: string; code: string; message: string; created_at: string | null; task_id?: string };
-type Health = { status: string; motion_backend: string; gateway_boot_id: string; database: string };
+type FeedEvent = { kind: string; code: string; message: string; created_at: string | null };
 
-const PRESETS = [
-  { label: "개방 구역", x: 5, y: 6.5 },
-  { label: "복도", x: 3, y: 3.6 },
-  { label: "교차로", x: 8, y: 4 },
-  { label: "엘리베이터 대기", x: 10, y: 3.7 },
-  { label: "도킹", x: 1.2, y: 1.2 },
-];
-
-const ROBOT_COLOR: Record<string, string> = {
-  "pinky-1": "#2ec4b6",
-  "pinky-2": "#e2b340",
-  "pinky-3": "#79b8ff",
-};
-
-async function readJson(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-  });
-  const text = await response.text();
-  const body = text ? JSON.parse(text) : null;
+async function readJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(path, { cache: "no-store", signal });
   if (!response.ok) {
-    const message = body?.error?.message || body?.detail || response.statusText;
-    throw new Error(typeof message === "string" ? message : "요청이 거절됐습니다.");
+    let detail = `HTTP ${response.status}`;
+    try {
+      const data = await response.json();
+      detail = typeof data?.detail === "string" ? data.detail : detail;
+    } catch { /* Keep HTTP status if response body is not JSON. */ }
+    throw new Error(detail);
   }
-  return body;
+  return response.json() as Promise<T>;
 }
 
 function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "COMPLETED" || status === "online" || status === "idle") return "default";
-  if (status === "FAILED" || status === "RECOVERY_REQUIRED" || status === "fault" || status === "offline") {
-    return "destructive";
-  }
-  if (status === "RUNNING" || status === "busy") return "secondary";
+  if (["COMPLETED", "ssh_connected", "online"].includes(status)) return "default";
+  if (["FAILED", "RECOVERY_REQUIRED", "offline", "ssh_offline"].includes(status)) return "destructive";
+  if (["RUNNING", "busy"].includes(status)) return "secondary";
   return "outline";
 }
 
+const VIRTUAL_COLOR: Record<string, string> = {
+  "pinky-1": "#007d82",
+  "pinky-2": "#c47b00",
+  "pinky-3": "#5b4db7",
+};
+
 export function FleetConsole() {
-  const [fleet, setFleet] = useState<Fleet | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [floor, setFloor] = useState<Floor | null>(null);
-  const [events, setEvents] = useState<FeedEvent[]>([]);
-  const [health, setHealth] = useState<Health | null>(null);
+  const [fleet, setFleet] = useState<PhysicalFleet | null>(null);
+  const [physicalMap, setPhysicalMap] = useState<PhysicalMap | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [label, setLabel] = useState("개방 구역");
-  const [x, setX] = useState("5");
-  const [y, setY] = useState("6.5");
+  const [label, setLabel] = useState("");
+  const [x, setX] = useState("");
+  const [y, setY] = useState("");
   const [robotId, setRobotId] = useState("");
-  const [armedStop, setArmedStop] = useState<string | null>(null);
-  const [ack, setAck] = useState<Record<string, boolean>>({});
-  const [watchId, setWatchId] = useState<string | null>(null);
+  // FMS_PINKY1_5CM_TEST_V1: real Nav2 relative forward-test, no mock task write.
+  // FMS_DIRECT_5CM_LIVE_POSE_V1: server holds the test token, not the browser.
+  const [livePose, setLivePose] = useState<{robot_id: string; pose: Pose | null; pose_checked_at?: string | null; pose_source?: string} | null>(null);
+  const [fiveCmStatus, setFiveCmStatus] = useState<{
+    state: string; detail?: string; finished_at?: string; requested_distance_m?: number;
+    actual_forward_m?: number | null; map_forward_m?: number | null; odom_forward_m?: number | null;
+    actual_lateral_m?: number | null; goal_status_name?: string; velocity_case?: string | null;
+    start_pose?: { x: number; y: number } | null; final_pose?: { x: number; y: number } | null;
+  } | null>(null);
+  const [fiveCmError, setFiveCmError] = useState<string | null>(null);
+  const [chainDiagnosis, setChainDiagnosis] = useState<{
+    motion_command_sent?: boolean; stop_zone_would_stop?: boolean; velocity_case?: string | null; detail?: string;
+    scan?: { received?: boolean; min_range_m?: number | null; points_within_stop_radius?: number; frame_id?: string | null };
+  } | null>(null);
+  const [fiveCmPending, setFiveCmPending] = useState(false);
+  const [routeOverlay, setRouteOverlay] = useState<RouteOverlay | null>(null);
+  const [goalWarning, setGoalWarning] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    try {
-      const [fleetBody, taskBody, zoneBody, eventBody, healthBody] = await Promise.all([
-        readJson("/fms-api/fleet/status"),
-        readJson("/fms-api/tasks"),
-        readJson("/fms-api/traffic/zones"),
-        readJson("/fms-api/fleet/events?limit=40"),
-        readJson("/fms-api/system/health"),
-      ]);
-      setFleet(fleetBody);
-      setTasks(taskBody.tasks);
-      setZones(zoneBody.zones);
-      setFloor(zoneBody.floor);
-      setEvents(eventBody.events);
-      setHealth(healthBody);
-      setLoadError(null);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "FMS API에 연결하지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 2000);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
-
+  // Existing FMS sections remain, but Phase-1 Mock DB/task/zone/event APIs
+  // must NOT be read or rendered as if they were physical robot observations.
+  const tasks: Task[] = useMemo(() => [], []);
+  const zones: Zone[] = useMemo(() => [], []);
   const active = useMemo(
     () => tasks.filter((task) => !["COMPLETED", "CANCELED", "FAILED"].includes(task.status)),
     [tasks],
@@ -161,69 +147,221 @@ export function FleetConsole() {
     () => tasks.filter((task) => ["COMPLETED", "CANCELED", "FAILED"].includes(task.status)).slice(0, 8),
     [tasks],
   );
-  const watched = tasks.find((task) => task.task_id === watchId) ?? null;
+  const events: FeedEvent[] = useMemo(() => {
+    if (!fleet) return [];
+    return [{
+      kind: "fleet_registry",
+      code: "fleet_registry_checked",
+      message: `등록 ${fleet.configured_count}대 · 실물 ${fleet.physical_count}대(SSH ${fleet.connected_count}) · 가상 ${fleet.virtual_count}대`,
+      created_at: fleet.checked_at,
+    }];
+  }, [fleet]);
 
-  async function createTask(event: React.FormEvent) {
-    event.preventDefault();
-    setFormError(null);
-    setNotice(null);
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    // Independent requests: an absent map should not hide authenticated robots.
+    const [robotsResult, mapResult] = await Promise.allSettled([
+      readJson<PhysicalFleet>("/fms-api/physical/robots", signal),
+      readJson<PhysicalMap>("/fms-api/physical/map", signal),
+    ]);
+    if (signal?.aborted) return;
+    if (robotsResult.status === "fulfilled" && Array.isArray(robotsResult.value.robots)) {
+      setFleet(robotsResult.value);
+      setLoadError(null);
+    } else {
+      setFleet(null); // Do not leave stale robots displaying as online.
+      setLoadError(robotsResult.status === "rejected"
+        ? String(robotsResult.reason instanceof Error ? robotsResult.reason.message : robotsResult.reason)
+        : "잘못된 실물 로봇 응답");
+    }
+    if (mapResult.status === "fulfilled" && Number.isFinite(mapResult.value.width_px)) {
+      setPhysicalMap(mapResult.value);
+      setMapError(null);
+    } else {
+      setPhysicalMap(null);
+      setMapError(mapResult.status === "rejected"
+        ? String(mapResult.reason instanceof Error ? mapResult.reason.message : mapResult.reason)
+        : "실제 지도 형식이 올바르지 않습니다.");
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void refresh(controller.signal);
+    const timer = window.setInterval(() => void refresh(controller.signal), 5000);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const poll = async () => {
+      try {
+        const result = await readJson<{
+          state: string; detail?: string; finished_at?: string; requested_distance_m?: number;
+          actual_forward_m?: number | null; map_forward_m?: number | null; odom_forward_m?: number | null;
+          actual_lateral_m?: number | null; goal_status_name?: string; velocity_case?: string | null;
+          start_pose?: { x: number; y: number } | null; final_pose?: { x: number; y: number } | null;
+        }>(
+          "/fms-api/physical/tests/pinky-1/forward-5cm", controller.signal,
+        );
+        if (!controller.signal.aborted) setFiveCmStatus(result);
+      } catch { /* Separate from SSH/TF status; don't hide the fleet. */ }
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 1500);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, []);
+
+  // Dedicated 1s TF polling. SSH/ROS health requests stay on their slower cadence.
+  useEffect(() => {
+    const controller = new AbortController();
+    let pending = false;
+    const poll = async () => {
+      if (pending || controller.signal.aborted) return;
+      pending = true;
+      try {
+        const result = await readJson<{robot_id: string; pose: Pose | null; pose_checked_at?: string | null; pose_source?: string}>(
+          "/fms-api/physical/nav2/pose", controller.signal,
+        );
+        if (!controller.signal.aborted) setLivePose(result);
+      } catch { if (!controller.signal.aborted) setLivePose(null); }
+      finally { pending = false; }
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 1000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, []);
+
+  async function diagnoseVelocityChain() {
+    setFiveCmError(null);
     try {
-      const body = await readJson("/fms-api/tasks", {
+      const result = await readJson<NonNullable<typeof chainDiagnosis>>("/fms-api/physical/tests/pinky-1/forward-5cm/diagnosis");
+      setChainDiagnosis(result);
+    } catch (err) {
+      setFiveCmError(err instanceof Error ? err.message : "속도 체인 진단 실패");
+    }
+  }
+
+  async function sendFiveCmAction(cancel: boolean) {
+    if (!cancel && !window.confirm("pinky-1 실기체에 Nav2 DriveOnHeading 5cm 전진 목표를 전송합니다. 실행하시겠습니까?")) return;
+    setFiveCmPending(true);
+    setFiveCmError(null);
+    try {
+      const response = await fetch("/api/physical-5cm", {
         method: "POST",
-        body: JSON.stringify({
-          destination: { x: Number(x), y: Number(y), yaw: 0, label },
-          priority: 0,
-          robot_id: robotId || null,
-        }),
+        headers: { "Content-Type": "application/json", "X-FMS-UI-Intent": "physical-5cm" },
+        body: JSON.stringify({ action: cancel ? "cancel" : "start" }),
       });
-      setWatchId(body.task.task_id);
-      setNotice("접수됐습니다. 이 응답은 도착이 아닙니다. 아래 상태가 COMPLETED로 바뀌는지 확인하세요.");
-      await refresh();
+      const body = await response.json();
+      if (!response.ok) throw new Error(typeof body.detail === "string" ? body.detail : `HTTP ${response.status}`);
+      if (!cancel) setFiveCmStatus(body);
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "작업을 만들지 못했습니다.");
+      setFiveCmError(error instanceof Error ? error.message : "5cm 작업 요청 실패");
+    } finally { setFiveCmPending(false); }
+  }
+
+  async function chooseDestination(px: number, py: number) {
+    if (!physicalMap) return;
+    const world = pixelToWorld(physicalMap, px, py);
+    setX(world.x.toFixed(3));
+    setY(world.y.toFixed(3));
+    try {
+      const response = await fetch("/fms-api/planning/points/inspect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ x: world.x, y: world.y }),
+      });
+      const body = await response.json() as { accepted_as_goal?: boolean; reason?: string };
+      setGoalWarning(body.accepted_as_goal ? null : `클릭 위치는 목적지로 사용할 수 없습니다 (${body.reason ?? "거부"}).`);
+    } catch {
+      setGoalWarning("목적지 검사에 실패했습니다.");
     }
   }
 
-  async function mutate(path: string, payload?: unknown) {
-    setFormError(null);
-    try {
-      await readJson(path, { method: "POST", body: payload === undefined ? undefined : JSON.stringify(payload) });
-      await refresh();
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "요청이 거절됐습니다.");
-    }
-  }
+  const selectedGrid = useMemo(() => {
+    if (!physicalMap || !x.trim() || !y.trim()) return null;
+    const gx = Number(x);
+    const gy = Number(y);
+    if (!Number.isFinite(gx) || !Number.isFinite(gy)) return null;
+    return worldToGrid(physicalMap, gx, gy);
+  }, [physicalMap, x, y]);
+
+  const selected = useMemo(() => {
+    if (!physicalMap || !selectedGrid) return null;
+    const { px, py } = worldToPixel(physicalMap, Number(x), Number(y));
+    return insidePixel(physicalMap, px, py) ? { px, py } : null;
+  }, [physicalMap, selectedGrid, x, y]);
+
+  // FMS_LIVE_TF_POSE_OVERLAY_V1: map coordinates -> SVG image pixels.
+  // The server only sends fresh TF results; time-gate again in the browser.
+  const liveMarkers = useMemo(() => {
+    if (!physicalMap) return [];
+    const theta = physicalMap.origin.yaw;
+    return (fleet?.robots ?? []).flatMap((robot) => {
+      const observation = robot.robot_id === "pinky-1" && livePose?.robot_id === "pinky-1" ? livePose : robot;
+      if (!observation.pose || !observation.pose_checked_at || observation.pose_source !== "tf:map->base_footprint") return [];
+      const stamp = Date.parse(observation.pose_checked_at);
+      const age = Date.now() - stamp;
+      if (!Number.isFinite(stamp) || age < -5000 || age > 5000) return [];
+      const { x: worldX, y: worldY, yaw } = observation.pose;
+      if (![worldX, worldY, yaw].every(Number.isFinite)) return [];
+      const { px, py } = worldToPixel(physicalMap, worldX, worldY);
+      if (!insidePixel(physicalMap, px, py)) return [];
+      return [{ robot, px, py, rotation: -(yaw - theta) * 180 / Math.PI }];
+    });
+  }, [fleet, physicalMap, livePose]);
+
+  const homeMarkers = useMemo(() => {
+    if (!physicalMap) return [];
+    return (fleet?.robots ?? []).flatMap((robot) => {
+      if (robot.kind !== "virtual" || !robot.home || robot.home.inside_map === false) return [];
+      const { px, py } = worldToPixel(physicalMap, robot.home.x, robot.home.y);
+      if (!insidePixel(physicalMap, px, py)) return [];
+      return [{ robot, px, py, rotation: -(robot.home.yaw - physicalMap.origin.yaw) * 180 / Math.PI }];
+    });
+  }, [fleet, physicalMap]);
+
+  // Permanent reference only: never passed off as the live robot pose.
+  const initialMarker = useMemo(() => {
+    if (!physicalMap) return null;
+    const { px, py } = worldToPixel(physicalMap, 1.696, 0.103);
+    if (!insidePixel(physicalMap, px, py)) return null;
+    return { px, py };
+  }, [physicalMap]);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 px-4 py-5 md:px-6">
       <header className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs tracking-[0.18em] text-primary uppercase">Care ward · {fleet?.execution_mode ?? "mock"} fleet</p>
+          <p className="text-xs tracking-[0.18em] text-primary uppercase">Care ward · physical fleet</p>
           <h1 className="text-2xl font-semibold">Care-Move FMS</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Pinky #1–#3 관제 화면입니다. 조회는 작업 상태를 바꾸지 않습니다. 실물 모터는 막혀 있고, Gazebo
-            주행은 이 화면의 완료 표시로 증명하지 않습니다.
+            실물 Pinky-1은 SSH·Nav2·실시간 TF로 표시하고, Pinky-2와 Pinky-3는 가상 등록 로봇으로 구분합니다.
+            가상 로봇에는 주행 명령을 보내지 않습니다.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
-          <Badge variant="outline">RMF {fleet?.rmf ?? "…"}</Badge>
-          <Badge variant="outline">실물 {fleet?.physical_control ?? "blocked"}</Badge>
-          <Badge variant="outline">ROS {fleet?.ros_bridge ?? "disabled"}</Badge>
-          <Badge variant="outline">mode {fleet?.execution_mode ?? "mock"}</Badge>
-          <Badge variant="outline">Gazebo {fleet?.gazebo_preflight?.status ?? "not_ready"}</Badge>
-          <Badge variant="outline">domain {fleet?.ros_domain_id ?? 73}</Badge>
-          <Badge variant={health?.database === "ok" ? "default" : "destructive"}>
-            DB {health?.database ?? "…"}
+          <Badge variant="outline">RMF 미사용</Badge>
+          <Badge variant="outline">실물 관제 조회</Badge>
+          <Badge variant="outline">5cm Nav2 테스트 전용</Badge>
+          <Badge variant="outline">실물 {fleet?.physical_count ?? 0} · SSH {fleet?.connected_count ?? 0}</Badge>
+          <Badge variant="outline">가상 {fleet?.virtual_count ?? 0}</Badge>
+          <Badge variant="outline">등록 {fleet?.configured_count ?? 0}대</Badge>
+          <Badge variant={physicalMap ? "default" : "destructive"}>
+            지도 {physicalMap ? "실제 파일" : "미확인"}
           </Badge>
         </div>
       </header>
 
-      {loading && !fleet && <p className="text-sm text-muted-foreground">함대 상태를 불러오는 중입니다.</p>}
+      {loading && <p className="text-sm text-muted-foreground">실물 Pinky와 실제 지도 확인 중...</p>}
       {loadError && (
         <Card>
           <CardHeader>
-            <CardTitle>API에 연결하지 못했습니다</CardTitle>
-            <CardDescription>{loadError} 백엔드가 8741에서 실행 중인지 확인하세요.</CardDescription>
+            <CardTitle>SSH 로봇 목록 API 연결 오류</CardTitle>
+            <CardDescription>{loadError} · Backend(8741) 및 SSH 설정을 확인하세요.</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -237,68 +375,96 @@ export function FleetConsole() {
                 <span className="font-mono text-xs text-muted-foreground">{robot.robot_id}</span>
               </CardTitle>
               <CardDescription>
-                {robot.controller_kind === "mock" ? "Mock 제어기 · ROS 미연결" : robot.controller_kind}
+                {robot.kind === "virtual" ? "가상 로봇 · 등록 위치만 표시" : `실물 로봇 · ${robot.host ?? "SSH 대상 없음"}`}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex flex-wrap gap-1.5">
-                <Badge variant={statusVariant(robot.connection_status)}>{robot.connection_status}</Badge>
-                <Badge variant={statusVariant(robot.operational_state)}>{robot.operational_state}</Badge>
-                <Badge variant="outline">배터리 {Math.round(robot.battery_percent)}%</Badge>
-                <Badge variant={robot.agent_online ? "default" : "destructive"}>
-                  agent {robot.agent_online ? "up" : "down"}
+                <Badge variant={robot.kind === "virtual" ? "secondary" : "outline"}>
+                  {robot.kind === "virtual" ? "가상" : "실물"}
+                </Badge>
+                {robot.kind === "physical" ? (
+                  <Badge variant={statusVariant(robot.connection_status)}>
+                    {robot.ssh_online ? "SSH 연결" : "SSH 끊김"}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">SSH 미사용</Badge>
+                )}
+                <Badge variant={robot.ros_online ? "default" : "outline"}>
+                  ROS {robot.ros_online ? "토픽 확인" : robot.kind === "virtual" ? "해당 없음" : "대기"}
+                </Badge>
+                <Badge variant="outline">배터리 미연동</Badge>
+                <Badge variant={robot.nav2_ready ? "default" : "outline"}>
+                  Nav2 {robot.nav2_ready ? "READY" : robot.kind === "virtual" ? "해당 없음" : "준비 대기"}
                 </Badge>
               </div>
               <p className="font-mono text-xs text-muted-foreground">
-                pose {robot.pose.x.toFixed(2)}, {robot.pose.y.toFixed(2)} ·{" "}
-                {robot.pose_trustworthy ? "위치 신뢰" : "위치 불확실"} · {robot.pose_source}
+                {robot.kind === "virtual" && robot.home
+                  ? `등록 위치 ${robot.home.x.toFixed(2)}, ${robot.home.y.toFixed(2)} m${robot.home.grid ? ` · grid ${robot.home.grid.col.toFixed(0)}, ${robot.home.grid.row.toFixed(0)}` : ""}`
+                  : `pose ${robot.pose ? `${robot.pose.x.toFixed(2)}, ${robot.pose.y.toFixed(2)}` : "미수신"}${robot.pose ? ` · TF 관측 · yaw ${(robot.pose.yaw * 180 / Math.PI).toFixed(1)}°` : " · 실시간 TF 위치 대기"}`}
               </p>
+              <p className="text-xs text-muted-foreground">Nav2: {robot.nav2_detail ?? "상태 점검 중"}</p>
+              {robot.robot_id === "pinky-1" && livePose?.pose && livePose.pose_checked_at &&
+                Date.now() - Date.parse(livePose.pose_checked_at) < 5000 && (
+                <p className="font-mono text-xs text-primary">
+                  현재 TF: X={livePose.pose.x.toFixed(3)}m, Y={livePose.pose.y.toFixed(3)}m
+                  {` · 시작점 대비 ${Math.hypot(livePose.pose.x - 1.696, livePose.pose.y - 0.103).toFixed(3)}m`}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
-                현재 작업 {robot.active_task_id ? robot.active_task_id.slice(0, 8) : "없음"}
-                {robot.fault_code ? ` · fault ${robot.fault_code}` : ""}
+                {robot.kind === "virtual"
+                  ? "SSH와 Nav2 READY는 표시하지 않습니다. Task 수신은 가상 기록입니다."
+                  : "Task 전달은 수신 ACK만 확인합니다. 5cm 테스트와 분리되어 있습니다."}
               </p>
+              {robot.robot_id === "pinky-1" && (
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  <p className="text-sm font-semibold">실물 Nav2 테스트 · 5cm 전진</p>
+                  <p className="text-xs text-muted-foreground">Nav2 DriveOnHeading으로 0.05m 직진합니다. 이동 거리는 map TF와 odometry를 함께 기록합니다. Task 취소와는 별도입니다.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" onClick={() => void sendFiveCmAction(false)}
+                      disabled={!robot.nav2_ready || fiveCmPending || ["checking", "pose_verified", "accepted", "running", "cancelling"].includes(fiveCmStatus?.state ?? "")}>
+                      Pinky 1 · 5cm 전진 테스트
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => void sendFiveCmAction(true)}
+                      disabled={fiveCmPending || !["checking", "pose_verified", "accepted", "running"].includes(fiveCmStatus?.state ?? "")}>
+                      테스트 Goal 취소
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => void diagnoseVelocityChain()}>
+                      속도 체인 진단
+                    </Button>
+                  </div>
+                  <p className="text-xs">Nav2 {robot.nav2_ready ? "READY" : "준비 대기"} · TF {livePose?.pose ? "수신" : "없음"}</p>
+                  <p className="text-xs">{["checking", "pose_verified", "accepted", "running", "cancelling"].includes(fiveCmStatus?.state ?? "") ? "현재 테스트" : "마지막 결과"}: {fiveCmStatus?.state ?? "조회 중"}
+                    {fiveCmStatus?.goal_status_name ? ` · Goal ${fiveCmStatus.goal_status_name}` : ""}
+                    {fiveCmStatus?.finished_at ? ` · ${fiveCmStatus.finished_at}` : ""}</p>
+                  <p className="text-xs">요청 거리 5cm
+                    {typeof fiveCmStatus?.map_forward_m === "number" || typeof fiveCmStatus?.actual_forward_m === "number"
+                      ? ` · map TF ${((fiveCmStatus.map_forward_m ?? fiveCmStatus.actual_forward_m ?? 0) * 100).toFixed(1)}cm` : ""}
+                    {typeof fiveCmStatus?.odom_forward_m === "number" ? ` · odometry ${(fiveCmStatus.odom_forward_m * 100).toFixed(1)}cm` : ""}
+                    {fiveCmStatus?.velocity_case ? ` · 속도 케이스 ${fiveCmStatus.velocity_case}` : ""}</p>
+                  {fiveCmStatus?.detail && <p className="text-xs">원인: {fiveCmStatus.detail}</p>}
+                  {chainDiagnosis && (
+                    <p className="text-xs">Collision Monitor 진단: {chainDiagnosis.stop_zone_would_stop ? "StopZone 안에 반환이 있어 정지 가능" : "이번 무주행 표본에서는 StopZone 정지 조건 미만"}
+                      {chainDiagnosis.scan?.received ? ` · scan ${chainDiagnosis.scan.frame_id ?? ""} 최소 ${chainDiagnosis.scan.min_range_m?.toFixed(3) ?? "-"}m · 반경 내 ${chainDiagnosis.scan.points_within_stop_radius ?? 0}점` : " · scan 없음"}
+                      {chainDiagnosis.detail ? ` · ${chainDiagnosis.detail}` : ""}</p>
+                  )}
+                  {fiveCmError && <p className="text-xs text-destructive">{fiveCmError}</p>}
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
-                {armedStop === robot.robot_id ? (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => {
-                      setArmedStop(null);
-                      void mutate(`/fms-api/robots/${robot.robot_id}/emergency-stop`, {
-                        reason: "operator estop from dashboard",
-                      });
-                    }}
-                  >
-                    정지 확정
-                  </Button>
-                ) : (
-                  <Button type="button" variant="outline" onClick={() => setArmedStop(robot.robot_id)}>
-                    비상 정지
-                  </Button>
-                )}
-                {robot.estop_latched && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => void mutate(`/fms-api/robots/${robot.robot_id}/estop/clear`, { acknowledge: true })}
-                  >
-                    정지 래치 해제
-                  </Button>
-                )}
-                {!robot.pose_trustworthy && (
-                  <Button type="button" variant="secondary" onClick={() => void mutate(`/fms-api/robots/${robot.robot_id}/mock-observe`)}>
-                    모의 위치 재확인
-                  </Button>
-                )}
+                <Button type="button" variant="outline" disabled title="실제 하드웨어 정지 API가 연결되기 전까지 사용할 수 없습니다.">
+                  비상 정지 (미연동)
+                </Button>
+                <Button type="button" variant="secondary" disabled>정지 래치 해제 (미연동)</Button>
               </div>
             </CardContent>
           </Card>
         ))}
-        {!loading && fleet && fleet.robots.length === 0 && (
+        {!loading && !loadError && (fleet?.robots.length ?? 0) === 0 && (
           <Card>
             <CardHeader>
               <CardTitle>등록된 로봇이 없습니다</CardTitle>
-              <CardDescription>시드가 꺼져 있으면 Pinky 3대가 표시되지 않습니다.</CardDescription>
+              <CardDescription>config/physical_fleet.json의 실물·가상 로봇 등록을 확인하세요.</CardDescription>
             </CardHeader>
           </Card>
         )}
@@ -307,75 +473,142 @@ export function FleetConsole() {
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
         <Card>
           <CardHeader>
-            <CardTitle>병동 스케치</CardTitle>
+            <CardTitle>현장 지도</CardTitle>
             <CardDescription>
-              {floor?.note ?? "구역 스케치"} · 배차 비용은 {fleet?.distance_model ?? "euclidean"} 이며 장애물 경로가
-              아닙니다.
+              {physicalMap
+                ? `${physicalMap.source} · ${physicalMap.width_m} × ${physicalMap.height_m} m · ${physicalMap.resolution} m/px · frame: ${physicalMap.frame_id}`
+                : "FMS/config/maps/physical_site/1f_map_f.yaml 및 PGM 원본을 사용합니다."}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <WardMap robots={fleet?.robots ?? []} zones={zones} tasks={active} width={floor?.width_m ?? 12} height={floor?.height_m ?? 8} />
+          <CardContent className="space-y-2">
+            {physicalMap ? (
+              <div className="rounded-lg border border-border overflow-hidden">
+                <svg
+                  role="img"
+                  aria-label="기존 물리 현장 지도, 클릭하면 지도 좌표를 작업 입력칸에 기록"
+                  viewBox={`0 0 ${physicalMap.width_px} ${physicalMap.height_px}`}
+                  className="block h-auto w-full cursor-crosshair"
+                  onClick={(event) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    if (rect.width <= 0 || rect.height <= 0) return;
+                    chooseDestination(
+                      ((event.clientX - rect.left) / rect.width) * physicalMap.width_px,
+                      ((event.clientY - rect.top) / rect.height) * physicalMap.height_px,
+                    );
+                  }}
+                >
+                  <image href={physicalMap.image_url} width={physicalMap.width_px} height={physicalMap.height_px} />
+                  {routeOverlay && [routeOverlay.candidates, [routeOverlay.selected]].map((group, groupIndex) => group.map((path, pathIndex) => {
+                    const color = VIRTUAL_COLOR[routeOverlay.robotId ?? ""] ?? "#526173";
+                    const points = path.map((point) => {
+                      const pixel = worldToPixel(physicalMap, point.x, point.y);
+                      return `${pixel.px},${pixel.py}`;
+                    }).join(" ");
+                    if (!points) return null;
+                    const selectedPath = groupIndex === 1;
+                    const historical = Boolean(routeOverlay.historical);
+                    return (
+                      <polyline key={`${groupIndex}-${pathIndex}`} points={points} fill="none"
+                        stroke={historical ? "#526173" : color}
+                        strokeWidth={selectedPath ? 1.4 : 0.7}
+                        strokeDasharray={historical ? "3 2" : selectedPath ? undefined : "2 1.2"}
+                        opacity={historical ? 0.55 : selectedPath ? 1 : 0.75} />
+                    );
+                  }))}
+                  {routeOverlay?.selected.map((point) => {
+                    const pixel = worldToPixel(physicalMap, point.x, point.y);
+                    const color = VIRTUAL_COLOR[routeOverlay.robotId ?? ""] ?? "#526173";
+                    return <circle key={point.waypoint_id ?? `${point.x}-${point.y}`} cx={pixel.px} cy={pixel.py} r={1.1} fill={color} />;
+                  })}
+                  {selected && (
+                    <g aria-label="선택된 좌표(아직 주행 명령 아님)">
+                      <circle cx={selected.px} cy={selected.py} r={4} fill="none" stroke="#e34d57" strokeWidth={1.5} />
+                      <path d={`M ${selected.px - 7} ${selected.py} h 14 M ${selected.px} ${selected.py - 7} v 14`}
+                        stroke="#e34d57" strokeWidth={0.8} />
+                    </g>
+                  )}
+                  {initialMarker && (
+                    <g aria-label="Pinky 1 최초 설정 위치(기준점)">
+                      <circle cx={initialMarker.px} cy={initialMarker.py} r={2.5}
+                        fill="#ffffff" stroke="#526173" strokeWidth={0.9} strokeDasharray="1.5 1" />
+                    </g>
+                  )}
+                  {liveMarkers.filter((m) => m.robot.robot_id === "pinky-1" && initialMarker !== null).map(({robot, px, py}) => (
+                    <line key={`${robot.robot_id}-offset`} x1={initialMarker!.px} y1={initialMarker!.py}
+                      x2={px} y2={py} stroke="#007d82" strokeWidth={0.8} strokeDasharray="2 1" opacity={0.8} />
+                  ))}
+                  {homeMarkers.map(({ robot, px, py, rotation }) => {
+                    const color = VIRTUAL_COLOR[robot.robot_id] ?? "#526173";
+                    return (
+                      <g key={`${robot.robot_id}-home`} aria-label={`${robot.name} 가상 등록 위치`}>
+                        <g transform={`translate(${px} ${py}) rotate(${rotation})`}>
+                          <rect x={-5} y={-5} width={10} height={10} fill={color} fillOpacity={0.18} stroke={color} strokeWidth={0.8} />
+                          <path d="M 0 -4 L 0 3 M -2.2 1.2 L 0 3.4 L 2.2 1.2" fill="none" stroke={color} strokeWidth={0.8} />
+                        </g>
+                        <text x={Math.min(px + 8, physicalMap.width_px - 4)} y={Math.max(py - 8, 10)}
+                          fontSize={5.5} fill={color} stroke="#ffffff" strokeWidth={1.5} paintOrder="stroke"
+                          textAnchor={px + 8 < physicalMap.width_px - 28 ? "start" : "end"}>
+                          {robot.name} 가상
+                        </text>
+                      </g>
+                    );
+                  })}
+                  {liveMarkers.map(({ robot, px, py, rotation }) => (
+                    <g key={robot.robot_id} aria-label={`${robot.name} 현재 TF 위치`}>
+                      {/* Distinct from the red destination crosshair: teal arrow + label. */}
+                      <circle cx={px} cy={py} r={7} fill="#09b8b4" fillOpacity={0.2} stroke="#007d82" strokeWidth={0.7} />
+                      <g transform={`translate(${px} ${py}) rotate(${rotation})`}>
+                        <path d="M 0 -6 L -4 4 L 0 2 L 4 4 Z" fill="#007d82" stroke="#ffffff" strokeWidth={0.65} />
+                      </g>
+                      <text x={Math.min(px + 9, physicalMap.width_px - 4)} y={Math.max(py - 9, 10)}
+                        fontSize={5.5} fill="#003e45" stroke="#ffffff" strokeWidth={1.5} paintOrder="stroke"
+                        textAnchor={px + 9 < physicalMap.width_px - 24 ? "start" : "end"}>
+                        {robot.name}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            ) : (
+              <p className="text-sm text-destructive">{mapError ?? "실제 지도 로딩 중..."}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              청록색 화살표: Pinky-1의 최근 TF(map → base_footprint). 주황·보라 사각형: Pinky-2·3 가상 등록 위치.
+              빨간 십자: 선택한 목적지(주행 미실행). TF가 미수신·오래됨·지도 밖이면 실물 표시는 숨깁니다.
+              {routeOverlay?.historical ? " 회색 점선은 종료된 Task의 저장 경로이며 현재 활성 예약이 아닙니다." : ""}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>작업 접수</CardTitle>
-            <CardDescription>접수 성공과 목적지 도착은 별개입니다.</CardDescription>
+            <CardDescription>경로 예약과 Task 전달은 분리됩니다. 전달해도 Nav2 Goal은 보내지 않습니다.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="flex flex-col gap-3" onSubmit={createTask}>
-              <div className="flex flex-wrap gap-2">
-                {PRESETS.map((preset) => (
-                  <Button
-                    key={preset.label}
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setLabel(preset.label);
-                      setX(String(preset.x));
-                      setY(String(preset.y));
-                    }}
-                  >
-                    {preset.label}
-                  </Button>
-                ))}
-              </div>
+            <form className="flex flex-col gap-3" onSubmit={(event) => event.preventDefault()}>
               <div className="grid gap-2">
                 <Label htmlFor="label">목적지 이름</Label>
-                <Input id="label" value={label} onChange={(event) => setLabel(event.target.value)} required />
+                <Input id="label" value={label} onChange={(event) => setLabel(event.target.value)} placeholder="실제 목적지 이름" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="grid gap-2">
                   <Label htmlFor="x">X (m)</Label>
-                  <Input id="x" value={x} onChange={(event) => setX(event.target.value)} inputMode="decimal" required />
+                  <Input id="x" value={x} onChange={(event) => setX(event.target.value)} inputMode="decimal" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="y">Y (m)</Label>
-                  <Input id="y" value={y} onChange={(event) => setY(event.target.value)} inputMode="decimal" required />
+                  <Input id="y" value={y} onChange={(event) => setY(event.target.value)} inputMode="decimal" />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="robot">로봇 지정 (비우면 자동 배차)</Label>
-                <Input
-                  id="robot"
-                  placeholder="pinky-1"
-                  value={robotId}
-                  onChange={(event) => setRobotId(event.target.value)}
-                />
-              </div>
-              <Button type="submit">작업 접수</Button>
-              {notice && <p className="text-sm text-primary">{notice}</p>}
-              {watched && (
-                <p className="font-mono text-xs">
-                  추적 {watched.task_id.slice(0, 8)} · {watched.status}
-                  {watched.robot_id ? ` · ${watched.robot_id}` : ""}
-                  {watched.completion_evidence
-                    ? ` · goal ${watched.completion_evidence.goal_status} · ${watched.completion_evidence.distance_m.toFixed(2)} m`
-                    : " · 완료 근거 없음"}
-                </p>
-              )}
-              {formError && <p className="text-sm text-destructive">{formError}</p>}
+              <p className="font-mono text-xs text-muted-foreground">
+                {selectedGrid
+                  ? `grid col ${selectedGrid.col.toFixed(1)}, row ${selectedGrid.row.toFixed(1)} · ${physicalMap?.grid?.convention ?? "nav2_occupancy"}`
+                  : "지도를 클릭하면 map 좌표와 grid 좌표가 함께 표시됩니다."}
+              </p>
+              {goalWarning && <p className="text-xs text-destructive">{goalWarning}</p>}
+              <FleetTaskPanel x={x} y={y} label={label} robotId={robotId} onLabel={setLabel} onRobot={setRobotId}
+                onGoal={(nextX, nextY) => { setX(nextX); setY(nextY); setGoalWarning(null); }}
+                onOverlay={setRouteOverlay} />
             </form>
           </CardContent>
         </Card>
@@ -385,88 +618,31 @@ export function FleetConsole() {
         <Card>
           <CardHeader>
             <CardTitle>작업 대기열 · 실행 중</CardTitle>
-            <CardDescription>{active.length === 0 ? "진행 중인 작업이 없습니다." : `${active.length}건`}</CardDescription>
+            <CardDescription>Fleet task 대기열은 오른쪽 작업 접수 패널에 표시합니다. 아래 목록은 기존 Mock 작업이며 비어 있습니다.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {active.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                목적지를 지정하면 스케줄러가 온라인 Mock 로봇에 배정합니다. 배정이 거절되면 작업은 PENDING으로 남습니다.
-              </p>
-            )}
+            {active.length === 0 && <p className="text-sm text-muted-foreground">기존 Mock 작업 목록은 비어 있습니다. Fleet task는 위 작업 접수 패널의 대기열에 표시됩니다.</p>}
             {active.map((task) => (
               <article key={task.task_id} className="rounded-lg border border-border p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{task.destination.label}</p>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {task.task_id.slice(0, 8)} · {task.robot_id ?? "미배정"} · epoch {task.owner_epoch} · goal{" "}
-                      {task.navigation_goal_count}
-                    </p>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <p>{task.destination.label} · {task.robot_id ?? "미배정"}</p>
                   <Badge variant={statusVariant(task.status)}>{task.status}</Badge>
-                </div>
-                {task.recovery_reason && (
-                  <p className="mt-2 text-xs text-destructive">복구 사유: {task.recovery_reason}</p>
-                )}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {task.status !== "RECOVERY_REQUIRED" && task.status !== "CANCEL_REQUESTED" && (
-                    <Button type="button" size="sm" variant="outline" onClick={() => void mutate(`/fms-api/tasks/${task.task_id}/cancel`)}>
-                      취소 요청
-                    </Button>
-                  )}
-                  {task.status === "RECOVERY_REQUIRED" && (
-                    <>
-                      <label className="flex items-center gap-2 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(ack[task.task_id])}
-                          onChange={(event) => setAck((current) => ({ ...current, [task.task_id]: event.target.checked }))}
-                        />
-                        위치가 확인되지 않았음을 인정
-                      </label>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          void mutate(`/fms-api/tasks/${task.task_id}/resolve`, {
-                            outcome: "CANCELED",
-                            reason: "operator closed recovery from dashboard",
-                            acknowledge_position_unknown: Boolean(ack[task.task_id]),
-                          })
-                        }
-                      >
-                        복구 건 취소로 닫기
-                      </Button>
-                    </>
-                  )}
                 </div>
               </article>
             ))}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>구역 점유</CardTitle>
-            <CardDescription>만료 시각만으로 구역을 비우지 않습니다. blocked 는 사람이 확인하기 전까지 유지됩니다.</CardDescription>
+            <CardDescription>기존 표시 영역 유지 · 실제 구역/예약 상태 미연동</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
+            {zones.length === 0 && <p className="text-sm text-muted-foreground">실물 지도 기반 구역 데이터가 없어 표시하지 않습니다.</p>}
             {zones.map((zone) => (
-              <div key={zone.zone_id} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium">
-                    {zone.zone_id} · {zone.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{zone.kind}</p>
-                </div>
-                {zone.reservation ? (
-                  <Badge variant={zone.reservation.reservation_status === "blocked" ? "destructive" : "secondary"}>
-                    {zone.reservation.reservation_status} · {zone.reservation.robot_id}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline">비어 있음</Badge>
-                )}
+              <div key={zone.zone_id} className="flex justify-between rounded-lg border border-border p-2">
+                <span>{zone.name}</span>
+                <Badge variant="outline">{zone.reservation?.reservation_status ?? "비어 있음"}</Badge>
               </div>
             ))}
           </CardContent>
@@ -477,18 +653,13 @@ export function FleetConsole() {
         <Card>
           <CardHeader>
             <CardTitle>최근 종료</CardTitle>
-            <CardDescription>COMPLETED 는 Nav 결과와 위치 대조가 있을 때만 표시됩니다.</CardDescription>
+            <CardDescription>실제 Nav2 결과 기반 종료 기록만 표시할 예정</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {history.length === 0 && <p className="text-sm text-muted-foreground">종료된 작업이 없습니다.</p>}
+            {history.length === 0 && <p className="text-sm text-muted-foreground">검증된 실물 주행 종료 기록이 없습니다.</p>}
             {history.map((task) => (
-              <div key={task.task_id} className="flex items-start justify-between gap-3 text-sm">
-                <div>
-                  <p>{task.destination.label}</p>
-                  <p className="font-mono text-xs text-muted-foreground">
-                    {task.robot_id ?? "-"} · {task.completion_evidence ? `goal ${task.completion_evidence.goal_status}` : task.failure_reason || task.status}
-                  </p>
-                </div>
+              <div key={task.task_id} className="flex justify-between text-sm">
+                <span>{task.destination.label}</span>
                 <Badge variant={statusVariant(task.status)}>{task.status}</Badge>
               </div>
             ))}
@@ -497,92 +668,26 @@ export function FleetConsole() {
         <Card>
           <CardHeader>
             <CardTitle>이벤트</CardTitle>
-            <CardDescription>
-              Gateway {fleet?.gateway.online ? "online" : "offline"} · boot {fleet?.gateway.boot_id.slice(0, 8) ?? "-"} ·{" "}
-              {fleet?.gateway.implementation}
-            </CardDescription>
+            <CardDescription>실물 SSH 상태 확인 결과 · Mock 이벤트 제외</CardDescription>
           </CardHeader>
           <CardContent className="max-h-80 space-y-2 overflow-auto">
-            {events.length === 0 && <p className="text-sm text-muted-foreground">아직 이벤트가 없습니다.</p>}
+            {events.length === 0 && <p className="text-sm text-muted-foreground">표시할 실물 연결 이벤트가 없습니다.</p>}
             {events.map((item, index) => (
               <div key={`${item.created_at}-${index}`} className="border-b border-border pb-2 text-xs">
-                <p className="font-medium">
-                  {item.code} <span className="text-muted-foreground">{item.kind}</span>
-                </p>
+                <p className="font-medium">{item.code} <span className="text-muted-foreground">{item.kind}</span></p>
                 <p className="text-muted-foreground">{item.message}</p>
               </div>
             ))}
           </CardContent>
         </Card>
       </section>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <p>마지막 SSH 확인: {fleet?.checked_at ? new Date(fleet.checked_at).toLocaleString("ko-KR") : "연결 확인 전"}</p>
+        <Button type="button" variant="outline" size="sm" onClick={() => void refresh()}>새로고침</Button>
+      </div>
     </main>
   );
 }
 
-function WardMap({
-  robots,
-  zones,
-  tasks,
-  width,
-  height,
-}: {
-  robots: Robot[];
-  zones: Zone[];
-  tasks: Task[];
-  width: number;
-  height: number;
-}) {
-  const scale = 100;
-  const sy = (y: number) => (height - y) * scale;
-  return (
-    <svg viewBox={`0 0 ${width * scale} ${height * scale}`} className="h-auto w-full rounded-lg bg-[#101820]">
-      {zones.map((zone) => {
-        const held = zone.reservation?.reservation_status === "held";
-        const blocked = zone.reservation?.reservation_status === "blocked";
-        return (
-          <g key={zone.zone_id}>
-            <rect
-              x={zone.bounds.x * scale}
-              y={sy(zone.bounds.y + zone.bounds.h)}
-              width={zone.bounds.w * scale}
-              height={zone.bounds.h * scale}
-              fill={blocked ? "rgba(240,113,120,0.35)" : held ? "rgba(226,179,64,0.28)" : "rgba(46,196,182,0.12)"}
-              stroke={blocked ? "#f07178" : held ? "#e2b340" : "#2ec4b6"}
-              strokeWidth={2}
-            />
-            <text x={zone.bounds.x * scale + 8} y={sy(zone.bounds.y + zone.bounds.h) + 18} fill="#d5dde6" fontSize={14}>
-              {zone.name}
-            </text>
-          </g>
-        );
-      })}
-      {tasks.map((task) => (
-        <circle
-          key={task.task_id}
-          cx={task.destination.x * scale}
-          cy={sy(task.destination.y)}
-          r={5}
-          fill="none"
-          stroke="#f07178"
-          strokeDasharray="3 3"
-        />
-      ))}
-      {robots.map((robot) => (
-        <g key={robot.robot_id}>
-          <circle
-            cx={robot.pose.x * scale}
-            cy={sy(robot.pose.y)}
-            r={10}
-            fill={ROBOT_COLOR[robot.robot_id] ?? "#ffffff"}
-            stroke={robot.pose_trustworthy ? "#081018" : "#f07178"}
-            strokeDasharray={robot.pose_trustworthy ? undefined : "2 2"}
-            strokeWidth={2}
-          />
-          <text x={robot.pose.x * scale + 14} y={sy(robot.pose.y) + 4} fill="#f4f7fb" fontSize={13}>
-            {robot.name}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-}
+// FMS_LIVE_TF_POSE_OVERLAY_V1

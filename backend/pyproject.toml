@@ -13,6 +13,7 @@ dependencies = [
   "sqlalchemy>=2.0.36",
   "pydantic>=2.10.0",
   "pydantic-settings>=2.6.0",
+  "paramiko>=3.4,<5",
 ]
 
 [project.optional-dependencies]

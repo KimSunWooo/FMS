@@ -12,7 +12,7 @@ from sqlalchemy.pool import NullPool
 from app.models.base import Base
 from app.models.tables import SchemaMigration
 
-LATEST_SCHEMA = 3
+LATEST_SCHEMA = 5
 
 _PARTIAL_INDEXES = (
     """
@@ -82,6 +82,26 @@ class Database:
             if "nav2_action_goal_id_absent_reason" not in columns:
                 connection.exec_driver_sql(
                     "ALTER TABLE navigation_goals ADD COLUMN nav2_action_goal_id_absent_reason VARCHAR(128)"
+                )
+            fleet_columns = {
+                row[1]
+                for row in connection.execute(text("PRAGMA table_info(fleet_tasks)")).fetchall()
+            }
+            if fleet_columns and "cancellation_json" not in fleet_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_tasks ADD COLUMN cancellation_json TEXT DEFAULT ''"
+                )
+            if fleet_columns and "is_archived" not in fleet_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_tasks ADD COLUMN is_archived BOOLEAN NOT NULL DEFAULT 0"
+                )
+            if fleet_columns and "archived_at" not in fleet_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_tasks ADD COLUMN archived_at DATETIME"
+                )
+            if fleet_columns and "archived_by" not in fleet_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_tasks ADD COLUMN archived_by VARCHAR(80) NOT NULL DEFAULT ''"
                 )
             current = connection.execute(
                 text("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")

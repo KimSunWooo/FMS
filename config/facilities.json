@@ -1,0 +1,7 @@
+{
+  "facilities": [
+    {"id": "restroom", "name": "화장실", "x": null, "y": null},
+    {"id": "cafeteria", "name": "식당", "x": null, "y": null},
+    {"id": "standby", "name": "대기 구역", "x": null, "y": null}
+  ]
+}

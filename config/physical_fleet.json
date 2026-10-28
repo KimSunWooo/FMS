@@ -1,0 +1,29 @@
+{
+  "robots": [
+    {
+      "robot_id": "pinky-1",
+      "name": "Pinky #1",
+      "kind": "physical"
+    },
+    {
+      "robot_id": "pinky-2",
+      "name": "Pinky #2",
+      "kind": "virtual",
+      "home": {
+        "x": 0.425,
+        "y": 1.925,
+        "yaw": 0.0
+      }
+    },
+    {
+      "robot_id": "pinky-3",
+      "name": "Pinky #3",
+      "kind": "virtual",
+      "home": {
+        "x": 0.425,
+        "y": 0.575,
+        "yaw": 0.0
+      }
+    }
+  ]
+}

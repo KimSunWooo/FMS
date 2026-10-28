@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.FMS_NEXT_DIST_DIR || ".next",
   async rewrites() {
     const api = process.env.FMS_API_ORIGIN ?? "http://127.0.0.1:8741";
     return [

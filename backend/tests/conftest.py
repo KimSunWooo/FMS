@@ -38,6 +38,20 @@ def make_settings(tmp_path: Path, *, seed_fleet: bool = True, execution_mode: st
         ros_bridge_enabled=False,
         execution_mode=execution_mode,
         ros_domain_id=73,
+        physical_nav2_auto_start=False,
+        physical_5cm_test_enabled=False,
+        physical_ssh_targets="",
+        physical_ssh_password="",
+        physical_map_yaml=ROOT / "config/maps/physical_site/1f_map_f.yaml",
+        physical_fleet_path=ROOT / "config" / "physical_fleet.json",
+        planning_resolution_m=0.05,
+        planning_robot_radius_m=0.06,
+        planning_max_candidates=3,
+        planning_allow_diagonal=True,
+        planning_speed_m_s=0.15,
+        planning_max_depart_slots=8,
+        planning_goal_dwell_s=0.5,
+        fleet_dispatch_mode="local",
     )
 
 

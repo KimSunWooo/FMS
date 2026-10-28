@@ -1,0 +1,49 @@
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+PARAMS = "/home/sw/DevSpace/FMS/config/maps/physical_site/nav2_params.yaml"
+
+SERVERS = [
+    ("nav2_controller", "controller_server", "controller_server"),
+    ("nav2_smoother", "smoother_server", "smoother_server"),
+    ("nav2_planner", "planner_server", "planner_server"),
+    ("nav2_behaviors", "behavior_server", "behavior_server"),
+    ("nav2_velocity_smoother", "velocity_smoother", "velocity_smoother"),
+    ("nav2_collision_monitor", "collision_monitor", "collision_monitor"),
+    ("nav2_bt_navigator", "bt_navigator", "bt_navigator"),
+    ("nav2_waypoint_follower", "waypoint_follower", "waypoint_follower"),
+]
+
+def generate_launch_description():
+    nodes = []
+
+    for package, executable, name in SERVERS:
+        remappings = []
+
+        if name in ("controller_server", "behavior_server"):
+            remappings = [("cmd_vel", "cmd_vel_nav")]
+
+        # Velocity Smoother는 cmd_vel_nav를 입력받고
+        # cmd_vel_smoothed를 출력하도록 유지한다.
+        nodes.append(Node(
+            package=package,
+            executable=executable,
+            name=name,
+            output="screen",
+            parameters=[PARAMS, {"use_sim_time": False}],
+            remappings=remappings,
+        ))
+
+    nodes.append(Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_navigation",
+        output="screen",
+        parameters=[{
+            "use_sim_time": False,
+            "autostart": True,
+            "node_names": [name for _, _, name in SERVERS],
+        }],
+    ))
+
+    return LaunchDescription(nodes)

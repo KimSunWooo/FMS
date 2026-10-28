@@ -1,4 +1,4 @@
-image: 1f_map.pgm
+image: 1f_map_f.pgm
 mode: trinary
 resolution: 0.01
 origin: [0.0, 0.0, 0.0]
