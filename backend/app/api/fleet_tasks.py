@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.services.fleet_task_machine import FleetTransitionError
 from app.services.fleet_task_service import FleetTaskError, FleetTaskService
+from app.services.robot_state import robot_state
 
 router = APIRouter(prefix="/api/fleet-tasks", tags=["fleet-tasks"])
 
@@ -54,7 +55,15 @@ def _service(request: Request) -> FleetTaskService:
         monitor = getattr(request.app.state, "physical_nav2", None)
         return None if monitor is None else monitor.snapshot()
 
-    existing = FleetTaskService(request.app.state.settings, request.app.state.runtime.db, snapshot)
+    def state(robot_id: str) -> dict:
+        sample = snapshot()
+        if isinstance(sample, dict) and sample.get("robot_id") not in (None, robot_id):
+            sample = None
+        return robot_state(robot_id, request.app.state.settings, sample)
+
+    existing = FleetTaskService(
+        request.app.state.settings, request.app.state.runtime.db, snapshot, state,
+    )
     request.app.state.fleet_tasks = existing
     return existing
 
@@ -71,6 +80,12 @@ def _call(action):
 @router.get("/queue")
 def fleet_queue(request: Request) -> dict:
     return {"tasks": _call(lambda: _service(request).queue())}
+
+
+@router.post("/replan")
+def fleet_replan(request: Request) -> dict:
+    """Re-evaluate waiting work. Does not deliver a task or start Nav2."""
+    return {"results": _call(lambda: _service(request).plan_pending())}
 
 
 @router.get("/browse")
@@ -146,6 +161,11 @@ def fleet_select(task_id: str, body: _SelectIn, request: Request) -> dict:
 @router.post("/{task_id}/dispatch")
 def fleet_dispatch(task_id: str, request: Request) -> dict:
     return _call(lambda: _service(request).dispatch(task_id))
+
+
+@router.post("/{task_id}/simulated-motion")
+def fleet_simulated_motion(task_id: str, request: Request) -> dict:
+    return _call(lambda: _service(request).mark_simulated_motion(task_id))
 
 
 @router.post("/{task_id}/archive")

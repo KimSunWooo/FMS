@@ -48,8 +48,11 @@ type FleetTask = {
   ack_status: string;
   ack_channel: string;
   ack: { receiver?: string; accepted?: boolean; payload_hash?: string } | null;
+  predecessor_task_id?: string | null;
+  start?: { x: number; y: number; source: string } | null;
   assignment_reason: string | null;
   failure_reason: string | null;
+  motion_verified?: boolean;
   cancellation?: {
     outcome?: string;
     reservations_released?: number;
@@ -60,8 +63,30 @@ type FleetTask = {
   archived_at?: string | null;
   archived_by?: string;
   active_reservation_count?: number;
-  schedule: { depart_s?: number; conflicts_avoided_by_delay?: boolean; collision_safety_verified?: boolean };
+  schedule: {
+    depart_s?: number;
+    conflicts_avoided_by_delay?: boolean;
+    collision_safety_verified?: boolean;
+    time_basis?: string;
+    needs_replan?: boolean;
+    replan_attempts?: number;
+    options?: { depart_s: number; arrival_epoch: number; travel_s: number; selected?: boolean }[];
+  };
   actual_motion_verified: boolean;
+  assigned_ros_domain_id?: number | null;
+  transport?: {
+    mode?: string;
+    ros_domain_id?: number | null;
+    command_topic?: string;
+    ack_topic?: string;
+    cancel_topic?: string;
+    cancel_ack_topic?: string;
+    publish_state?: string;
+    receiver_ready?: boolean | null;
+    received?: boolean;
+    executed?: boolean;
+    completed?: boolean;
+  };
 };
 
 type Scope = "active" | "history" | "archived";
@@ -525,13 +550,25 @@ export function FleetTaskPanel({
       {selected && (
         <div className="rounded-lg border border-border p-2 text-xs">
           <p className="font-mono">{selected.task_id}</p>
-          <p>{selected.assigned_robot_id ?? "미배정"} · {selected.status}{selected.is_archived ? " · 숨김" : ""}</p>
-          <p>목적지 {selected.goal.label || `${selected.goal.x.toFixed(2)}, ${selected.goal.y.toFixed(2)}`}</p>
-          <p>선택 경로 {selected.selected_path_id ?? "없음"} · {selected.planned_path.length} waypoint
-            {FINISHED.has(selected.status) ? " · 이력 경로" : ""}
+          <p>우선순위 {selected.priority} · {selected.assigned_robot_id ?? "미배정"} · {selected.status}{selected.is_archived ? " · 숨김" : ""}</p>
+          <p>이전 작업 {selected.predecessor_task_id ?? "없음"} · 이동 확인 {selected.motion_verified ? "시뮬레이션 확인" : "미확인"}</p>
+          <p>전송 {selected.transport?.mode === "simulated" ? "가상 수신" : selected.transport?.mode === "ssh" ? "SSH legacy" : "ROS 2 Topic"}
+            {selected.transport?.ros_domain_id != null ? ` · Domain ${selected.transport.ros_domain_id}` : ""}
+            {selected.transport?.command_topic ? ` · ${selected.transport.command_topic}` : ""}
           </p>
-          <p>예상 출발 {selected.estimated_start_time ?? "-"}</p>
-          <p>예상 도착 {selected.estimated_arrival_time ?? "-"}</p>
+          <p>Publish {selected.transport?.publish_state ?? "not_sent"} · ACK {selected.transport?.received ? "수신" : "없음"}
+            · Receiver {selected.transport?.receiver_ready ? "ready" : "미확인"}
+            · 실행 {selected.transport?.executed ? "예" : "아니오"} · 완료 {selected.transport?.completed ? "예" : "아니오"}
+          </p>
+          <p>시작 {selected.start ? `${selected.start.source} (${selected.start.x.toFixed(2)}, ${selected.start.y.toFixed(2)})` : "미정"}</p>
+          <p>목적지 {selected.goal.label || `${selected.goal.x.toFixed(2)}, ${selected.goal.y.toFixed(2)}`}</p>
+          <p>계획 경로 {selected.selected_path_id ?? "없음"} · {selected.planned_path.length} waypoint
+            {FINISHED.has(selected.status) ? " · 이력 경로" : ""}
+            {selected.schedule?.time_basis ? ` · 예약 시각 ${selected.schedule.time_basis}` : ""}
+          </p>
+          <p>예상 출발(UTC) {selected.estimated_start_time ?? "-"}</p>
+          <p>예상 도착(UTC) {selected.estimated_arrival_time ?? "-"}</p>
+          <p>{selected.schedule?.needs_replan ? `재계획 필요 · 시도 ${selected.schedule.replan_attempts ?? 0}` : "재계획 대기 아님"}</p>
           <p>{selected.assignment_reason}</p>
           <p>활성 예약 {selected.active_reservation_count ?? 0}건 · 계획 충돌 회피 {selected.schedule?.conflicts_avoided_by_delay ? "대기 후 출발" : "추가 대기 없음"} · 실측 안전 검증 아님</p>
           <p>취소 {selected.status === "CANCEL_PENDING" ? "보류" : selected.status === "CANCELLED" ? "완료" : selected.status === "FAILED" ? "불가" : "가능"}
@@ -543,6 +580,9 @@ export function FleetTaskPanel({
             <button key={path.path_id} type="button" className="mt-1 block w-full rounded border border-border px-2 py-1 text-left"
               onClick={() => void choosePath(selected, path.path_id)}>
               {path.path_id} · {path.length_m} m · 비용 {path.cost}
+              {selected.schedule?.options?.find((option) => option.selected && path.path_id === selected.selected_path_id)
+                ? ` · 도착 +${selected.schedule.options.find((option) => option.selected)?.travel_s.toFixed(1)}s`
+                : ""}
               {path.path_id === selected.selected_path_id ? " · 선택됨" : " · 이 경로로 재검증"}
             </button>
           ))}

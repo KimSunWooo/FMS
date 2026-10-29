@@ -2,15 +2,21 @@
 
 Times are planning estimates from a configured speed. They are not measured
 motion and never mark a cell as actually traversed.
+
+New intervals use absolute UTC epoch seconds. ``depart_s`` remains a delay
+from the planning origin. Rows whose ``t_start`` is below ``EPOCH_FLOOR``
+cannot be placed on that clock and stay ``legacy``.
 """
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime, timezone
 
 from app.services.waypoint_graph import WaypointGraph
 
 Node = tuple[int, int]
+EPOCH_FLOOR = 1_000_000_000.0
 
 
 @dataclass(frozen=True)
@@ -24,6 +30,28 @@ class Interval:
     t_start: float
     t_end: float
     node: Node | None = None
+    time_basis: str = "absolute"
+    ax: float | None = None
+    ay: float | None = None
+    bx: float | None = None
+    by: float | None = None
+
+
+def classify_time_basis(t_start: float, stored: str | None = None) -> str:
+    """Keep an unrestorable relative timestamp out of the absolute clock."""
+    if stored == "legacy" or float(t_start) < EPOCH_FLOOR:
+        return "legacy"
+    return "absolute"
+
+
+def footprint_corner_m(half_width_m: float) -> float:
+    """Corner radius of a square whose half-width is the configured planning radius.
+
+    Nav2's current footprint is the square (±0.06 m, ±0.06 m). The planning
+    disk of 0.06 m does not cover that corner (~0.085 m). This is a planning
+    clearance, not a measured collision certificate.
+    """
+    return max(0.0, half_width_m) * math.sqrt(2)
 
 
 def overlaps(a0: float, a1: float, b0: float, b1: float) -> bool:
@@ -73,17 +101,50 @@ def time_path(
             t_end = t_start + dwell_s
         intervals.append(Interval(
             robot_id, task_id, "vertex", f"v-{node[0]}-{node[1]}", x, y, t_start, t_end, node,
+            ax=x, ay=y, bx=x, by=y,
         ))
         if index + 1 < len(nodes):
             nxt = nodes[index + 1]
+            nx, ny = graph.world(nxt)
             intervals.append(Interval(
                 robot_id, task_id, "edge",
                 f"e-{node[0]},{node[1]}>{nxt[0]},{nxt[1]}",
-                (x + graph.world(nxt)[0]) / 2,
-                (y + graph.world(nxt)[1]) / 2,
+                (x + nx) / 2,
+                (y + ny) / 2,
                 times[index], times[index + 1], None,
+                ax=x, ay=y, bx=nx, by=ny,
             ))
     return intervals
+
+
+def shift_intervals(intervals: list[Interval], origin_epoch: float) -> list[Interval]:
+    """Move relative planning times onto the shared UTC epoch clock."""
+    shifted = []
+    for item in intervals:
+        shifted.append(replace(
+            item,
+            t_start=item.t_start + origin_epoch,
+            t_end=item.t_end + origin_epoch,
+            time_basis="absolute",
+        ))
+    return shifted
+
+
+def hydrate_interval(graph: WaypointGraph, interval: Interval) -> Interval:
+    """Fill edge endpoints from the graph so stored rows can be rechecked."""
+    if interval.kind != "edge" or interval.ax is not None:
+        if interval.kind == "vertex" and interval.ax is None:
+            return replace(interval, ax=interval.x, ay=interval.y, bx=interval.x, by=interval.y)
+        return interval
+    nodes = _edge_nodes(interval.resource_id)
+    if nodes is None:
+        return interval
+    try:
+        ax, ay = graph.world(nodes[0])
+        bx, by = graph.world(nodes[1])
+    except (TypeError, ValueError, IndexError, KeyError):
+        return interval
+    return replace(interval, ax=ax, ay=ay, bx=bx, by=by)
 
 
 def find_conflicts(
@@ -91,30 +152,37 @@ def find_conflicts(
     existing: list[Interval],
     *,
     robot_radius_m: float,
+    now_epoch: float | None = None,
 ) -> list[dict]:
+    """Plan-time conflicts. A past-due absolute reservation still occupies space.
+
+    ``now_epoch`` does not mean the robot finished moving. A legacy interval
+    has no UTC meaning, so it conflicts on geometry with every other task.
+    """
     found: list[dict] = []
     for left in proposed:
         for right in existing:
             if left.task_id == right.task_id:
                 continue
-            if not overlaps(left.t_start, left.t_end, right.t_start, right.t_end):
+            legacy = left.time_basis == "legacy" or right.time_basis == "legacy"
+            stale = (
+                now_epoch is not None
+                and right.time_basis == "absolute"
+                and right.t_end < now_epoch
+            )
+            timed = overlaps(left.t_start, left.t_end, right.t_start, right.t_end)
+            if not legacy and not stale and not timed:
                 continue
-            if left.kind == "vertex" and right.kind == "vertex" and left.resource_id == right.resource_id:
-                found.append(_hit("vertex", left, right))
-                if (right.t_end - right.t_start) > (left.t_end - left.t_start) + 1e-9:
-                    found.append(_hit("waiting", left, right))
-            if left.kind == "edge" and right.kind == "edge" and _opposite_edge(left.resource_id, right.resource_id):
-                found.append(_hit("edge", left, right))
-            if left.kind == "edge" and right.kind == "edge" and _crosses(left.resource_id, right.resource_id):
-                found.append(_hit("crossing", left, right))
-            if (
-                robot_radius_m > 0
-                and left.kind == "vertex"
-                and right.kind == "vertex"
-                and left.resource_id != right.resource_id
-                and math.hypot(left.x - right.x, left.y - right.y) < 2 * robot_radius_m
-            ):
-                found.append(_hit("footprint", left, right))
+            kinds = _spatial_kinds(left, right, robot_radius_m)
+            if not kinds:
+                continue
+            if legacy:
+                found.append(_hit("legacy_time_basis", left, right))
+            if stale:
+                found.append(_hit("delayed_motion", left, right))
+            if timed or legacy or stale:
+                for kind in kinds:
+                    found.append(_hit(kind, left, right))
     unique: list[dict] = []
     seen: set[tuple] = set()
     for item in found:
@@ -137,31 +205,169 @@ def schedule_candidates(
     dwell_s: float,
     robot_radius_m: float,
     max_depart_slots: int,
+    origin_epoch: float | None = None,
+    now_epoch: float | None = None,
 ) -> dict | None:
-    """Try candidate geometry, then a later departure. Stops after the slot cap."""
+    """Pick the conflict-free candidate with the earliest estimated arrival.
+
+    The first feasible departure of each path is enough: a later slot only
+    increases arrival when travel time is fixed. The search stops at
+    ``max_depart_slots * len(candidates)``.
+    """
+    origin = datetime.now(timezone.utc).timestamp() if origin_epoch is None else float(origin_epoch)
+    # A future queue origin is not "now". Past-due occupancy uses the wall clock.
+    wall = origin if now_epoch is None else float(now_epoch)
     slot = graph.planning_resolution_m / speed_m_s
+    prepared = [hydrate_interval(graph, item) for item in existing]
     attempts = 0
     limit = max(1, max_depart_slots) * max(1, len(candidates))
+    best: dict | None = None
+    options: list[dict] = []
     for nodes in candidates:
         for slot_index in range(max(1, max_depart_slots)):
             attempts += 1
             if attempts > limit:
-                return None
+                break
             depart = slot_index * slot
-            proposed = time_path(
+            relative = time_path(
                 graph, nodes, depart_s=depart, speed_m_s=speed_m_s, dwell_s=dwell_s,
                 robot_id=robot_id, task_id=task_id,
             )
-            hits = find_conflicts(proposed, existing, robot_radius_m=robot_radius_m)
-            if not hits:
-                return {
+            proposed = shift_intervals(relative, origin)
+            hits = find_conflicts(
+                proposed, prepared, robot_radius_m=robot_radius_m, now_epoch=wall,
+            )
+            if hits:
+                continue
+            arrival = max((item.t_end for item in proposed), default=origin + depart)
+            option = {
+                "nodes": nodes,
+                "depart_s": depart,
+                "arrival_epoch": arrival,
+                "travel_s": max(0.0, arrival - (origin + depart)),
+            }
+            options.append(option)
+            if best is None or arrival < best["arrival_epoch"] - 1e-9:
+                best = {
                     "nodes": nodes,
                     "depart_s": depart,
                     "intervals": proposed,
                     "conflicts_avoided_by_delay": slot_index > 0,
                     "attempts": attempts,
+                    "origin_epoch": origin,
+                    "arrival_epoch": arrival,
                 }
-    return None
+            break
+        if attempts > limit:
+            break
+    if best is None:
+        return None
+    best["options"] = options
+    best["attempts"] = attempts
+    return best
+
+
+def _spatial_kinds(left: Interval, right: Interval, robot_radius_m: float) -> list[str]:
+    kinds: list[str] = []
+    corner = footprint_corner_m(robot_radius_m)
+    if left.kind == "vertex" and right.kind == "vertex" and left.resource_id == right.resource_id:
+        kinds.append("vertex")
+        if (right.t_end - right.t_start) > (left.t_end - left.t_start) + 1e-9:
+            kinds.append("waiting")
+    if left.kind == "edge" and right.kind == "edge" and _opposite_edge(left.resource_id, right.resource_id):
+        kinds.append("edge")
+    if left.kind == "edge" and right.kind == "edge" and _crosses(left.resource_id, right.resource_id):
+        kinds.append("crossing")
+    if (
+        robot_radius_m > 0
+        and left.kind == "vertex"
+        and right.kind == "vertex"
+        and left.resource_id != right.resource_id
+        and math.hypot(left.x - right.x, left.y - right.y) < 2 * robot_radius_m
+    ):
+        kinds.append("footprint")
+    if robot_radius_m > 0 and _edge_vertex(left, right, 2 * corner):
+        kinds.append("edge_vertex")
+    if robot_radius_m > 0 and left.kind == "edge" and right.kind == "edge":
+        gap = _edge_gap(left, right)
+        same_direction = _same_direction(left.resource_id, right.resource_id)
+        if left.resource_id == right.resource_id or (same_direction and gap is not None and gap < 2 * corner):
+            kinds.append("following")
+        elif gap is not None and gap < 2 * corner and left.resource_id != right.resource_id:
+            kinds.append("edge_proximity")
+    return kinds
+
+
+def _edge_vertex(left: Interval, right: Interval, limit: float) -> bool:
+    edge, point = (left, right) if left.kind == "edge" and right.kind == "vertex" else (
+        (right, left) if right.kind == "edge" and left.kind == "vertex" else (None, None)
+    )
+    if edge is None or point is None or edge.ax is None or edge.bx is None:
+        return False
+    return _point_segment((point.x, point.y), (edge.ax, edge.ay or 0.0), (edge.bx, edge.by or 0.0)) < limit
+
+
+def _edge_gap(left: Interval, right: Interval) -> float | None:
+    if None in (left.ax, left.ay, left.bx, left.by, right.ax, right.ay, right.bx, right.by):
+        return None
+    return _segment_distance(
+        (left.ax, left.ay), (left.bx, left.by), (right.ax, right.ay), (right.bx, right.by),
+    )
+
+
+def _same_direction(left: str, right: str) -> bool:
+    a = _edge_vector(left)
+    b = _edge_vector(right)
+    if a is None or b is None:
+        return False
+    return a[0] * b[0] + a[1] * b[1] > 0
+
+
+def _edge_vector(resource_id: str) -> tuple[float, float] | None:
+    nodes = _edge_nodes(resource_id)
+    if nodes is None:
+        return None
+    return (nodes[1][0] - nodes[0][0], nodes[1][1] - nodes[0][1])
+
+
+def _point_segment(point: tuple[float, float], start: tuple[float, float], end: tuple[float, float]) -> float:
+    dx, dy = end[0] - start[0], end[1] - start[1]
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return math.hypot(point[0] - start[0], point[1] - start[1])
+    scale = max(0.0, min(1.0, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / length_sq))
+    return math.hypot(point[0] - (start[0] + scale * dx), point[1] - (start[1] + scale * dy))
+
+
+def _segment_distance(a, b, c, d) -> float:
+    """Closest distance between two finite segments. Exact for the clamped parameters."""
+    def dot(u, v):
+        return u[0] * v[0] + u[1] * v[1]
+
+    def sub(u, v):
+        return (u[0] - v[0], u[1] - v[1])
+
+    ab, cd = sub(b, a), sub(d, c)
+    uu, vv, uv = dot(ab, ab), dot(cd, cd), dot(ab, cd)
+    width = sub(a, c)
+    along = dot(ab, width)
+    across = dot(cd, width)
+    denom = uu * vv - uv * uv
+    if denom > 1e-12 and uu > 1e-12:
+        s = max(0.0, min(1.0, (uv * across - vv * along) / denom))
+    else:
+        s = 0.0
+    if vv > 1e-12:
+        t = max(0.0, min(1.0, (uv * s + across) / vv))
+    else:
+        t = 0.0
+    if uu > 1e-12:
+        s = max(0.0, min(1.0, (uv * t - along) / uu))
+    if vv > 1e-12:
+        t = max(0.0, min(1.0, (uv * s + across) / vv))
+    closest_ab = (a[0] + s * ab[0], a[1] + s * ab[1])
+    closest_cd = (c[0] + t * cd[0], c[1] + t * cd[1])
+    return math.hypot(closest_ab[0] - closest_cd[0], closest_ab[1] - closest_cd[1])
 
 
 def _hit(kind: str, left: Interval, right: Interval) -> dict:

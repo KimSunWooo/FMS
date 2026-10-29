@@ -1,6 +1,6 @@
 # Care-Move FMS
 
-Open-RMF를 쓰지 않는 독립 Fleet Management System입니다. FastAPI가 Task, 경로, 예약을 관리하고, Next.js 관제 화면이 그 API를 표시합니다. Pinky-1 Task 전달은 SSH로 수신 전용 Receiver를 실행합니다. 5cm 전진은 그와 별도의 Nav2 `DriveOnHeading` 시험입니다.
+Open-RMF를 쓰지 않는 독립 Fleet Management System입니다. FastAPI가 Task, 경로, 예약을 관리하고, Next.js 관제 화면이 그 API를 표시합니다. Pinky-1 Task 전달의 기본 경로는 ROS 2 Topic입니다. Receiver가 저장한 뒤 ACK Topic으로 확인하기 전에는 전달 성공이 아닙니다. SSH는 접속 진단과 유지보수에만 남습니다. 5cm 전진은 Task와 별도의 Nav2 `DriveOnHeading` 시험입니다.
 
 ## 구성
 
@@ -10,7 +10,8 @@ FMS/
 ├── frontend/         Next.js 관제 화면
 ├── config/           1f_map_f, Nav2 파라미터, 로봇 Registry
 ├── launch/           Pinky-1 Nav2 launch
-├── robot_receiver/   Pinky 수신 전용 스크립트
+├── robot_receiver/   Topic Receiver와 SSH legacy 수신 스크립트
+├── ros_ws/           fms_msgs 인터페이스 패키지
 ├── robot_agent/      모의 실행 에이전트
 ├── scripts/          API와 대시보드 실행
 ├── simulation/       Gazebo용 워크스페이스. 제조사 소스는 submodule
@@ -61,6 +62,7 @@ python3 -m venv .venv
 
 - [운영 설명서](docs/FMS_Operation_Guide.md)
 - [통신 및 API 명세](docs/FMS_Communication_API_Specification.md)
+- [ROS 2 Topic 통신 명세](docs/FMS_ROS2_Topic_Communication_Specification.md)
 - [5cm 진단](docs/FMS_5cm_Motion_Diagnosis_Report.md)
 - [저장소 정리](docs/FMS_Repository_Cleanup_Report.md)
 

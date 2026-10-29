@@ -12,6 +12,9 @@ WORKER_ENTRYPOINTS = {
     ROOT / "backend" / "app" / "services" / "live_tf_worker.py",
     ROOT / "backend" / "app" / "services" / "nav2_chain_probe.py",
     ROOT / "backend" / "app" / "services" / "map_identity_probe.py",
+    ROOT / "robot_receiver" / "ros_gateway_node.py",
+    ROOT / "robot_receiver" / "ros_task_node.py",
+    ROOT / "robot_receiver" / "ros_messages.py",
 }
 BANNED = ("rmf", "rclpy", "nav2", "open_rmf", "rmf_fleet")
 
@@ -57,6 +60,9 @@ def test_api_does_not_import_ros_worker_entrypoints():
         "app.services.live_tf_worker",
         "app.services.nav2_chain_probe",
         "app.services.map_identity_probe",
+        "robot_receiver.ros_gateway_node",
+        "robot_receiver.ros_task_node",
+        "robot_receiver.ros_messages",
     }
     offenders = []
     for path, text in _python_sources():

@@ -7,21 +7,29 @@
 ## 통신 세 갈래
 
 ```text
-브라우저  --HTTP-->  Next.js :8742
-                         |
-                         | /fms-api/*  ->  /api/*
-                         v
-                    FastAPI :8741
-                         |
-                         | SSH, JSON stdin, ACK stdout
-                         v
-                    Pinky-1 Receiver
-                    execute=false, Nav2를 호출하지 않음
+브라우저  --HTTP REST-->  Next.js :8742
+                              |
+                              | /fms-api/*  ->  /api/*
+                              v
+                         FastAPI :8741
+                              |
+                              | 파일 IPC. API 프로세스는 rclpy를 올리지 않음
+                              v
+                         Domain Worker Gateway
+                         ROS_DOMAIN_ID = Registry 값
+                              |
+                              | ROS 2 Topic /fms/task/command
+                              v
+                         Pinky Receiver
+                         저장 후 /fms/task/ack
+                         execute=false, Nav2를 호출하지 않음
 
-FastAPI 5cm 워커 --ROS 2 Action--> /drive_on_heading
+FastAPI 5cm 워커 --Nav2 Action--> /drive_on_heading
 ```
 
-Task Dispatcher는 로봇에 HTTP POST를 보내지 않는다. Pinky-1 전달은 Paramiko SSH다. 5cm 주행은 Task payload와 별도이며, 운영자가 시험을 시작한 뒤에만 Nav2 Goal을 보낸다.
+HTTP REST는 관제 화면과 FMS 사이의 요청이다. ROS 2 Topic은 FMS Gateway와 로봇 Receiver 사이의 Task 수신 확인이다. Nav2 Action은 운영자가 승인한 5cm 시험에만 쓰며 Fleet Task가 Goal을 보내지 않는다.
+
+Task Dispatcher는 로봇에 HTTP POST를 보내지 않는다. Pinky-1 전달의 기본값은 `FMS_FLEET_DISPATCH_MODE=ros_topic`이다. `ssh`는 명시적 legacy이고, Topic이 실패해도 SSH로 넘어가지 않는다. Topic 필드와 QoS는 `docs/FMS_ROS2_Topic_Communication_Specification.md`에 있다.
 
 `scripts/run_api.sh`는 `0.0.0.0:8741`에 바인딩한다. Fleet Task API는 토큰이 없으므로 외부 인터페이스에 이 포트를 열면 조회와 상태 변경이 모두 가능하다.
 
@@ -101,7 +109,7 @@ health 본문에는 `service`, `status`, `phase`, `database`, `physical_control`
 | GET | `/api/fleet-tasks/{task_id}` | 없음 | 없음 | 읽기 |
 | POST | `/api/fleet-tasks/{task_id}/plan` | 없음 | 없음 | 경로 저장 |
 | POST | `/api/fleet-tasks/{task_id}/select` | `{"path_id":"..."}` | 없음 | 예약 |
-| POST | `/api/fleet-tasks/{task_id}/dispatch` | 없음 | SSH 또는 가상 수신 | ACK 저장 |
+| POST | `/api/fleet-tasks/{task_id}/dispatch` | 없음 | Topic, 명시적 SSH, 또는 가상 수신 | ACK 저장 |
 | POST | `/api/fleet-tasks/{task_id}/cancel` | `{"reason":"operator"}` 또는 빈 body | 수신된 Task면 cancel JSON | 상태 변경 |
 | POST | `/api/fleet-tasks/{task_id}/archive` | `{"archived_by":"operator"}` 또는 빈 body | 없음 | 보관 플래그 |
 | POST | `/api/fleet-tasks/{task_id}/restore` | archive와 동일 | 없음 | 보관 해제 |
@@ -223,7 +231,7 @@ Cancel ACK:
 }
 ```
 
-저장 파일은 `executable: false`가 되고 수신 ACK의 payload hash는 유지된다. 같은 취소를 다시 보내면 저장된 cancel ACK를 돌려준다. 가상 로봇은 receiver가 `fms-virtual-receiver`이고 `channel`이 `simulated`다. SSH 성공 ACK에는 FMS가 `channel: "physical"`을 붙인다.
+저장 파일은 `executable: false`가 되고 수신 ACK의 payload hash는 유지된다. 같은 취소를 다시 보내면 저장된 cancel ACK를 돌려준다. 가상 로봇은 receiver가 `fms-virtual-receiver`이고 `channel`이 `simulated`다. 이 값은 DDS ACK가 아니다. Topic ACK에는 FMS가 `channel: "ros_topic"`을 붙인다. 명시적 SSH 성공 ACK에만 `channel: "physical"`을 붙인다.
 
 ## SSH
 
@@ -232,7 +240,7 @@ Cancel ACK:
 3. `~/fms_task_receiver`가 없으면 만들고 로컬 `robot_receiver/pinky_task_receiver.py`를 업로드한다.
 4. 원격 명령은 `python3 ~/fms_task_receiver/pinky_task_receiver.py ~/fms_task_receiver/inbox`다. 명령 문자열에 `ros2` 또는 `cmd_vel`이 있으면 실행하지 않는다.
 5. JSON 하나를 stdin에 쓰고 stdout 마지막 줄을 ACK로 파싱한다. `exec_command` timeout은 20초다.
-6. 로컬 테스트 모드 `FMS_FLEET_DISPATCH_MODE=local`은 SSH 없이 같은 Receiver를 로컬 inbox에서 실행한다. 기본 모드는 `ssh`다.
+6. `FMS_FLEET_DISPATCH_MODE=local`은 테스트용으로 SSH 없이 같은 Receiver를 로컬 inbox에서 실행한다. `ssh`는 명시적 legacy다. 기본 모드는 `ros_topic`이며 이 절의 SSH 순서를 타지 않는다.
 
 ## ROS 2
 
@@ -250,6 +258,11 @@ FMS가 구독하거나 호출하는 인터페이스만 적는다. 아래 이름�
 
 | 이름 | 타입 | FMS 역할 | 이동 명령 |
 |---|---|---|---|
+| `/fms/task/command` | `fms_msgs/msg/TaskCommand` | Gateway 발행, Receiver 구독 | 아님. `execute`는 false |
+| `/fms/task/ack` | `fms_msgs/msg/TaskAck` | Receiver 발행, Gateway 구독 | 아님 |
+| `/fms/task/cancel` | `fms_msgs/msg/TaskCancel` | Gateway 발행, Receiver 구독 | 아님 |
+| `/fms/task/cancel_ack` | `fms_msgs/msg/TaskCancelAck` | Receiver 발행, Gateway 구독 | 아님 |
+| `/fms/robot/status` | `fms_msgs/msg/RobotStatus` | Receiver 1 Hz 발행 | 아님. 실행 가능 플래그는 false |
 | `/scan` | `sensor_msgs/LaserScan` | 진단 구독 | 아님 |
 | `/odom` | `nav_msgs/Odometry` | 5cm 거리 측정 구독 | 아님 |
 | `/tf`, `/tf_static` | `tf2_msgs/TFMessage` | `map`→`odom`→`base_footprint`, LiDAR TF | 아님 |
@@ -303,7 +316,7 @@ DriveOnHeading
 | `FMS_PHYSICAL_5CM_TEST_ENABLED` | 5cm POST 허용 | false | 시험 시 true | 필요 |
 | `FMS_PHYSICAL_5CM_TEST_TOKEN` | 5cm POST 헤더 | 빈 문자열 | 설정됨. 값 비공개 | 필요 |
 | `FMS_LEASE_SECRET` | 모의 lease | 없음 | `.env`에만 | 필요 |
-| `FMS_FLEET_DISPATCH_MODE` | `ssh` 또는 `local` | ssh | ssh | 필요 |
+| `FMS_FLEET_DISPATCH_MODE` | `ros_topic`, `ssh`, `local` | ros_topic | ros_topic. ssh는 자동 fallback 아님 | 필요 |
 
 계획 파라미터:
 

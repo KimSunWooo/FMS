@@ -6,6 +6,7 @@ or send a Nav2 goal.
 """
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import signal
@@ -75,6 +76,7 @@ def main() -> int:
     observed = int(os.environ["ROS_DOMAIN_ID"])
     interval = max(1.0, float(os.environ.get("FMS_DOMAIN_WORKER_INTERVAL_S", "3")))
     stop = False
+    gateway: subprocess.Popen | None = None
 
     def _stop(*_args) -> None:
         nonlocal stop
@@ -106,11 +108,60 @@ def main() -> int:
         status = run_once(robot, observed)
         status["worker_pid"] = os.getpid()
         status["last_seen"] = datetime.now(timezone.utc).isoformat()
+        gateway = _ensure_gateway(gateway, robot, data_dir)
+        status["task_transport"] = _transport_label(robot, gateway)
+        status["task_execution_enabled"] = False
+        status["receiver_ready"] = _receiver_ready(data_dir, robot["robot_id"])
         write_status(status_path(data_dir, robot["robot_id"]), status)
         deadline = time.monotonic() + interval
         while not stop and time.monotonic() < deadline:
             time.sleep(0.1)
+    if gateway is not None and gateway.poll() is None:
+        gateway.terminate()
     return 0
+
+
+def _ensure_gateway(current: subprocess.Popen | None, robot: dict, data_dir: Path) -> subprocess.Popen | None:
+    """Start the topic gateway only for a physical robot. Virtual robots stay silent."""
+    mode = os.environ.get("FMS_FLEET_DISPATCH_MODE", "ros_topic")
+    physical = robot["kind"] == "physical" and robot["physical_connection_enabled"] and mode == "ros_topic"
+    if not physical:
+        if current is not None and current.poll() is None:
+            current.terminate()
+        return None
+    if current is not None and current.poll() is None:
+        return current
+    env = os.environ.copy()
+    env["ROS_DOMAIN_ID"] = str(robot["ros_domain_id"])
+    env["FMS_WORKER_ROBOT_ID"] = robot["robot_id"]
+    env["FMS_DATA_DIR"] = str(data_dir)
+    env["RMW_IMPLEMENTATION"] = "rmw_fastrtps_cpp"
+    return subprocess.Popen(
+        ["/bin/bash", str(ROOT / "scripts" / "run_ros_gateway.sh")],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
+def _transport_label(robot: dict, gateway: subprocess.Popen | None) -> str:
+    if robot["kind"] != "physical" or not robot["physical_connection_enabled"]:
+        return "physical_transport_disabled"
+    if os.environ.get("FMS_FLEET_DISPATCH_MODE", "ros_topic") != "ros_topic":
+        return os.environ.get("FMS_FLEET_DISPATCH_MODE", "ros_topic")
+    if gateway is not None and gateway.poll() is None:
+        return "ros_topic"
+    return "gateway_unavailable"
+
+
+def _receiver_ready(data_dir: Path, robot_id: str) -> bool:
+    path = data_dir / "ros_ipc" / robot_id / "robot_status.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return bool(payload.get("receiver_ready")) and payload.get("robot_id") == robot_id and payload.get("task_execution_enabled") is False
 
 
 def _ros(args: tuple[str, ...], *, env: dict[str, str] | None, timeout: float) -> tuple[bool, str]:

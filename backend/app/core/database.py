@@ -12,7 +12,7 @@ from sqlalchemy.pool import NullPool
 from app.models.base import Base
 from app.models.tables import SchemaMigration
 
-LATEST_SCHEMA = 5
+LATEST_SCHEMA = 6
 
 _PARTIAL_INDEXES = (
     """
@@ -102,6 +102,28 @@ class Database:
             if fleet_columns and "archived_by" not in fleet_columns:
                 connection.exec_driver_sql(
                     "ALTER TABLE fleet_tasks ADD COLUMN archived_by VARCHAR(80) NOT NULL DEFAULT ''"
+                )
+            if fleet_columns and "predecessor_task_id" not in fleet_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_tasks ADD COLUMN predecessor_task_id VARCHAR(36)"
+                )
+            if fleet_columns and "motion_verified" not in fleet_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_tasks ADD COLUMN motion_verified BOOLEAN NOT NULL DEFAULT 0"
+                )
+            reservation_columns = {
+                row[1]
+                for row in connection.execute(text("PRAGMA table_info(fleet_reservations)")).fetchall()
+            }
+            if reservation_columns and "time_basis" not in reservation_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_reservations ADD COLUMN time_basis VARCHAR(16) NOT NULL DEFAULT 'absolute'"
+                )
+            if reservation_columns:
+                # Relative seconds cannot be shifted onto UTC without inventing an origin.
+                connection.exec_driver_sql(
+                    "UPDATE fleet_reservations SET time_basis = 'legacy' "
+                    "WHERE t_start < 1000000000 AND time_basis != 'legacy'"
                 )
             current = connection.execute(
                 text("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1")

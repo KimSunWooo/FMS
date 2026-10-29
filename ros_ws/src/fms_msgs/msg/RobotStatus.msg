@@ -1,0 +1,7 @@
+string robot_id
+uint32 ros_domain_id
+bool receiver_ready
+bool task_execution_enabled
+string active_task_id
+string last_received_task_id
+builtin_interfaces/Time stamp

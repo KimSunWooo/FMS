@@ -51,7 +51,7 @@ cp .env.example .env
 
 `scripts/run_api.sh`는 `.env`가 없으면 도메인 73과 새 lease secret으로 파일을 만든다. 이미 있는 `.env`를 덮어쓰지 않는다. 현재 `.env`를 지우지 않는다.
 
-`FMS_PHYSICAL_CONTROL_ENABLED=true`, `FMS_ROS_BRIDGE_ENABLED=true`, `FMS_EXECUTION_MODE=physical`이면 서버가 기동을 거부한다. 이 거부와 별도로, 현재 코드는 ROS 상태를 읽고, 수신 전용 Task를 SSH로 보내며, 운영자가 승인한 5cm Goal만 Nav2에 보낸다. Task 수신 payload의 `execute`는 false다.
+`FMS_PHYSICAL_CONTROL_ENABLED=true`, `FMS_ROS_BRIDGE_ENABLED=true`, `FMS_EXECUTION_MODE=physical`이면 서버가 기동을 거부한다. 이 거부와 별도로, 현재 코드는 ROS 상태를 읽고, 수신 전용 Task를 ROS 2 Topic으로 보내며, 운영자가 승인한 5cm Goal만 Nav2에 보낸다. Task 수신 payload의 `execute`는 false다. Topic 전송이 실패해도 SSH로 다시 보내지 않는다.
 
 ## 4. ROS 2
 
@@ -94,6 +94,8 @@ FMS가 Nav2를 띄우는 조건은 `FMS_PHYSICAL_NAV2_AUTO_START`와 `physical_n
 저장 `nav2_params.yaml`의 AMCL 초기 위치 x=0.11, y=2.527, yaw=-3.052는 `set_initial_pose: true`로 적혀 있다. 실행 중인 프로세스가 `-p set_initial_pose:=false`로 시작됐다면 그 YAML 좌표는 적용되지 않는다.
 
 ## 5. Pinky SSH
+
+SSH는 Task 전달의 기본 경로가 아니다. 접속 진단, Receiver 초기 설치, ROS 환경 확인, 로그 조회에 남긴다. Task를 SSH로 보내려면 `FMS_FLEET_DISPATCH_MODE=ssh`를 명시해야 하며, `ros_topic` 실패가 이 값으로 바뀌지는 않는다.
 
 대상은 `FMS_PHYSICAL_SSH_TARGETS`다. 현재 개발 대상 형식은 `pinky-1=pinky@192.168.0.83`이다. 인증은 Paramiko 비밀번호이고 `look_for_keys=false`, `allow_agent=false`, 시스템 host key만 신뢰한다. 비밀번호는 `.env`의 `FMS_PHYSICAL_SSH_PASSWORD`다.
 
@@ -169,7 +171,7 @@ curl -sS -X POST http://127.0.0.1:8741/api/planning/routes/preview \
 
 ## 9. Task
 
-관제 화면에서 로봇, 목적지, 할당 방식을 고른 뒤 생성, 계획, 선택, 전달 순서로 진행한다. 전달 버튼은 Pinky-1에 SSH 수신을 수행하므로 운영자 승인 단계다. 아래 생성 예시는 가상 로봇용 형태만 보여 준다. 실제 `robot_id: "pinky-1"` 생성 후 dispatch는 여기서 실행하지 않는다.
+관제 화면에서 로봇, 목적지, 할당 방식을 고른 뒤 생성, 계획, 선택, 전달 순서로 진행한다. 전달 버튼은 Pinky-1 Domain 24의 `/fms/task/command`를 발행하고 Receiver ACK를 기다린다. Publish만으로 성공이 아니다. 아래 생성 예시는 가상 로봇용 형태만 보여 준다. 실제 `robot_id: "pinky-1"` 생성 후 dispatch는 여기서 실행하지 않는다.
 
 생성 body:
 
@@ -184,7 +186,7 @@ curl -sS -X POST http://127.0.0.1:8741/api/planning/routes/preview \
 }
 ```
 
-`assignment_mode`가 automatic이면 `robot_id`를 비울 수 있다. 이어서 화면 또는 API에서 plan, select, dispatch를 호출한다. dispatch 전 예약은 `GET /api/planning/reservations`로 확인한다. 가상 로봇 ACK의 receiver는 `fms-virtual-receiver`이고 channel은 `simulated`다. Pinky-1 ACK의 receiver는 `pinky-fms-receiver`이고 channel은 `physical`이다. 둘 다 `execute: false`이며 로봇이 이동했다는 뜻이 아니다.
+`assignment_mode`가 automatic이면 `robot_id`를 비울 수 있다. 이어서 화면 또는 API에서 plan, select, dispatch를 호출한다. dispatch 전 예약은 `GET /api/planning/reservations`로 확인한다. 가상 로봇 ACK의 receiver는 `fms-virtual-receiver`이고 channel은 `simulated`다. 이 수신은 DDS ACK가 아니다. Pinky-1 Topic ACK의 receiver는 `pinky-fms-receiver`이고 channel은 `ros_topic`이다. 명시적 `FMS_FLEET_DISPATCH_MODE=ssh`일 때만 channel이 `physical`이다. 둘 다 `execute: false`이며 로봇이 이동했다는 뜻이 아니다. Topic 이름, Domain, Publish 상태, ACK, 실행, 완료는 Task 상세에 따로 표시된다.
 
 취소 body는 `{"reason":"operator"}`다. 이미 수신된 Task는 `CANCEL_PENDING`으로 남고, Receiver cancel ACK 뒤에 `CANCELLED`가 된다. 보관과 복원은 `POST /api/fleet-tasks/{task_id}/archive`와 `restore`다. 삭제 API는 없다.
 

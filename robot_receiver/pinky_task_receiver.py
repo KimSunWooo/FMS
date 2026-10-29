@@ -35,6 +35,11 @@ def accept(store: Path, payload: dict) -> dict:
         previous = json.loads(path.read_text(encoding="utf-8"))
         if previous.get("payload_hash") != digest:
             raise ValueError(f"Task {task_id} already stored with a different payload")
+        ack = dict(previous["ack"])
+        command_id = str(payload.get("command_id") or "")
+        if command_id:
+            ack["command_id"] = command_id
+            return ack
         return previous["ack"]
     ack = {
         "task_id": task_id,

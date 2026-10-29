@@ -1,0 +1,9 @@
+string command_id
+string task_id
+string robot_id
+bool accepted
+string status
+string reason
+string payload_hash
+builtin_interfaces/Time received_at
+string receiver_id

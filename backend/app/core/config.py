@@ -78,7 +78,18 @@ class Settings(BaseSettings):
     planning_speed_m_s: float = 0.15
     planning_max_depart_slots: int = 8
     planning_goal_dwell_s: float = 0.5
-    fleet_dispatch_mode: str = "ssh"
+    # Replans WAITING work only. It does not dispatch a task or send a Nav2 goal.
+    fleet_replan_enabled: bool = True
+    fleet_replan_interval_s: float = 5.0
+    fleet_replan_max_attempts: int = 5
+    fleet_dispatch_mode: str = "ros_topic"
+    ros_task_command_topic: str = "/fms/task/command"
+    ros_task_ack_topic: str = "/fms/task/ack"
+    ros_task_cancel_topic: str = "/fms/task/cancel"
+    ros_task_cancel_ack_topic: str = "/fms/task/cancel_ack"
+    ros_robot_status_topic: str = "/fms/robot/status"
+    ros_task_ack_timeout_s: float = 8.0
+    ros_task_max_attempts: int = 2
     facilities_path: Path = Field(default_factory=lambda: ROOT / "config" / "facilities.json")
     physical_5cm_test_enabled: bool = False
     physical_5cm_test_token: str = ""

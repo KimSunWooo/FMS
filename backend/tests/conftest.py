@@ -53,6 +53,7 @@ def make_settings(tmp_path: Path, *, seed_fleet: bool = True, execution_mode: st
         planning_max_depart_slots=8,
         planning_goal_dwell_s=0.5,
         fleet_dispatch_mode="local",
+        fleet_replan_enabled=False,
     )
 
 

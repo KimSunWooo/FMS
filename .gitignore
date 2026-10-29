@@ -30,5 +30,8 @@ tmp-next/
 simulation/ros_ws/build/
 simulation/ros_ws/install/
 simulation/ros_ws/log/
+ros_ws/build/
+ros_ws/install/
+ros_ws/log/
 *.pid
 .DS_Store

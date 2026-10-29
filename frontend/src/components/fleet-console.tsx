@@ -383,8 +383,8 @@ export function FleetConsole() {
           <p className="text-xs tracking-[0.18em] text-primary uppercase">Care ward · physical fleet</p>
           <h1 className="text-2xl font-semibold">Care-Move FMS</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            실물 Pinky-1은 SSH·Nav2·실시간 TF로 표시하고, Pinky-2와 Pinky-3는 가상 등록 로봇으로 구분합니다.
-            가상 로봇에는 주행 명령을 보내지 않습니다.
+            실물 Pinky-1 Task는 ROS 2 Topic과 실시간 TF로 확인하고, SSH는 접속 진단에만 씁니다.
+            Pinky-2와 Pinky-3는 가상 등록 로봇입니다. 가상 로봇에는 주행 명령을 보내지 않습니다.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
@@ -637,7 +637,8 @@ export function FleetConsole() {
             )}
             <p className="text-xs text-muted-foreground">
               청록색 화살표: Pinky-1의 최근 TF(map → base_footprint). 주황·보라 사각형: Pinky-2·3 가상 등록 위치.
-              빨간 십자: 선택한 목적지(주행 미실행). TF가 미수신·오래됨·지도 밖이면 실물 표시는 숨깁니다.
+              빨간 십자: 선택한 목적지(주행 미실행). 선은 계획 경로이며 예약 시각과 실제 자세는 따로 표시합니다. 로봇 마커는 계획 경로를 따라 움직이지 않습니다.
+              TF가 미수신·오래됨·지도 밖이면 실물 표시는 숨깁니다.
               {routeOverlay?.historical ? " 회색 점선은 종료된 Task의 저장 경로이며 현재 활성 예약이 아닙니다." : ""}
             </p>
           </CardContent>

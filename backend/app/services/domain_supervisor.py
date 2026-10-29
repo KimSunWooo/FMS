@@ -37,6 +37,12 @@ class DomainSupervisor:
         env["FMS_PHYSICAL_FLEET_PATH"] = str(self.settings.physical_fleet_path)
         env["FMS_DATA_DIR"] = str(self.settings.data_dir)
         env["FMS_DOMAIN_WORKER_INTERVAL_S"] = "3"
+        env["FMS_FLEET_DISPATCH_MODE"] = str(getattr(self.settings, "fleet_dispatch_mode", "ros_topic"))
+        env["FMS_TOPIC_TASK_COMMAND"] = str(getattr(self.settings, "ros_task_command_topic", "/fms/task/command"))
+        env["FMS_TOPIC_TASK_ACK"] = str(getattr(self.settings, "ros_task_ack_topic", "/fms/task/ack"))
+        env["FMS_TOPIC_TASK_CANCEL"] = str(getattr(self.settings, "ros_task_cancel_topic", "/fms/task/cancel"))
+        env["FMS_TOPIC_TASK_CANCEL_ACK"] = str(getattr(self.settings, "ros_task_cancel_ack_topic", "/fms/task/cancel_ack"))
+        env["FMS_TOPIC_ROBOT_STATUS"] = str(getattr(self.settings, "ros_robot_status_topic", "/fms/robot/status"))
         for key in list(env):
             if any(token in key.upper() for token in ("PASSWORD", "TOKEN", "SECRET")):
                 env.pop(key, None)

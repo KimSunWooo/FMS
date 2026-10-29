@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -22,6 +24,8 @@ from app.services.physical_nav2_auto import PhysicalNav2Auto
 from app.services.domain_supervisor import DomainSupervisor
 from app.services.forward_5cm_service import PinkyFiveCmTest  # FMS_PINKY1_5CM_TEST_V1
 
+log = logging.getLogger(__name__)
+
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
@@ -35,6 +39,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         nav2_task = None
         pose_task = None  # FMS_DIRECT_5CM_LIVE_POSE_V1
         domain_task = None
+        replan_stop = None
+        replan_thread = None
+        if settings.fleet_replan_enabled:
+            replan_stop = threading.Event()
+
+            def _replan_loop() -> None:
+                from app.services.fleet_task_service import FleetTaskService
+                from app.services.robot_state import robot_state
+
+                def snapshot() -> dict | None:
+                    monitor = getattr(app.state, "physical_nav2", None)
+                    return None if monitor is None else monitor.snapshot()
+
+                def state(robot_id: str) -> dict:
+                    sample = snapshot()
+                    if isinstance(sample, dict) and sample.get("robot_id") not in (None, robot_id):
+                        sample = None
+                    return robot_state(robot_id, settings, sample)
+
+                while not replan_stop.is_set():
+                    try:
+                        service = getattr(app.state, "fleet_tasks", None)
+                        if service is None:
+                            service = FleetTaskService(settings, app.state.runtime.db, snapshot, state)
+                            app.state.fleet_tasks = service
+                        service.plan_pending()
+                    except Exception:
+                        log.exception("fleet replan failed")
+                    if replan_stop.wait(settings.fleet_replan_interval_s):
+                        break
+
+            replan_thread = threading.Thread(target=_replan_loop, name="fms-fleet-replan", daemon=True)
+            replan_thread.start()
         if settings.domain_workers_enabled:
             app.state.domain_supervisor = DomainSupervisor(settings)
             domain_task = asyncio.create_task(app.state.domain_supervisor.run())
@@ -46,6 +83,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            if replan_stop is not None:
+                replan_stop.set()
+            if replan_thread is not None:
+                replan_thread.join(timeout=2)
             if pose_task is not None:
                 pose_task.cancel()
                 try:

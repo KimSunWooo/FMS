@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -42,12 +43,19 @@ from app.services.fleet_task_machine import (
     TERMINAL,
     UNREACHABLE,
     WAITING,
+    can_transition,
     require_transition,
 )
 from app.services.map_frame import load_geometry
-from app.services.reservation_manager import Interval, schedule_candidates
+from app.services.reservation_manager import (
+    Interval,
+    classify_time_basis,
+    hydrate_interval,
+    schedule_candidates,
+)
+from app.services.robot_state import START_MATCH_M, robot_state
 from app.services.route_planner import k_shortest_paths, path_record
-from app.services.route_preview import fresh_tf_pose, inspect_point
+from app.services.route_preview import inspect_point
 from app.services.waypoint_graph import WaypointGraph
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -62,10 +70,11 @@ class FleetTaskError(Exception):
 
 
 class FleetTaskService:
-    def __init__(self, settings, database, snapshot_provider) -> None:
+    def __init__(self, settings, database, snapshot_provider, state_provider=None) -> None:
         self.settings = settings
         self.db = database
         self.snapshot_provider = snapshot_provider
+        self.state_provider = state_provider
         self._recovered = False
 
     def create(self, *, mode: str, goal_x: float, goal_y: float, robot_id: str | None,
@@ -199,7 +208,9 @@ class FleetTaskService:
 
     def queue(self) -> list[dict]:
         rows = [item for item in self.list_tasks() if item["status"] not in TERMINAL]
-        rows.sort(key=lambda item: (-item["priority"], item["created_at"]))
+        rows.sort(key=lambda item: (-_aged_priority(item["priority"], item["created_at"]), item["created_at"]))
+        for index, item in enumerate(rows, start=1):
+            item["queue_index"] = index
         return rows
 
     def get(self, task_id: str) -> dict:
@@ -242,6 +253,7 @@ class FleetTaskService:
                 _release(session, task.id, "stale")
                 task.map_revision = revision
             if task.status in {CREATED, WAITING, REPLANNING, FAILED, UNREACHABLE}:
+                _release(session, task.id, "released")
                 _move(session, task, PLANNING, "planning")
             elif task.status in {RESERVED, PLANNED}:
                 _release(session, task.id, "released")
@@ -308,12 +320,14 @@ class FleetTaskService:
             elif task.status in {CREATED, PLANNING, PLANNED, RESERVED, WAITING, REPLANNING, UNREACHABLE}:
                 self._begin_cancellation(session, task, reason, outcome="local_only")
                 _move(session, task, CANCELLED, reason or "cancelled")
+                _reopen_successors(session, task.id)
             else:
                 raise FleetTaskError(409, f"Cannot cancel {task.status}")
             session.flush()
             public = _public(task)
         if needs_receiver:
             return self._complete_receiver_cancel(task_id)
+        self.plan_pending()
         return public
 
     def dispatch(self, task_id: str) -> dict:
@@ -328,6 +342,10 @@ class FleetTaskService:
                 raise FleetTaskError(409, "Map revision changed. Plan the task again before dispatch.")
             if task.status != RESERVED:
                 raise FleetTaskError(409, f"Dispatch requires RESERVED, not {task.status}")
+            if task.predecessor_task_id:
+                predecessor = session.get(FleetTaskRecord, task.predecessor_task_id)
+                if predecessor is not None and not predecessor.motion_verified and predecessor.status != CANCELLED:
+                    raise FleetTaskError(409, "predecessor motion is not verified")
             if not task.assigned_robot_id or not task.payload_hash:
                 raise FleetTaskError(409, "Task has no reserved path to deliver")
             record = load_registry(self.settings.physical_fleet_path)
@@ -342,13 +360,62 @@ class FleetTaskService:
                 channel = "simulated"
             else:
                 ack = self._deliver_physical(payload)
-                channel = "physical"
+                channel = str(ack.get("channel") or "physical")
             error = None
         except DispatchError as exc:
             ack = None
             channel = None
             error = exc
         return self._apply_delivery(task_id, ack, channel, error)
+
+    def plan_pending(self, *, limit: int = 3) -> list[dict]:
+        """Re-evaluate CREATED, WAITING, and REPLANNING tasks. Does not dispatch."""
+        self._recover()
+        now = _now()
+        max_attempts = int(getattr(self.settings, "fleet_replan_max_attempts", 5) or 5)
+        with self.db.read() as session:
+            rows = session.scalars(select(FleetTaskRecord).where(
+                FleetTaskRecord.status.in_([CREATED, WAITING, REPLANNING]),
+            )).all()
+            picked: list[tuple[str, int]] = []
+            for task in sorted(rows, key=lambda item: _task_rank(item, now)):
+                schedule = json.loads(task.schedule_json or "{}")
+                attempts = int(schedule.get("replan_attempts") or 0)
+                if task.status != CREATED and attempts >= max_attempts:
+                    continue
+                due = schedule.get("next_replan_at")
+                if due and _is_future(due, now):
+                    continue
+                picked.append((task.id, attempts))
+                if len(picked) >= limit:
+                    break
+        results = []
+        for task_id, attempts in picked:
+            try:
+                result = self.plan(task_id)
+            except FleetTaskError as exc:
+                result = {"task_id": task_id, "status": "FAILED", "failure_reason": exc.detail}
+            self._note_replan(task_id, attempts)
+            results.append(result)
+        return results
+
+    def mark_simulated_motion(self, task_id: str) -> dict:
+        """Record an explicit simulated completion. A physical ACK cannot call this."""
+        with self.db.write() as session:
+            task = _one(session, task_id)
+            if task.ack_channel != "simulated" or task.status != DELIVERED:
+                raise FleetTaskError(409, "Simulated motion evidence is only accepted for a simulated receipt")
+            task.motion_verified = True
+            task.updated_at = _now()
+            rows = session.scalars(select(FleetReservationRecord).where(
+                FleetReservationRecord.task_id == task.id,
+                FleetReservationRecord.status == "confirmed",
+            )).all()
+            for row in rows:
+                row.status = "motion_verified"
+            _event(session, task, task.status, task.status, "simulated motion verified")
+            session.flush()
+            return _public(task)
 
     def reservations(self) -> list[dict]:
         self._recover()
@@ -357,14 +424,20 @@ class FleetTaskService:
             return [_reservation_public(row) for row in rows]
 
     def conflict_report(self) -> dict:
+        graph = self._graph()
         intervals = []
         for row in self.reservations():
-            intervals.append(Interval(
+            intervals.append(hydrate_interval(graph, Interval(
                 row["robot_id"], row["task_id"], row["resource_kind"], row["resource_id"],
-                row["x"], row["y"], row["t_start"], row["t_end"],
-            ))
+                row["x"], row["y"], row["t_start"], row["t_end"], None,
+                row.get("time_basis") or "absolute",
+            )))
         from app.services.reservation_manager import find_conflicts
-        hits = find_conflicts(intervals, intervals, robot_radius_m=self.settings.planning_robot_radius_m)
+        hits = find_conflicts(
+            intervals, intervals,
+            robot_radius_m=self.settings.planning_robot_radius_m,
+            now_epoch=_now().timestamp(),
+        )
         # find_conflicts skips same task and same robot, so a consistent plan reports none.
         return {
             "conflicts": hits,
@@ -405,7 +478,6 @@ class FleetTaskService:
     def robot_availability(self) -> list[dict]:
         graph = self._graph()
         registry = load_registry(self.settings.physical_fleet_path)
-        snapshot = self.snapshot_provider()
         queue = {item["assigned_robot_id"]: 0 for item in self.queue()}
         for item in self.queue():
             if item["assigned_robot_id"]:
@@ -426,14 +498,16 @@ class FleetTaskService:
                     "nav2_ready": None,
                 })
             else:
-                pose = fresh_tf_pose(snapshot)
-                if pose is None:
+                state = self._robot_state(record["robot_id"])
+                pose = state.get("pose") if state.get("tf_fresh") else None
+                if not isinstance(pose, dict):
                     reports.append({
                         "robot_id": record["robot_id"],
                         "kind": "physical",
                         "assignable": False,
                         "reason": "tf_unavailable",
                         "pose_source": None,
+                        "ros_domain_id": state.get("ros_domain_id"),
                         "inspection": None,
                         "queue_length": queue.get(record["robot_id"], 0),
                     })
@@ -444,7 +518,8 @@ class FleetTaskService:
                         "kind": "physical",
                         "assignable": inspection["traversable"],
                         "reason": inspection["reason"],
-                        "pose_source": pose["source"],
+                        "pose_source": state.get("pose_source"),
+                        "ros_domain_id": state.get("ros_domain_id"),
                         "inspection": inspection,
                         "queue_length": queue.get(record["robot_id"], 0),
                     })
@@ -460,7 +535,10 @@ class FleetTaskService:
                 return _public(task)
             choice = self._score_robot(session, task, graph, robot, snapshot)
             if not choice.get("error"):
-                choice["reason"] = f"manual assignment to {robot['robot_id']}"
+                choice["reason"] = (
+                    f"manual assignment to {robot['robot_id']}; "
+                    f"travel {choice['travel_s']:.2f}s + delay {choice['depart_s']:.2f}s"
+                )
             if choice.get("error"):
                 _fail(session, task, choice["status"], choice["error"])
                 task.schedule_json = json.dumps({"suggestions": choice.get("suggestions", [])})
@@ -480,24 +558,33 @@ class FleetTaskService:
                 continue
             ranked.append(choice)
         if not ranked:
-            _fail(session, task, UNREACHABLE if any(item["error"].startswith("no path") for item in errors) else FAILED,
-                  "No assignable robot")
+            if errors and all(item["error"] == "reservation conflict" for item in errors):
+                status = WAITING
+            elif any(str(item["error"]).startswith("no path") for item in errors):
+                status = UNREACHABLE
+            else:
+                status = FAILED
+            _fail(session, task, status, "No assignable robot")
             task.assignment_reason = json.dumps(errors, ensure_ascii=False)
-            task.schedule_json = json.dumps({"rejected": errors})
+            task.schedule_json = json.dumps({"rejected": errors, "needs_replan": status == WAITING})
             return _public(task)
         ranked.sort(key=lambda item: item["score"])
         winner = ranked[0]
         winner["reason"] = (
-            f"score {winner['score']:.3f} = (travel {winner['travel_s']:.2f}s"
-            f" + delay {winner['depart_s']:.2f}s + queue {winner['queue_length']})"
-            f" / priority {task.priority}"
+            f"score {winner['score']:.3f} = travel {winner['travel_s']:.2f}s"
+            f" + delay {winner['depart_s']:.2f}s + queue {winner['queue_length']}"
+            f"; priority {task.priority} orders the queue"
         )
+        winner["alternatives"] = [
+            {"robot_id": item["robot"]["robot_id"], "score": item["score"], "depart_s": item["depart_s"]}
+            for item in ranked[1:]
+        ] + errors
         self._commit_choice(session, task, graph, winner, revision)
         task.assignment_reason = winner["reason"]
         return _public(task)
 
     def _score_robot(self, session, task, graph, robot, snapshot) -> dict:
-        start = self._resolve_start(task, robot, snapshot, graph)
+        start = self._resolve_start(task, robot, snapshot, graph, session)
         if start.get("error"):
             return start
         goal = graph.locate(task.goal_x, task.goal_y)
@@ -508,7 +595,10 @@ class FleetTaskService:
         if not paths:
             return {"error": "no path", "status": UNREACHABLE, "suggestions": []}
         node_lists = [nodes for nodes, _cost in paths]
-        existing = _active_intervals(session, exclude_task=task.id)
+        existing = [
+            hydrate_interval(graph, item)
+            for item in _active_intervals(session, exclude_task=task.id)
+        ]
         scheduled = schedule_candidates(
             graph, node_lists, existing,
             robot_id=robot["robot_id"], task_id=task.id,
@@ -516,6 +606,8 @@ class FleetTaskService:
             dwell_s=self.settings.planning_goal_dwell_s,
             robot_radius_m=self.settings.planning_robot_radius_m,
             max_depart_slots=self.settings.planning_max_depart_slots,
+            origin_epoch=start.get("origin_epoch"),
+            now_epoch=_now().timestamp(),
         )
         queued = session.scalars(select(FleetTaskRecord).where(
             FleetTaskRecord.assigned_robot_id == robot["robot_id"],
@@ -526,7 +618,7 @@ class FleetTaskService:
         if scheduled is None:
             return {"error": "reservation conflict", "status": WAITING, "suggestions": []}
         travel_s = _path_length(graph, scheduled["nodes"]) / self.settings.planning_speed_m_s
-        score = (travel_s + scheduled["depart_s"] + queue_length * self.settings.planning_goal_dwell_s) / task.priority
+        score = travel_s + scheduled["depart_s"] + queue_length * self.settings.planning_goal_dwell_s
         records = []
         for rank, (nodes, cost) in enumerate(paths, start=1):
             record = path_record(graph, nodes, cost, rank)
@@ -544,32 +636,66 @@ class FleetTaskService:
             "reason": "",
         }
 
-    def _resolve_start(self, task, robot, snapshot, graph) -> dict:
-        if task.start_x is not None and task.start_y is not None:
-            x, y, source = task.start_x, task.start_y, task.start_source or "request"
+    def _resolve_start(self, task, robot, snapshot, graph, session=None) -> dict:
+        state = self._robot_state(robot["robot_id"])
+        anchor = None if session is None else _queue_anchor(session, robot["robot_id"], task.id)
+        origin = _now().timestamp()
+        predecessor_id = None
+        unverified = False
+        if anchor is not None:
+            x, y, source = anchor["x"], anchor["y"], "predecessor_goal"
+            predecessor_id = anchor["task_id"]
+            if anchor.get("arrival_epoch"):
+                origin = max(origin, anchor["arrival_epoch"])
         elif robot["kind"] == "virtual":
-            x, y, source = robot["home"]["x"], robot["home"]["y"], "registry_home"
+            if task.start_x is not None and task.start_y is not None:
+                x, y, source = task.start_x, task.start_y, task.start_source or "request"
+            else:
+                x, y, source = robot["home"]["x"], robot["home"]["y"], "registry_home"
         else:
-            pose = fresh_tf_pose(snapshot)
-            if pose is None:
+            pose = state.get("pose") if state.get("tf_fresh") else None
+            requested = task.start_x is not None and task.start_y is not None
+            if isinstance(pose, dict):
+                if requested and _distance(task.start_x, task.start_y, pose["x"], pose["y"]) > START_MATCH_M:
+                    return {
+                        "error": "start_mismatch",
+                        "status": FAILED,
+                        "suggestions": [],
+                    }
+                x, y, source = pose["x"], pose["y"], state.get("pose_source") or "tf"
+            elif requested:
+                x, y, source = task.start_x, task.start_y, task.start_source or "request"
+                unverified = True
+            else:
                 return {"error": "tf_unavailable", "status": FAILED, "suggestions": []}
-            x, y, source = pose["x"], pose["y"], pose["source"]
         reason, node = graph.locate(x, y)
         if reason != "ok":
             inspection = inspect_point(graph, x, y)
             return {"error": f"start {reason}", "status": FAILED, "suggestions": inspection["suggestions"]}
-        return {"x": x, "y": y, "source": source, "node": node}
+        return {
+            "x": x, "y": y, "source": source, "node": node,
+            "origin_epoch": origin, "predecessor_task_id": predecessor_id,
+            "pose_source": state.get("pose_source"), "ros_domain_id": state.get("ros_domain_id"),
+            "pose_unverified": unverified,
+        }
 
     def _commit_choice(self, session, task, graph, choice, revision: str) -> None:
         scheduled = choice["scheduled"]
         selected = next(item for item in choice["paths"] if item["nodes"] == [list(node) for node in scheduled["nodes"]])
         task.assigned_robot_id = choice["robot"]["robot_id"]
+        task.predecessor_task_id = choice["start"].get("predecessor_task_id")
         task.start_x = choice["start"]["x"]
         task.start_y = choice["start"]["y"]
         task.start_source = choice["start"]["source"]
         task.assignment_reason = choice.get("reason") or task.assignment_reason
         task.candidate_paths_json = json.dumps(choice["paths"])
         _store_schedule(session, task, graph, selected, scheduled, revision)
+        stored = json.loads(task.schedule_json or "{}")
+        if choice.get("alternatives"):
+            stored["alternatives"] = choice["alternatives"]
+        if choice["start"].get("pose_unverified"):
+            stored["pose_unverified"] = True
+        task.schedule_json = json.dumps(stored)
         _move(session, task, PLANNED, "path selected")
         _move(session, task, RESERVED, "reserved")
 
@@ -663,6 +789,7 @@ class FleetTaskService:
         except DispatchError as exc:
             ack = None
             error = exc
+        cancelled = False
         with self.db.write() as session:
             task = _one(session, task_id)
             if task.status != CANCEL_PENDING:
@@ -672,42 +799,92 @@ class FleetTaskService:
                 record["outcome"] = "cancel_ack"
                 record["receiver"] = ack
                 task.cancellation_json = json.dumps(record)
-                if ack.get("channel") == "physical":
+                if ack.get("channel") in {"physical", "ros_topic"}:
                     task.ack_status = "CANCEL_ACKNOWLEDGED"
+                _reopen_successors(session, task.id)
                 _move(session, task, CANCELLED, "receiver cancel ack")
+                cancelled = True
             elif error is not None and error.code == "not_stored":
                 record["outcome"] = "not_stored"
                 record["receiver_error"] = error.detail
                 task.cancellation_json = json.dumps(record)
+                _reopen_successors(session, task.id)
                 _move(session, task, CANCELLED, "receiver has no stored task")
+                cancelled = True
             else:
                 record["outcome"] = "pending"
                 record["receiver_error"] = None if error is None else error.detail
                 task.cancellation_json = json.dumps(record)
+                cancelled = False
             session.flush()
-            return _public(task)
+            public = _public(task)
+        if cancelled:
+            self.plan_pending()
+        return public
 
     def _send_receiver_cancel(self, robot_id: str, channel: str, message: dict) -> dict:
         if channel == "simulated":
             return cancel_simulated(Path(self.settings.data_dir) / "virtual_inbox", message)
-        if self.settings.fleet_dispatch_mode == "local":
+        mode = self.settings.fleet_dispatch_mode
+        if mode == "local":
             return cancel_local_receiver(Path(self.settings.data_dir) / "physical_inbox", message)
-        from app.api.physical import parse_targets
-        targets = dict(parse_targets(self.settings.physical_ssh_targets))
-        target = targets.get(robot_id)
-        if not target:
-            raise DispatchError("ssh_unconfigured", "No SSH target for the physical robot")
-        return cancel_ssh(self.settings, target, message)
+        if mode == "ssh":
+            from app.api.physical import parse_targets
+            targets = dict(parse_targets(self.settings.physical_ssh_targets))
+            target = targets.get(robot_id)
+            if not target:
+                raise DispatchError("ssh_unconfigured", "No SSH target for the physical robot")
+            return cancel_ssh(self.settings, target, message)
+        if mode == "ros_topic":
+            from app.services.ros_task_gateway import cancel_ros_topic
+            return cancel_ros_topic(self.settings, message)
+        raise DispatchError("dispatch_mode", f"Unknown fleet dispatch mode {mode}")
 
     def _deliver_physical(self, payload: dict) -> dict:
-        if self.settings.fleet_dispatch_mode == "local":
+        if payload.get("execute") is True:
+            raise DispatchError("execute_refused", "execute=true is not allowed")
+        mode = self.settings.fleet_dispatch_mode
+        if mode == "local":
             return deliver_local_receiver(Path(self.settings.data_dir) / "physical_inbox", payload)
-        from app.api.physical import parse_targets
-        targets = dict(parse_targets(self.settings.physical_ssh_targets))
-        target = targets.get(payload["robot_id"])
-        if not target:
-            raise DispatchError("ssh_unconfigured", "No SSH target for the physical robot")
-        return deliver_ssh(self.settings, target, payload)
+        if mode == "ssh":
+            from app.api.physical import parse_targets
+            targets = dict(parse_targets(self.settings.physical_ssh_targets))
+            target = targets.get(payload["robot_id"])
+            if not target:
+                raise DispatchError("ssh_unconfigured", "No SSH target for the physical robot")
+            return deliver_ssh(self.settings, target, payload)
+        if mode == "ros_topic":
+            from app.services.ros_task_gateway import deliver_ros_topic
+            return deliver_ros_topic(self.settings, payload)
+        raise DispatchError("dispatch_mode", f"Unknown fleet dispatch mode {mode}")
+
+    def _robot_state(self, robot_id: str) -> dict:
+        snapshot = self.snapshot_provider() if self.snapshot_provider else None
+        if self.state_provider is not None:
+            provided = self.state_provider(robot_id)
+            if provided is not None:
+                return provided
+        if isinstance(snapshot, dict) and snapshot.get("robot_id") not in (None, robot_id):
+            snapshot = None
+        return robot_state(robot_id, self.settings, snapshot)
+
+    def _note_replan(self, task_id: str, previous_attempts: int) -> None:
+        with self.db.write() as session:
+            task = session.get(FleetTaskRecord, task_id)
+            if task is None:
+                return
+            schedule = json.loads(task.schedule_json or "{}")
+            if task.status == RESERVED:
+                schedule["replan_attempts"] = 0
+                schedule["next_replan_at"] = None
+                schedule["needs_replan"] = False
+            elif task.status in {WAITING, REPLANNING, FAILED, UNREACHABLE}:
+                attempts = previous_attempts + 1
+                schedule["replan_attempts"] = attempts
+                schedule["needs_replan"] = True
+                delay = min(60, 2 * attempts)
+                schedule["next_replan_at"] = (_now() + timedelta(seconds=delay)).isoformat()
+            task.schedule_json = json.dumps(schedule)
 
     def _graph(self) -> WaypointGraph:
         from app.services.route_preview import build_graph
@@ -744,6 +921,7 @@ class FleetTaskService:
                     task.delivery_status = "FAILED"
                     _move(session, task, FAILED, task.failure_reason)
                     _release(session, task.id, "released")
+            _protect_legacy_reservations(session)
         self._recovered = True
 
 
@@ -778,19 +956,34 @@ def _store_schedule(session, task, graph, selected, scheduled, revision: str) ->
     task.selected_path_id = selected["path_id"]
     task.planned_path_json = json.dumps(selected["waypoints"])
     depart = scheduled["depart_s"]
-    last = max(item.t_end for item in scheduled["intervals"])
-    base = _now()
-    task.estimated_start_time = (base + timedelta(seconds=depart)).isoformat()
-    task.estimated_arrival_time = (base + timedelta(seconds=last)).isoformat()
+    origin = float(scheduled.get("origin_epoch") or _now().timestamp())
+    arrival = float(scheduled.get("arrival_epoch") or max(item.t_end for item in scheduled["intervals"]))
+    task.estimated_start_time = datetime.fromtimestamp(origin + depart, tz=timezone.utc).isoformat()
+    task.estimated_arrival_time = datetime.fromtimestamp(arrival, tz=timezone.utc).isoformat()
     payload = canonical_payload(task, selected["waypoints"])
     task.payload_hash = payload["payload_hash"]
     task.schedule_json = json.dumps({
             "depart_s": depart,
+            "time_basis": "absolute",
+            "origin_epoch": origin,
+            "arrival_epoch": arrival,
             "speed_m_s_is_estimated": True,
             "actual_motion_verified": False,
             "collision_safety_verified": False,
+            "plan_collision_check": True,
+            "needs_replan": False,
+            "replan_attempts": 0,
             "payload": payload,
             "conflicts_avoided_by_delay": scheduled["conflicts_avoided_by_delay"],
+            "options": [
+                {
+                    "depart_s": item["depart_s"],
+                    "arrival_epoch": item["arrival_epoch"],
+                    "travel_s": item["travel_s"],
+                    "selected": item["nodes"] == scheduled["nodes"] and abs(item["depart_s"] - depart) < 1e-9,
+                }
+                for item in scheduled.get("options") or []
+            ],
         })
     task.map_revision = revision
     for interval in scheduled["intervals"]:
@@ -805,6 +998,7 @@ def _store_schedule(session, task, graph, selected, scheduled, revision: str) ->
             t_start=interval.t_start,
             t_end=interval.t_end,
             status="confirmed",
+            time_basis="absolute",
             occupancy_class="planned",
             map_revision=revision,
             created_at=_now(),
@@ -823,10 +1017,16 @@ def _path_length(graph, nodes) -> float:
 
 def _active_intervals(session, exclude_task: str) -> list[Interval]:
     rows = session.scalars(select(FleetReservationRecord).where(FleetReservationRecord.status == "confirmed")).all()
-    return [
-        Interval(row.robot_id, row.task_id, row.resource_kind, row.resource_id, row.x, row.y, row.t_start, row.t_end)
-        for row in rows if row.task_id != exclude_task
-    ]
+    intervals = []
+    for row in rows:
+        if row.task_id == exclude_task:
+            continue
+        basis = classify_time_basis(row.t_start, row.time_basis)
+        intervals.append(Interval(
+            row.robot_id, row.task_id, row.resource_kind, row.resource_id,
+            row.x, row.y, row.t_start, row.t_end, None, basis,
+        ))
+    return intervals
 
 
 def _release(session, task_id: str, status: str) -> int:
@@ -888,6 +1088,52 @@ def _publish(session, rows: list[FleetTaskRecord]) -> list[dict]:
     return [_public(row, counts.get(row.id, 0)) for row in rows]
 
 
+def _transport_view(task: FleetTaskRecord) -> dict:
+    ack = json.loads(task.ack_json) if task.ack_json else {}
+    channel = str(ack.get("transport") or ack.get("channel") or "")
+    if channel == "simulated":
+        mode = "simulated"
+    elif channel == "physical":
+        mode = "ssh"
+    elif channel == "ros_topic":
+        mode = "ros_topic"
+    else:
+        kind = _robot_kind(task.assigned_robot_id)
+        if kind == "virtual":
+            mode = "simulated"
+        elif task.ack_channel in {"", "none"}:
+            mode = "ros_topic"
+        else:
+            mode = task.ack_channel
+    topics = mode == "ros_topic"
+    return {
+        "mode": mode,
+        "ros_domain_id": _domain_for(task.assigned_robot_id),
+        "command_topic": (ack.get("command_topic") or "/fms/task/command") if topics else None,
+        "ack_topic": (ack.get("ack_topic") or "/fms/task/ack") if topics else None,
+        "cancel_topic": (ack.get("cancel_topic") or "/fms/task/cancel") if topics else None,
+        "cancel_ack_topic": (ack.get("cancel_ack_topic") or "/fms/task/cancel_ack") if topics else None,
+        "publish_state": ack.get("publish_state") or ("not_sent" if not ack else "ack_received"),
+        "receiver_ready": ack.get("receiver_ready"),
+        "received": bool(ack.get("accepted")),
+        "executed": False,
+        "completed": bool(task.motion_verified),
+    }
+
+
+def _robot_kind(robot_id: str | None) -> str | None:
+    if not robot_id:
+        return None
+    try:
+        robots = load_registry()
+    except RegistryError:
+        return None
+    for robot in robots:
+        if robot["robot_id"] == robot_id:
+            return str(robot["kind"])
+    return None
+
+
 def _domain_for(robot_id: str | None) -> int | None:
     """Registry lookup. A domain number never selects the task owner."""
     if not robot_id:
@@ -911,6 +1157,7 @@ def _public(task: FleetTaskRecord, active_reservation_count: int = 0) -> dict:
         "requested_robot_id": task.requested_robot_id,
         "assigned_robot_id": task.assigned_robot_id,
         "assigned_ros_domain_id": _domain_for(task.assigned_robot_id),
+        "transport": _transport_view(task),
         "start": None if task.start_x is None else {"x": task.start_x, "y": task.start_y, "source": task.start_source},
         "goal": {"x": task.goal_x, "y": task.goal_y, "label": task.goal_label},
         "map_id": task.map_id,
@@ -926,6 +1173,7 @@ def _public(task: FleetTaskRecord, active_reservation_count: int = 0) -> dict:
         "ack_channel": task.ack_channel,
         "ack": json.loads(task.ack_json) if task.ack_json else None,
         "payload_hash": task.payload_hash,
+        "predecessor_task_id": task.predecessor_task_id,
         "assignment_reason": task.assignment_reason,
         "failure_reason": task.failure_reason,
         "cancellation": json.loads(task.cancellation_json) if task.cancellation_json else None,
@@ -934,7 +1182,8 @@ def _public(task: FleetTaskRecord, active_reservation_count: int = 0) -> dict:
         "archived_by": task.archived_by or "",
         "active_reservation_count": active_reservation_count,
         "schedule": json.loads(task.schedule_json or "{}"),
-        "actual_motion_verified": False,
+        "actual_motion_verified": bool(task.motion_verified),
+        "motion_verified": bool(task.motion_verified),
         "created_at": task.created_at.isoformat(),
         "updated_at": task.updated_at.isoformat(),
     }
@@ -952,6 +1201,7 @@ def _reservation_public(row: FleetReservationRecord) -> dict:
         "t_start": row.t_start,
         "t_end": row.t_end,
         "status": row.status,
+        "time_basis": classify_time_basis(row.t_start, row.time_basis),
         "occupancy_class": row.occupancy_class,
         "map_revision": row.map_revision,
         "actual_motion_verified": False,
@@ -960,3 +1210,84 @@ def _reservation_public(row: FleetReservationRecord) -> dict:
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _distance(x0: float, y0: float, x1: float, y1: float) -> float:
+    return math.hypot(float(x0) - float(x1), float(y0) - float(y1))
+
+
+def _aged_priority(priority: int, created_at: str) -> int:
+    try:
+        created = datetime.fromisoformat(created_at)
+    except ValueError:
+        return int(priority)
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    hours = max(0.0, (_now() - created).total_seconds()) / 3600
+    return int(priority) + min(3, int(hours))
+
+
+def _task_rank(task: FleetTaskRecord, now: datetime) -> tuple:
+    created = task.created_at
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    hours = max(0.0, (now - created).total_seconds()) / 3600
+    return (-(int(task.priority) + min(3, int(hours))), created)
+
+
+def _is_future(value: str, now: datetime) -> bool:
+    try:
+        due = datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    if due.tzinfo is None:
+        due = due.replace(tzinfo=timezone.utc)
+    return due > now
+
+
+def _queue_anchor(session, robot_id: str, task_id: str) -> dict | None:
+    rows = session.scalars(select(FleetTaskRecord).where(
+        FleetTaskRecord.assigned_robot_id == robot_id,
+        FleetTaskRecord.id != task_id,
+        FleetTaskRecord.motion_verified.is_(False),
+        FleetTaskRecord.status.in_([RESERVED, DISPATCHING, DELIVERED, ACKNOWLEDGED]),
+    )).all()
+    anchored = [row for row in rows if row.estimated_arrival_time and row.goal_x is not None]
+    if not anchored:
+        return None
+    latest = max(anchored, key=lambda row: row.estimated_arrival_time)
+    try:
+        arrival = datetime.fromisoformat(latest.estimated_arrival_time).timestamp()
+    except ValueError:
+        arrival = None
+    return {"task_id": latest.id, "x": latest.goal_x, "y": latest.goal_y, "arrival_epoch": arrival}
+
+
+def _reopen_successors(session, task_id: str) -> None:
+    rows = session.scalars(select(FleetTaskRecord).where(FleetTaskRecord.predecessor_task_id == task_id)).all()
+    for row in rows:
+        if row.status in {RESERVED, PLANNED, WAITING} and can_transition(row.status, REPLANNING):
+            if row.status in {RESERVED, PLANNED}:
+                _release(session, row.id, "released")
+            _move(session, row, REPLANNING, "predecessor cancelled")
+
+
+def _protect_legacy_reservations(session) -> None:
+    rows = session.scalars(select(FleetReservationRecord).where(FleetReservationRecord.status == "confirmed")).all()
+    legacy_tasks: set[str] = set()
+    for row in rows:
+        basis = classify_time_basis(row.t_start, row.time_basis)
+        if basis != "legacy":
+            continue
+        row.time_basis = "legacy"
+        legacy_tasks.add(row.task_id)
+    if not legacy_tasks:
+        return
+    tasks = session.scalars(select(FleetTaskRecord).where(FleetTaskRecord.id.in_(legacy_tasks))).all()
+    for task in tasks:
+        schedule = json.loads(task.schedule_json or "{}")
+        schedule["needs_replan"] = True
+        schedule["time_basis"] = "legacy_time_basis"
+        task.schedule_json = json.dumps(schedule)
+        if task.status in {RESERVED, PLANNED} and can_transition(task.status, REPLANNING):
+            _move(session, task, REPLANNING, "legacy reservation is not on the absolute clock")
