@@ -77,6 +77,13 @@ class PhysicalNav2Auto:
             'state': 'waiting_for_ssh',
             'detail': '실물 Pinky SSH 인증 대기',
             'checked_at': None,
+            'map_matches_fms': False,
+            'map_server_yaml': None,
+            'expected_map_yaml': None,
+            'map_content_sha256': None,
+            'expected_map_sha256': None,
+            'map_mismatch_detail': 'map identity not checked',
+            'collision_monitor_active': False,
             'launch_owned_by_fms': False,
             'initial_pose_target': {'frame_id': 'map', 'x': 1.696, 'y': 0.103,
                                     'yaw_deg': float(settings.physical_initial_pose_yaw_deg)},
@@ -89,6 +96,8 @@ class PhysicalNav2Auto:
         self._live_pose_seen = False
         self._live_pose = None
         self._live_pose_checked_at = None
+        self._live_lookup_failed = False
+        self._live_observer_down = False
         # FMS_NAV2_ATOMIC_SNAPSHOT_V1: expose only a completed check.
         self._published_state: dict = dict(self.state)
         self._initial_pose_sent = False
@@ -97,21 +106,51 @@ class PhysicalNav2Auto:
         self._ssh_failure_checks = 0
 
     def snapshot(self) -> dict:
-        # FMS_DIRECT_5CM_LIVE_POSE_V1: keep readiness flags atomically sampled,
-        # but merge the independent high-frequency TF stream for map display.
+        """Publish one completed poll, then overlay only a fresh live TF sample.
+
+        A failed live sample does not erase checked_at and is not replaced with
+        the slower poll pose. Map display and the 5cm gate both see that gap.
+        """
+        from app.services.observation_gate import LIVE_TF_MAX_AGE_S, observation_blockers, stamp_status
+
         result = dict(self._published_state)
-        if self._live_pose_seen:
-            timestamp = self._live_pose_checked_at
-            pose = self._live_pose
-            try:
-                age = (datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)).total_seconds()
-            except (ValueError, TypeError):
-                age = float('inf')
-            if not (0 <= age <= 4.0 and result.get('ssh_connected')
-                    and result.get('amcl_active') and result.get('initial_pose_confirmed')):
-                pose, timestamp = None, None
-            result['pose'] = dict(pose) if pose is not None else None
-            result['pose_checked_at'] = timestamp
+        result['poll_pose_checked_at'] = self._published_state.get('pose_checked_at')
+        poll_pose = self._published_state.get('pose')
+        result['poll_pose'] = dict(poll_pose) if isinstance(poll_pose, dict) else None
+        if not self._live_pose_seen and not self._live_observer_down:
+            live_status, live_age = 'missing', None
+        elif self._live_observer_down:
+            live_status, live_age = 'observer_down', None
+        elif self._live_lookup_failed or self._live_pose is None:
+            live_status, live_age = 'lookup_failed', None
+        else:
+            live_status, live_age = stamp_status(
+                self._live_pose_checked_at, max_age=LIVE_TF_MAX_AGE_S,
+            )
+        result['live_pose_checked_at'] = self._live_pose_checked_at if self._live_pose_seen else None
+        result['live_tf_age_s'] = live_age
+        closed_gates = [
+            name for name in ('ssh_connected', 'amcl_active', 'initial_pose_confirmed')
+            if not result.get(name)
+        ]
+        gates_open = not closed_gates
+        result['live_tf_withheld_reason'] = ''
+        if live_status == 'fresh' and gates_open and isinstance(self._live_pose, dict):
+            result['pose'] = dict(self._live_pose)
+            result['pose_checked_at'] = self._live_pose_checked_at
+            result['live_tf_status'] = 'fresh'
+        elif live_status == 'fresh' and not gates_open:
+            result['pose'] = None
+            result['pose_checked_at'] = None
+            result['live_tf_status'] = 'withheld'
+            result['live_tf_withheld_reason'] = (
+                'fresh TF withheld because ' + ', '.join(closed_gates) + ' is false'
+            )
+        else:
+            result['pose'] = None
+            result['pose_checked_at'] = None
+            result['live_tf_status'] = live_status
+        result['five_cm_blockers'] = observation_blockers(result)
         return result
 
     def _update(self, state: str, detail: str, **extra) -> None:
@@ -120,7 +159,8 @@ class PhysicalNav2Auto:
 
     def _env(self) -> dict[str, str]:
         env = os.environ.copy()
-        env['ROS_DOMAIN_ID'] = str(self.settings.ros_domain_id)
+        from app.services.domain_status import resolve_robot_domain
+        env['ROS_DOMAIN_ID'] = str(resolve_robot_domain(self.primary_id, self.settings))
         env['RMW_IMPLEMENTATION'] = 'rmw_fastrtps_cpp'
         env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'SUBNET'
         env.pop('ROS_LOCALHOST_ONLY', None)
@@ -220,6 +260,54 @@ class PhysicalNav2Auto:
             return False
         self._update('waiting_' + name, f'{name} 현재 상태: {state}')
         return False
+
+    async def _param_string(self, node: str, name: str) -> str | None:
+        ok, output = await self._ros('ros2', 'param', 'get', node, name, timeout=8.0)
+        if not ok:
+            return None
+        match = re.search(r'String value is:\s*(.+)', output)
+        return match.group(1).strip() if match else None
+
+    async def _map_probe(self) -> dict:
+        import shlex
+        script = Path(__file__).with_name('map_identity_probe.py')
+        command = 'source /opt/ros/jazzy/setup.bash && exec /usr/bin/python3 -u ' + shlex.quote(str(script))
+        process = await asyncio.create_subprocess_exec(
+            '/bin/bash', '-c', command, env=self._env(),
+            stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        try:
+            line = await asyncio.wait_for(process.stdout.readline(), timeout=6.0)
+        except asyncio.TimeoutError:
+            process.kill()
+            await process.wait()
+            return {'error': 'map observation timed out'}
+        await process.wait()
+        try:
+            payload = json.loads(line.decode('utf-8', errors='replace') or '{}')
+        except json.JSONDecodeError:
+            return {'error': 'map observation was not JSON'}
+        return payload if isinstance(payload, dict) else {'error': 'map observation had the wrong type'}
+
+    async def _record_map_identity(self, expected: Path) -> None:
+        from app.services.map_identity import assess_map_identity
+        try:
+            server_yaml = await self._param_string('/map_server', 'yaml_filename')
+            probe = await self._map_probe()
+            report = assess_map_identity(expected_yaml=expected, server_yaml=server_yaml, probe=probe)
+        except Exception as exc:
+            report = {
+                'map_matches_fms': False,
+                'map_server_yaml': None,
+                'expected_map_yaml': str(expected),
+                'map_content_sha256': None,
+                'expected_map_sha256': None,
+                'map_mismatch_detail': f'map identity observation failed: {type(exc).__name__}',
+            }
+        self.state.update(report)
+        if not report['map_matches_fms']:
+            log.warning('Map server does not match the FMS map: %s', report['map_mismatch_detail'])
 
     async def _verify_chain(self) -> bool:
         # Real graph checks; topic name presence alone is not sufficient.
@@ -324,6 +412,10 @@ class PhysicalNav2Auto:
                           amcl_active=False, nav2_active=False, tf_ready=False,
                           pose=None, pose_checked_at=None,
                           cmd_vel_chain_ready=False, nav2_ready=False,
+                          map_matches_fms=False, map_server_yaml=None,
+                          collision_monitor_active=False,
+                          map_content_sha256=None, expected_map_sha256=None,
+                          map_mismatch_detail='map identity not checked',
                           launch_owned_by_fms='navigation' in self.children and
                           self.children['navigation'].poll() is None)
         if not target:
@@ -366,6 +458,9 @@ class PhysicalNav2Auto:
                  '-p', 'use_sim_time:=false', '-p', 'yaml_filename:=' + str(map_yaml)]):
             return
         self.state['map_server_active'] = True
+        # Active only means the lifecycle state. An already-running server may
+        # still be serving a different YAML. Do not restart a user-owned process.
+        await self._record_map_identity(map_yaml)
         if not await self._ensure_lifecycle('amcl', nodes,
                 ['ros2', 'run', 'nav2_amcl', 'amcl', '--ros-args',
                  '-p', 'use_sim_time:=false',
@@ -399,6 +494,7 @@ class PhysicalNav2Auto:
             if await self._lifecycle(name) != 'active':
                 self._update('activating_nav2', f'{name} 활성화 대기')
                 return
+        self.state['collision_monitor_active'] = True
         self.state['nav2_active'] = True
         action_ok, action_list = await self._ros('ros2', 'action', 'list', '-t')
         if not action_ok or '/navigate_to_pose [nav2_msgs/action/NavigateToPose]' not in action_list:
@@ -448,13 +544,16 @@ class PhysicalNav2Auto:
                         continue
                     pose = message.get('pose')
                     self._live_pose_seen = True
+                    self._live_observer_down = False
                     if isinstance(pose, dict) and all(
                         isinstance(pose.get(k), (int, float)) and math.isfinite(pose[k])
                         for k in ('x', 'y', 'yaw')
                     ):
+                        self._live_lookup_failed = False
                         self._live_pose = {k: float(pose[k]) for k in ('x', 'y', 'yaw')}
                         self._live_pose_checked_at = message.get('pose_checked_at')
                     else:
+                        self._live_lookup_failed = True
                         self._live_pose = None
                         self._live_pose_checked_at = None
             except asyncio.CancelledError:
@@ -464,6 +563,7 @@ class PhysicalNav2Auto:
             finally:
                 self._live_pose = None
                 self._live_pose_checked_at = None
+                self._live_observer_down = True
                 if process is not None and process.returncode is None:
                     process.terminate()
                     try:

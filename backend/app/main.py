@@ -19,6 +19,7 @@ from app.api.traffic import router as traffic_router
 from app.core.config import Settings
 from app.services.runtime import Runtime
 from app.services.physical_nav2_auto import PhysicalNav2Auto
+from app.services.domain_supervisor import DomainSupervisor
 from app.services.forward_5cm_service import PinkyFiveCmTest  # FMS_PINKY1_5CM_TEST_V1
 
 
@@ -30,8 +31,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.runtime.startup()
         app.state.physical_nav2 = None
         app.state.forward_5cm = None
+        app.state.domain_supervisor = None
         nav2_task = None
         pose_task = None  # FMS_DIRECT_5CM_LIVE_POSE_V1
+        domain_task = None
+        if settings.domain_workers_enabled:
+            app.state.domain_supervisor = DomainSupervisor(settings)
+            domain_task = asyncio.create_task(app.state.domain_supervisor.run())
         if settings.physical_nav2_auto_start:
             app.state.physical_nav2 = PhysicalNav2Auto(settings)
             nav2_task = asyncio.create_task(app.state.physical_nav2.run())
@@ -55,6 +61,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 except asyncio.CancelledError:
                     pass
                 await app.state.physical_nav2.shutdown()
+            if domain_task is not None:
+                domain_task.cancel()
+                try:
+                    await domain_task
+                except asyncio.CancelledError:
+                    pass
+                await app.state.domain_supervisor.shutdown()
             app.state.runtime.shutdown()
 
     app = FastAPI(

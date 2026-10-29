@@ -1,1 +1,0 @@
-/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_llm/pinky_llm/robot_tools.py

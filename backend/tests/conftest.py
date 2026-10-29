@@ -39,6 +39,7 @@ def make_settings(tmp_path: Path, *, seed_fleet: bool = True, execution_mode: st
         execution_mode=execution_mode,
         ros_domain_id=73,
         physical_nav2_auto_start=False,
+        domain_workers_enabled=False,
         physical_5cm_test_enabled=False,
         physical_ssh_targets="",
         physical_ssh_password="",

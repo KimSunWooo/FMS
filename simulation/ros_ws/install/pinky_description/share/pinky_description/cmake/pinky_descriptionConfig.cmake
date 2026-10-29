@@ -1,1 +1,0 @@
-/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_description/ament_cmake_core/pinky_descriptionConfig.cmake

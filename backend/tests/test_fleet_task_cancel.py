@@ -229,3 +229,8 @@ def test_velocity_cases_are_distinct_from_motion():
     assert blocked and "not sent" in blocked
     assert stop_zone_block_reason({"stop_zone_would_stop": False, "scan": {"received": True}}) is None
     assert stop_zone_block_reason({"scan": {"received": False}})
+    failed = stop_zone_block_reason({
+        "stop_zone_would_stop": False,
+        "scan": {"received": True, "transform_status": "failed", "transform_error": "lookup failed"},
+    })
+    assert failed and "not sent" in failed

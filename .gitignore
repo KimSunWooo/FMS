@@ -8,6 +8,10 @@ __pycache__/
 
 .env
 .env.local
+.env.before_*
+*.before_*
+*.bak
+*.backup_*
 
 data/*
 !data/.gitkeep
@@ -17,10 +21,14 @@ logs/
 
 frontend/node_modules/
 frontend/.next/
+frontend/.next-verify/
 frontend/out/
 frontend/next-env.d.ts
 frontend/*.tsbuildinfo
 
 tmp-next/
+simulation/ros_ws/build/
+simulation/ros_ws/install/
+simulation/ros_ws/log/
 *.pid
 .DS_Store

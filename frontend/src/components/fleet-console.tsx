@@ -27,6 +27,10 @@ type PhysicalRobot = {
   host: string | null;
   connection_status: string;
   connection_kind: string;
+  connection_phase?: string;
+  ros_domain_id?: number;
+  physical_connection_enabled?: boolean;
+  planned_physical?: boolean;
   ssh_online: boolean;
   pose: Pose | null;
   pose_checked_at?: string | null;
@@ -36,6 +40,17 @@ type PhysicalRobot = {
   nav2_state?: string | null;
   nav2_detail?: string | null;
   controller_ready: boolean | null;
+  map_matches_fms?: boolean | null;
+  live_tf_status?: string | null;
+  task_assignable?: boolean;
+  motion_allowed?: boolean;
+  worker?: {
+    connection_state?: string | null;
+    tf_status?: string | null;
+    last_seen?: string | null;
+    worker_running?: boolean | null;
+    detail?: string | null;
+  } | null;
   home?: RobotHome | null;
 };
 type PhysicalFleet = {
@@ -119,7 +134,22 @@ export function FleetConsole() {
   const [robotId, setRobotId] = useState("");
   // FMS_PINKY1_5CM_TEST_V1: real Nav2 relative forward-test, no mock task write.
   // FMS_DIRECT_5CM_LIVE_POSE_V1: server holds the test token, not the browser.
-  const [livePose, setLivePose] = useState<{robot_id: string; pose: Pose | null; pose_checked_at?: string | null; pose_source?: string} | null>(null);
+  const [livePose, setLivePose] = useState<{
+    robot_id: string;
+    pose: Pose | null;
+    pose_checked_at?: string | null;
+    pose_source?: string;
+    live_tf_status?: string | null;
+    live_tf_age_s?: number | null;
+    live_tf_withheld_reason?: string | null;
+    collision_monitor_active?: boolean | null;
+    nav2_ready?: boolean | null;
+    map_matches_fms?: boolean | null;
+    map_server_yaml?: string | null;
+    expected_map_yaml?: string | null;
+    map_mismatch_detail?: string | null;
+    five_cm_blockers?: string[];
+  } | null>(null);
   const [fiveCmStatus, setFiveCmStatus] = useState<{
     state: string; detail?: string; finished_at?: string; requested_distance_m?: number;
     actual_forward_m?: number | null; map_forward_m?: number | null; odom_forward_m?: number | null;
@@ -129,7 +159,15 @@ export function FleetConsole() {
   const [fiveCmError, setFiveCmError] = useState<string | null>(null);
   const [chainDiagnosis, setChainDiagnosis] = useState<{
     motion_command_sent?: boolean; stop_zone_would_stop?: boolean; velocity_case?: string | null; detail?: string;
-    scan?: { received?: boolean; min_range_m?: number | null; points_within_stop_radius?: number; frame_id?: string | null };
+    scan?: {
+      received?: boolean; min_range_m?: number | null; range_min_m?: number | null; range_max_m?: number | null;
+      points_within_stop_radius?: number; frame_id?: string | null;
+      inside_sectors_base_frame?: { front?: number; left?: number; rear?: number; right?: number };
+      nearest_base_distance_m?: number | null;
+      right_returns_base_m?: { x: number; y: number; range_m: number; radius_m: number }[];
+      right_return_identity?: string; self_reflection_proven?: boolean;
+      lidar_in_base_m?: { x: number; y: number; z: number; yaw_rad: number };
+    };
   } | null>(null);
   const [fiveCmPending, setFiveCmPending] = useState(false);
   const [routeOverlay, setRouteOverlay] = useState<RouteOverlay | null>(null);
@@ -223,7 +261,13 @@ export function FleetConsole() {
       if (pending || controller.signal.aborted) return;
       pending = true;
       try {
-        const result = await readJson<{robot_id: string; pose: Pose | null; pose_checked_at?: string | null; pose_source?: string}>(
+        const result = await readJson<{
+          robot_id: string; pose: Pose | null; pose_checked_at?: string | null; pose_source?: string;
+          live_tf_status?: string | null; live_tf_age_s?: number | null; live_tf_withheld_reason?: string | null;
+          collision_monitor_active?: boolean | null; nav2_ready?: boolean | null;
+          map_matches_fms?: boolean | null; map_server_yaml?: string | null; expected_map_yaml?: string | null;
+          map_mismatch_detail?: string | null; five_cm_blockers?: string[];
+        }>(
           "/fms-api/physical/nav2/pose", controller.signal,
         );
         if (!controller.signal.aborted) setLivePose(result);
@@ -375,10 +419,13 @@ export function FleetConsole() {
                 <span className="font-mono text-xs text-muted-foreground">{robot.robot_id}</span>
               </CardTitle>
               <CardDescription>
-                {robot.kind === "virtual" ? "가상 로봇 · 등록 위치만 표시" : `실물 로봇 · ${robot.host ?? "SSH 대상 없음"}`}
+                {robot.kind === "virtual"
+                  ? "Virtual / Physical connection pending"
+                  : `실물 로봇 · ${robot.host ?? "SSH 대상 없음"}`}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
+              <p className="font-mono text-xs">ROS Domain {robot.ros_domain_id ?? "-"}</p>
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant={robot.kind === "virtual" ? "secondary" : "outline"}>
                   {robot.kind === "virtual" ? "가상" : "실물"}
@@ -390,8 +437,8 @@ export function FleetConsole() {
                 ) : (
                   <Badge variant="outline">SSH 미사용</Badge>
                 )}
-                <Badge variant={robot.ros_online ? "default" : "outline"}>
-                  ROS {robot.ros_online ? "토픽 확인" : robot.kind === "virtual" ? "해당 없음" : "대기"}
+                <Badge variant={robot.ros_online || robot.worker?.connection_state === "ros_connected" || robot.worker?.connection_state === "nav2_ready" ? "default" : "outline"}>
+                  ROS {robot.ros_online || robot.worker?.connection_state === "ros_connected" || robot.worker?.connection_state === "nav2_ready" ? "노드 확인" : robot.kind === "virtual" ? "해당 없음" : "대기"}
                 </Badge>
                 <Badge variant="outline">배터리 미연동</Badge>
                 <Badge variant={robot.nav2_ready ? "default" : "outline"}>
@@ -413,16 +460,21 @@ export function FleetConsole() {
               )}
               <p className="text-xs text-muted-foreground">
                 {robot.kind === "virtual"
-                  ? "SSH와 Nav2 READY는 표시하지 않습니다. Task 수신은 가상 기록입니다."
-                  : "Task 전달은 수신 ACK만 확인합니다. 5cm 테스트와 분리되어 있습니다."}
+                  ? "Physical connection not configured. 등록 위치는 실제 TF가 아닙니다. Task 수신은 가상 기록입니다."
+                  : `SSH ${robot.ssh_online ? "Connected" : "끊김"} · ROS ${robot.ros_online || robot.worker?.connection_state === "ros_connected" || robot.worker?.connection_state === "nav2_ready" ? "Connected" : "대기"} · TF ${robot.live_tf_status ?? robot.worker?.tf_status ?? "대기"} · 지도 ${robot.map_matches_fms ? "일치" : "확인 전"}`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Task 할당 {robot.task_assignable ? "가능" : "불가"}
+                {robot.kind === "physical" ? ` · 실물 주행 ${robot.motion_allowed ? "가능" : "불가"}` : " · 실물 주행 불가"}
+                {robot.worker?.detail ? ` · Worker ${robot.worker.detail}` : ""}
               </p>
               {robot.robot_id === "pinky-1" && (
                 <div className="rounded-lg border border-border p-3 space-y-2">
-                  <p className="text-sm font-semibold">실물 Nav2 테스트 · 5cm 전진</p>
+                  <p className="text-sm font-semibold">실물 Nav2 테스트 · 5cm 전진 · ROS Domain 24</p>
                   <p className="text-xs text-muted-foreground">Nav2 DriveOnHeading으로 0.05m 직진합니다. 이동 거리는 map TF와 odometry를 함께 기록합니다. Task 취소와는 별도입니다.</p>
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" onClick={() => void sendFiveCmAction(false)}
-                      disabled={!robot.nav2_ready || fiveCmPending || ["checking", "pose_verified", "accepted", "running", "cancelling"].includes(fiveCmStatus?.state ?? "")}>
+                      disabled={!robot.nav2_ready || (livePose?.five_cm_blockers?.length ?? 0) > 0 || !livePose || fiveCmPending || ["checking", "pose_verified", "accepted", "running", "cancelling"].includes(fiveCmStatus?.state ?? "")}>
                       Pinky 1 · 5cm 전진 테스트
                     </Button>
                     <Button type="button" variant="outline" onClick={() => void sendFiveCmAction(true)}
@@ -433,7 +485,16 @@ export function FleetConsole() {
                       속도 체인 진단
                     </Button>
                   </div>
-                  <p className="text-xs">Nav2 {robot.nav2_ready ? "READY" : "준비 대기"} · TF {livePose?.pose ? "수신" : "없음"}</p>
+                  <p className="text-xs">Nav2 {robot.nav2_ready ? "READY" : "준비 대기"} · 이 표시만으로 5cm를 시작할 수 없습니다.</p>
+                  <p className="text-xs">실시간 TF {livePose?.live_tf_status ?? "조회 전"}
+                    {typeof livePose?.live_tf_age_s === "number" ? ` · ${livePose.live_tf_age_s.toFixed(1)}s` : ""}
+                    {livePose?.pose_checked_at ? ` · ${livePose.pose_checked_at}` : ""}
+                    {livePose?.live_tf_withheld_reason ? ` · ${livePose.live_tf_withheld_reason}` : ""}</p>
+                  <p className="text-xs">Collision Monitor {livePose?.collision_monitor_active ? "active" : "확인 전 또는 비활성"}</p>
+                  <p className="text-xs">지도 {livePose?.map_matches_fms ? "FMS 1f_map_f와 일치" : (livePose?.map_mismatch_detail ?? "확인 전")}</p>
+                  {(livePose?.five_cm_blockers?.length ?? 0) > 0 && (
+                    <p className="text-xs text-destructive">5cm 시작 불가: {livePose?.five_cm_blockers?.join("; ")}</p>
+                  )}
                   <p className="text-xs">{["checking", "pose_verified", "accepted", "running", "cancelling"].includes(fiveCmStatus?.state ?? "") ? "현재 테스트" : "마지막 결과"}: {fiveCmStatus?.state ?? "조회 중"}
                     {fiveCmStatus?.goal_status_name ? ` · Goal ${fiveCmStatus.goal_status_name}` : ""}
                     {fiveCmStatus?.finished_at ? ` · ${fiveCmStatus.finished_at}` : ""}</p>
@@ -445,7 +506,9 @@ export function FleetConsole() {
                   {fiveCmStatus?.detail && <p className="text-xs">원인: {fiveCmStatus.detail}</p>}
                   {chainDiagnosis && (
                     <p className="text-xs">Collision Monitor 진단: {chainDiagnosis.stop_zone_would_stop ? "StopZone 안에 반환이 있어 정지 가능" : "이번 무주행 표본에서는 StopZone 정지 조건 미만"}
-                      {chainDiagnosis.scan?.received ? ` · scan ${chainDiagnosis.scan.frame_id ?? ""} 최소 ${chainDiagnosis.scan.min_range_m?.toFixed(3) ?? "-"}m · 반경 내 ${chainDiagnosis.scan.points_within_stop_radius ?? 0}점` : " · scan 없음"}
+                      {chainDiagnosis.scan?.received ? ` · scan ${chainDiagnosis.scan.frame_id ?? ""} 최소 ${chainDiagnosis.scan.min_range_m?.toFixed(3) ?? "-"}m · 유효 ${chainDiagnosis.scan.range_min_m?.toFixed(3) ?? "-"}–${chainDiagnosis.scan.range_max_m?.toFixed(2) ?? "-"}m · 반경 내 ${chainDiagnosis.scan.points_within_stop_radius ?? 0}점 · 오른쪽 ${chainDiagnosis.scan.inside_sectors_base_frame?.right ?? 0}` : " · scan 없음"}
+                      {chainDiagnosis.scan?.right_returns_base_m?.[0] ? ` · 가장 가까운 오른쪽 (${chainDiagnosis.scan.right_returns_base_m[0].x.toFixed(3)}, ${chainDiagnosis.scan.right_returns_base_m[0].y.toFixed(3)})m` : ""}
+                      {chainDiagnosis.scan?.self_reflection_proven === false ? " · 자체 반사 여부는 확인되지 않음" : ""}
                       {chainDiagnosis.detail ? ` · ${chainDiagnosis.detail}` : ""}</p>
                   )}
                   {fiveCmError && <p className="text-xs text-destructive">{fiveCmError}</p>}

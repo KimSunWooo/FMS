@@ -888,6 +888,20 @@ def _publish(session, rows: list[FleetTaskRecord]) -> list[dict]:
     return [_public(row, counts.get(row.id, 0)) for row in rows]
 
 
+def _domain_for(robot_id: str | None) -> int | None:
+    """Registry lookup. A domain number never selects the task owner."""
+    if not robot_id:
+        return None
+    try:
+        robots = load_registry()
+    except RegistryError:
+        return None
+    for robot in robots:
+        if robot["robot_id"] == robot_id:
+            return int(robot["ros_domain_id"])
+    return None
+
+
 def _public(task: FleetTaskRecord, active_reservation_count: int = 0) -> dict:
     return {
         "task_id": task.id,
@@ -896,6 +910,7 @@ def _public(task: FleetTaskRecord, active_reservation_count: int = 0) -> dict:
         "assignment_mode": task.assignment_mode,
         "requested_robot_id": task.requested_robot_id,
         "assigned_robot_id": task.assigned_robot_id,
+        "assigned_ros_domain_id": _domain_for(task.assigned_robot_id),
         "start": None if task.start_x is None else {"x": task.start_x, "y": task.start_y, "source": task.start_source},
         "goal": {"x": task.goal_x, "y": task.goal_y, "label": task.goal_label},
         "map_id": task.map_id,

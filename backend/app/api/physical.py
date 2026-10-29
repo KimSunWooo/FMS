@@ -169,6 +169,13 @@ async def connected_robots(request: Request) -> dict:
     }
     monitor = getattr(request.app.state, "physical_nav2", None)
     snapshot = _fresh_nav2(monitor.snapshot()) if monitor is not None else None
+    supervisor = getattr(request.app.state, "domain_supervisor", None)
+    workers = {}
+    if supervisor is not None:
+        try:
+            workers = {item["robot_id"]: item for item in supervisor.statuses()}
+        except RegistryError:
+            workers = {}
     try:
         geometry = load_geometry(Path(settings.physical_map_yaml))
     except MapFileError:
@@ -177,7 +184,10 @@ async def connected_robots(request: Request) -> dict:
     for record in registry:
         ssh_robot = ssh_by_id.get(record["robot_id"]) if record["kind"] == "physical" else None
         nav2 = snapshot if ssh_robot is not None and monitor is not None and record["robot_id"] == monitor.primary_id else None
-        robots.append(present_robot(record, ssh_robot=ssh_robot, nav2=nav2, geometry=geometry))
+        robots.append(present_robot(
+            record, ssh_robot=ssh_robot, nav2=nav2, geometry=geometry,
+            worker=workers.get(record["robot_id"]),
+        ))
     return {
         "robots": robots,
         "configured_count": len(registry),
@@ -187,6 +197,18 @@ async def connected_robots(request: Request) -> dict:
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "data_source": "fleet_registry",
     }
+
+
+@router.get("/domain-workers")
+async def domain_workers(request: Request) -> dict:
+    supervisor = getattr(request.app.state, "domain_supervisor", None)
+    if supervisor is None:
+        return {"enabled": False, "workers": [], "detail": "FMS_DOMAIN_WORKERS_ENABLED=false"}
+    try:
+        workers = supervisor.statuses()
+    except RegistryError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    return {"enabled": True, "workers": workers, "checked_at": datetime.now(timezone.utc).isoformat()}
 
 
 @router.get("/nav2/status")
@@ -255,6 +277,16 @@ async def physical_live_pose(request: Request) -> dict:
         "pose": pose,
         "pose_checked_at": latest.get("pose_checked_at"),
         "pose_source": "tf:map->base_footprint",
+        "live_tf_status": latest.get("live_tf_status"),
+        "live_tf_age_s": latest.get("live_tf_age_s"),
+        "live_tf_withheld_reason": latest.get("live_tf_withheld_reason"),
+        "collision_monitor_active": latest.get("collision_monitor_active"),
+        "nav2_ready": latest.get("nav2_ready"),
+        "map_matches_fms": latest.get("map_matches_fms"),
+        "map_server_yaml": latest.get("map_server_yaml"),
+        "expected_map_yaml": latest.get("expected_map_yaml"),
+        "map_mismatch_detail": latest.get("map_mismatch_detail"),
+        "five_cm_blockers": latest.get("five_cm_blockers") or [],
     }
 
 

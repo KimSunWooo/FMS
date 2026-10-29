@@ -51,7 +51,8 @@ class PinkyFiveCmTest:
 
     def _env(self):
         env = os.environ.copy()
-        env['ROS_DOMAIN_ID'] = str(self.settings.ros_domain_id)
+        from app.services.domain_status import resolve_robot_domain
+        env['ROS_DOMAIN_ID'] = str(resolve_robot_domain('pinky-1', self.settings))
         env['RMW_IMPLEMENTATION'] = 'rmw_fastrtps_cpp'
         env['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'SUBNET'
         env.pop('ROS_LOCALHOST_ONLY', None)
@@ -74,19 +75,24 @@ class PinkyFiveCmTest:
                 raise HTTPException(409, '5cm physical test already running')
             if self.monitor is None or self.monitor.primary_id != 'pinky-1':
                 raise HTTPException(409, 'Pinky-1 Nav2 monitor not configured')
+            from app.services.domain_status import resolve_robot_domain
+            from app.services.fleet_registry import RegistryError
+            try:
+                domain = resolve_robot_domain('pinky-1', self.settings)
+            except RegistryError:
+                domain = None
+            if domain is not None and domain != 24:
+                raise HTTPException(409, f'Pinky-1 5cm stays on ROS domain 24, not {domain}')
             s = self.monitor.snapshot()
             if not all(s.get(key) is True for key in (
                 'ssh_connected', 'ros_online', 'map_server_active', 'amcl_active',
                 'nav2_ready', 'tf_ready', 'cmd_vel_chain_ready', 'initial_pose_confirmed',
             )):
                 raise HTTPException(409, 'Pinky-1 Nav2/TF/initial pose not ready')
-            try:
-                age = (datetime.now(timezone.utc) - datetime.fromisoformat(s['checked_at'])).total_seconds()
-                pose_age = (datetime.now(timezone.utc) - datetime.fromisoformat(s['pose_checked_at'])).total_seconds()
-            except (TypeError, ValueError, KeyError):
-                raise HTTPException(409, 'Recent Nav2/TF observations unavailable')
-            if not (0 <= age <= 45 and 0 <= pose_age <= 45):
-                raise HTTPException(409, 'Nav2/TF observations stale')
+            from app.services.observation_gate import observation_blockers
+            blockers = observation_blockers(s)
+            if blockers:
+                raise HTTPException(409, '; '.join(blockers))
             if not await self._manager_active():
                 raise HTTPException(409, 'Nav2 Lifecycle Manager is not active')
             # Check physical start+target map bounds; never forward a goal beyond
@@ -197,6 +203,9 @@ class PinkyFiveCmTest:
                 continue
             if isinstance(body, dict) and 'scan' in body:
                 body['collision_monitor_bypassed'] = False
+                from app.services.domain_status import resolve_robot_domain
+                body['ros_domain_id'] = resolve_robot_domain('pinky-1', self.settings)
+                body['robot_id'] = 'pinky-1'
                 return body
         return {'motion_command_sent': False, 'detail': 'Velocity-chain probe returned no JSON'}
 

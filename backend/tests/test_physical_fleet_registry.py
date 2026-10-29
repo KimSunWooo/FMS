@@ -1,6 +1,8 @@
 import math
 from pathlib import Path
 
+import pytest
+
 from app.core.config import ROOT
 from app.services.fleet_registry import load_registry, present_robot
 from app.services.map_frame import (
@@ -12,6 +14,31 @@ from app.services.map_frame import (
     load_geometry,
     world_to_grid,
 )
+
+
+def test_missing_map_env_is_rejected_and_not_replaced(monkeypatch):
+    from pydantic import ValidationError
+
+    from app.core.config import Settings
+
+    monkeypatch.setenv(
+        "FMS_PHYSICAL_MAP_YAML",
+        str(ROOT / "config/maps/physical_site/1f_map.yaml"),
+    )
+    with pytest.raises(ValidationError, match="does not exist"):
+        Settings()
+    monkeypatch.delenv("FMS_PHYSICAL_MAP_YAML", raising=False)
+    settings = Settings(
+        env="development",
+        environment_id="care-move-fms-test",
+        lease_secret="test-secret-not-from-care-move",
+        database_url="sqlite:///:memory:",
+        physical_control_enabled=False,
+        ros_bridge_enabled=False,
+        execution_mode="mock",
+    )
+    assert settings.physical_map_yaml.name == "1f_map_f.yaml"
+    assert settings.physical_map_yaml.is_file()
 
 
 def test_site_map_is_the_filtered_1f_map():

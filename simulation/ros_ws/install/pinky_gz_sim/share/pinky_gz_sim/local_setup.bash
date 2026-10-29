@@ -1,1 +1,0 @@
-/home/sw/DevSpace/FMS/simulation/ros_ws/build/pinky_gz_sim/ament_cmake_environment_hooks/local_setup.bash

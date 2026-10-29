@@ -25,4 +25,12 @@ EOF
   echo "Wrote .env with a new local lease secret. It is not copied from Care-Move."
 fi
 mkdir -p "$ROOT/data" "$ROOT/logs"
+# pydantic-settings lets the process environment override .env. A shell that
+# still exports the deleted 1f_map.yaml hides the official map. Drop only a
+# path that is not a file. Do not replace it with a different map here.
+if [[ -n "${FMS_PHYSICAL_MAP_YAML:-}" && ! -f "$FMS_PHYSICAL_MAP_YAML" ]]; then
+  echo "FMS_PHYSICAL_MAP_YAML points at a missing file: $FMS_PHYSICAL_MAP_YAML" >&2
+  echo "Removing that process override so .env can load config/maps/physical_site/1f_map_f.yaml." >&2
+  unset FMS_PHYSICAL_MAP_YAML
+fi
 exec "$ROOT/.venv/bin/uvicorn" app.main:app --app-dir "$ROOT/backend" --host 0.0.0.0 --port 8741

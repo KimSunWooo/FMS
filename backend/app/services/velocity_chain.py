@@ -29,6 +29,13 @@ def classify_velocity(
 def stop_zone_block_reason(diagnosis: dict) -> str | None:
     """Return why a drive must not start. None means this sample does not block it."""
     scan = diagnosis.get("scan") or {}
+    transform_status = scan.get("transform_status")
+    if transform_status not in (None, "ok"):
+        error = scan.get("transform_error") or transform_status
+        return (
+            "StopZone diagnosis failed: the scan was not transformed into base_footprint "
+            f"({error}). The drive goal was not sent."
+        )
     if not scan.get("received"):
         return "LaserScan was not observed, so the StopZone cannot be cleared"
     if diagnosis.get("stop_zone_would_stop"):

@@ -1,1 +1,0 @@
-/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/src/mobile_robot_llm/pinky_llm/setup.py

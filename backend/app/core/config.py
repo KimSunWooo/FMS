@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     physical_nav2_auto_start: bool = False
     physical_nav2_poll_seconds: float = 6.0
     physical_nav2_robot_id: str = "pinky-1"
+    # Per-robot workers use registry domains. This flag does not join those domains
+    # from the API process itself.
+    domain_workers_enabled: bool = True
     physical_map_yaml: Path = Field(
         default_factory=lambda: ROOT / "config/maps/physical_site/1f_map_f.yaml"
     )
@@ -127,6 +130,16 @@ class Settings(BaseSettings):
             raise ValueError("Refusing a placeholder lease secret when FMS_ENV=production.")
         if self.ros_domain_id < 0 or self.ros_domain_id > 232:
             raise ValueError("FMS_ROS_DOMAIN_ID must be in 0..232.")
+        # Process environment overrides .env. A missing file is a configuration
+        # error. Do not replace it with another map.
+        map_path = Path(self.physical_map_yaml)
+        if not map_path.is_file():
+            official = ROOT / "config/maps/physical_site/1f_map_f.yaml"
+            raise ValueError(
+                f"FMS_PHYSICAL_MAP_YAML does not exist: {map_path}. "
+                f"Official map: {official}. "
+                "The process environment overrides .env. This build does not substitute another map."
+            )
         return self
 
     @property

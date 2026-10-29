@@ -13,6 +13,7 @@ from app.services.map_frame import MapGeometry, describe_map_point
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_REGISTRY = ROOT / "config" / "physical_fleet.json"
+CANONICAL_DOMAINS = {"pinky-1": 24, "pinky-2": 25, "pinky-3": 26}
 
 
 class RegistryError(Exception):
@@ -74,8 +75,38 @@ def load_registry(path: Path | None = None) -> list[dict]:
                 raise RegistryError(f"{robot_id} home pose is invalid") from exc
         elif home is not None:
             raise RegistryError(f"{robot_id} physical robot must not carry a registry home")
+        domain = item.get("ros_domain_id")
+        try:
+            domain = int(domain)
+        except (TypeError, ValueError) as exc:
+            raise RegistryError(f"{robot_id} ros_domain_id must be an integer") from exc
+        if domain < 0 or domain > 232:
+            raise RegistryError(f"{robot_id} ros_domain_id must be in 0..232")
+        expected = CANONICAL_DOMAINS.get(robot_id)
+        if expected is not None and domain != expected:
+            raise RegistryError(f"{robot_id} ros_domain_id must be {expected}")
+        enabled = bool(item.get("physical_connection_enabled", False))
+        planned = bool(item.get("planned_physical", False))
+        if kind == "virtual" and enabled:
+            raise RegistryError(
+                f"{robot_id} stays virtual until an operator changes kind; "
+                "physical_connection_enabled cannot be true"
+            )
+        if kind == "physical" and not enabled:
+            raise RegistryError(f"{robot_id} physical robot requires physical_connection_enabled")
         seen.add(robot_id)
-        cleaned.append({"robot_id": robot_id, "name": name, "kind": kind, "home": home})
+        cleaned.append({
+            "robot_id": robot_id,
+            "name": name,
+            "kind": kind,
+            "home": home,
+            "ros_domain_id": domain,
+            "physical_connection_enabled": enabled,
+            "planned_physical": planned,
+        })
+    domains = [robot["ros_domain_id"] for robot in cleaned]
+    if len(domains) != len(set(domains)):
+        raise RegistryError("Fleet registry ros_domain_id values must be unique")
     if sum(1 for robot in cleaned if robot["kind"] == "physical") < 1:
         raise RegistryError("Fleet registry needs at least one physical robot")
     return cleaned
@@ -107,16 +138,17 @@ def present_robot(
     ssh_robot: dict | None,
     nav2: dict | None,
     geometry: MapGeometry | None,
+    worker: dict | None = None,
 ) -> dict:
     """One dashboard record. Virtual robots stay free of live TF and SSH."""
+    identity = _identity(record, worker)
     if record["kind"] == "virtual":
         return {
-            "robot_id": record["robot_id"],
-            "name": record["name"],
-            "kind": "virtual",
+            **identity,
             "host": None,
             "connection_status": "virtual",
             "connection_kind": "registry",
+            "connection_phase": "virtual",
             "ssh_online": False,
             "pose": None,
             "pose_checked_at": None,
@@ -124,19 +156,21 @@ def present_robot(
             "nav2_ready": None,
             "ros_online": False,
             "nav2_state": "not_applicable",
-            "nav2_detail": "가상 로봇 · SSH/Nav2/TF 미연결",
+            "nav2_detail": "가상 로봇 · 실물 연결 대기 · SSH/Nav2/TF 미연결",
             "controller_ready": None,
+            "map_matches_fms": None,
+            "task_assignable": True,
+            "motion_allowed": False,
             "home": _home_view(record, geometry),
         }
 
     if ssh_robot is None:
         return {
-            "robot_id": record["robot_id"],
-            "name": record["name"],
-            "kind": "physical",
+            **identity,
             "host": None,
             "connection_status": "ssh_offline",
             "connection_kind": "ssh_authenticated",
+            "connection_phase": "disconnected",
             "ssh_online": False,
             "pose": None,
             "pose_checked_at": None,
@@ -146,16 +180,18 @@ def present_robot(
             "nav2_state": "waiting_for_ssh",
             "nav2_detail": "SSH 인증 전 · 실시간 TF 없음",
             "controller_ready": False,
+            "map_matches_fms": None,
+            "task_assignable": True,
+            "motion_allowed": False,
             "home": None,
         }
 
     robot = {
-        "robot_id": record["robot_id"],
-        "name": record["name"],
-        "kind": "physical",
+        **identity,
         "host": ssh_robot.get("host"),
         "connection_status": "ssh_connected",
         "connection_kind": "ssh_authenticated",
+        "connection_phase": "ssh_connected",
         "ssh_online": True,
         "pose": None,
         "pose_checked_at": None,
@@ -165,6 +201,9 @@ def present_robot(
         "nav2_state": None,
         "nav2_detail": None,
         "controller_ready": False,
+        "map_matches_fms": None,
+        "task_assignable": True,
+        "motion_allowed": False,
         "home": None,
     }
     if nav2 is None or nav2.get("robot_id") not in (None, record["robot_id"]):
@@ -174,6 +213,11 @@ def present_robot(
     robot["controller_ready"] = bool(nav2.get("cmd_vel_chain_ready")) and bool(nav2.get("nav2_ready"))
     robot["nav2_state"] = nav2.get("state")
     robot["nav2_detail"] = nav2.get("detail")
+    robot["map_matches_fms"] = nav2.get("map_matches_fms")
+    robot["map_server_yaml"] = nav2.get("map_server_yaml")
+    robot["map_mismatch_detail"] = nav2.get("map_mismatch_detail")
+    robot["live_tf_status"] = nav2.get("live_tf_status")
+    robot["five_cm_blockers"] = list(nav2.get("five_cm_blockers") or [])
     pose = nav2.get("pose")
     observed_at = nav2.get("pose_checked_at")
     if nav2.get("ssh_connected") and isinstance(pose, dict) and observed_at:
@@ -188,7 +232,49 @@ def present_robot(
             located = describe_map_point(geometry, float(pose["x"]), float(pose["y"]), float(pose.get("yaw") or 0.0))
             robot["pose"]["grid"] = located["grid"]
             robot["pose"]["inside_map"] = located["inside_map"]
+    robot["connection_phase"] = _phase(robot)
+    robot["motion_allowed"] = bool(
+        robot["nav2_ready"] and robot.get("map_matches_fms") is True and robot.get("live_tf_status") == "fresh"
+    )
     return robot
+
+
+def _identity(record: dict, worker: dict | None) -> dict:
+    """Registry identity. A worker sample is kept only when robot and domain match."""
+    accepted = None
+    if (
+        isinstance(worker, dict)
+        and worker.get("robot_id") == record["robot_id"]
+        and worker.get("ros_domain_id") == record["ros_domain_id"]
+    ):
+        accepted = {
+            "connection_state": worker.get("connection_state"),
+            "tf_status": worker.get("tf_status"),
+            "last_seen": worker.get("last_seen"),
+            "worker_running": worker.get("worker_running"),
+            "detail": worker.get("detail"),
+        }
+    return {
+        "robot_id": record["robot_id"],
+        "name": record["name"],
+        "kind": record["kind"],
+        "ros_domain_id": record["ros_domain_id"],
+        "physical_connection_enabled": record["physical_connection_enabled"],
+        "planned_physical": record["planned_physical"],
+        "worker": accepted,
+    }
+
+
+def _phase(robot: dict) -> str:
+    if robot.get("nav2_ready"):
+        return "nav2_ready"
+    if robot.get("live_tf_status") == "fresh" and robot.get("pose"):
+        return "tf_ready"
+    if robot.get("ros_online"):
+        return "ros_connected"
+    if robot.get("ssh_online"):
+        return "ssh_connected"
+    return "disconnected"
 
 
 def _finite_pose(pose: dict) -> bool:

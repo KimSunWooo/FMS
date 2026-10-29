@@ -1,1 +1,0 @@
-/home/sw/DevSpace/FMS/simulation/ros_ws/src/pinky_pro/pinky_navigation/scripts/nav2_web_server.py

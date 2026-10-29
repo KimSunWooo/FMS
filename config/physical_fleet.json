@@ -3,12 +3,18 @@
     {
       "robot_id": "pinky-1",
       "name": "Pinky #1",
-      "kind": "physical"
+      "kind": "physical",
+      "ros_domain_id": 24,
+      "physical_connection_enabled": true,
+      "planned_physical": false
     },
     {
       "robot_id": "pinky-2",
       "name": "Pinky #2",
       "kind": "virtual",
+      "ros_domain_id": 25,
+      "physical_connection_enabled": false,
+      "planned_physical": true,
       "home": {
         "x": 0.425,
         "y": 1.925,
@@ -19,6 +25,9 @@
       "robot_id": "pinky-3",
       "name": "Pinky #3",
       "kind": "virtual",
+      "ros_domain_id": 26,
+      "physical_connection_enabled": false,
+      "planned_physical": true,
       "home": {
         "x": 0.425,
         "y": 0.575,

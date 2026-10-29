@@ -1,0 +1,136 @@
+"""One robot, one ROS domain, one process.
+
+The parent API does not change its own ROS_DOMAIN_ID. This process only
+writes the status file for FMS_WORKER_ROBOT_ID. It does not publish cmd_vel
+or send a Nav2 goal.
+"""
+from __future__ import annotations
+
+import os
+import shlex
+import signal
+import subprocess
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+from app.services.domain_status import build_status, status_path, write_status
+from app.services.fleet_registry import RegistryError, load_registry
+from app.services.physical_nav2_auto import parse_map_tf_pose
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def observe_physical(env: dict[str, str] | None = None) -> dict:
+    """Read-only discovery on the process domain. Empty discovery is not a pose."""
+    ok, text = _ros(("ros2", "node", "list"), env=env, timeout=5.0)
+    nodes = {line.strip() for line in text.splitlines() if line.strip().startswith("/")}
+    if not ok and not nodes:
+        return {
+            "ros_connected": False,
+            "nav2_ready": False,
+            "tf_status": "missing",
+            "pose": None,
+            "connection_state": "error",
+            "detail": "ROS discovery failed",
+        }
+    if not nodes:
+        return {
+            "ros_connected": False,
+            "nav2_ready": False,
+            "tf_status": "missing",
+            "pose": None,
+            "connection_state": "disconnected",
+            "detail": "No ROS nodes in this domain",
+        }
+    life_ok, life = _ros(("ros2", "lifecycle", "get", "/bt_navigator"), env=env, timeout=5.0)
+    nav2_active = life_ok and "active" in life
+    tf_ok, tf_text = _ros(
+        ("timeout", "3", "ros2", "run", "tf2_ros", "tf2_echo", "map", "base_footprint"),
+        env=env,
+        timeout=4.0,
+    )
+    pose = parse_map_tf_pose(tf_text) if tf_text else None
+    tf_status = "fresh" if pose else ("lookup_failed" if tf_ok or "Invalid" in tf_text else "missing")
+    return {
+        "ros_connected": True,
+        "nav2_ready": bool(nav2_active and pose),
+        "tf_status": tf_status,
+        "pose": pose,
+        "connection_state": "nav2_ready" if nav2_active and pose else "ros_connected",
+        "detail": f"nodes={len(nodes)} bt_navigator={'active' if nav2_active else 'inactive'}",
+    }
+
+
+def run_once(robot: dict, observed_domain: int, probe: dict | None = None) -> dict:
+    if robot["kind"] == "physical" and robot["physical_connection_enabled"] and int(observed_domain) == int(robot["ros_domain_id"]):
+        probe = observe_physical() if probe is None else probe
+    return build_status(robot, observed_domain, probe)
+
+
+def main() -> int:
+    robot_id = os.environ.get("FMS_WORKER_ROBOT_ID", "").strip()
+    fleet_path = Path(os.environ.get("FMS_PHYSICAL_FLEET_PATH") or (ROOT / "config" / "physical_fleet.json"))
+    data_dir = Path(os.environ.get("FMS_DATA_DIR") or (ROOT / "data"))
+    observed = int(os.environ["ROS_DOMAIN_ID"])
+    interval = max(1.0, float(os.environ.get("FMS_DOMAIN_WORKER_INTERVAL_S", "3")))
+    stop = False
+
+    def _stop(*_args) -> None:
+        nonlocal stop
+        stop = True
+
+    signal.signal(signal.SIGTERM, _stop)
+    signal.signal(signal.SIGINT, _stop)
+    while not stop:
+        try:
+            robots = load_registry(fleet_path)
+            robot = next(item for item in robots if item["robot_id"] == robot_id)
+        except (RegistryError, StopIteration, KeyError, ValueError) as exc:
+            broken = {
+                "robot_id": robot_id or "unknown",
+                "ros_domain_id": observed,
+                "connection_state": "error",
+                "detail": str(exc),
+                "pose": None,
+                "ros_connected": False,
+                "nav2_ready": False,
+                "tf_status": "missing",
+                "last_seen": datetime.now(timezone.utc).isoformat(),
+                "worker_pid": os.getpid(),
+            }
+            if robot_id:
+                write_status(status_path(data_dir, robot_id), broken)
+            time.sleep(interval)
+            continue
+        status = run_once(robot, observed)
+        status["worker_pid"] = os.getpid()
+        status["last_seen"] = datetime.now(timezone.utc).isoformat()
+        write_status(status_path(data_dir, robot["robot_id"]), status)
+        deadline = time.monotonic() + interval
+        while not stop and time.monotonic() < deadline:
+            time.sleep(0.1)
+    return 0
+
+
+def _ros(args: tuple[str, ...], *, env: dict[str, str] | None, timeout: float) -> tuple[bool, str]:
+    command = "source /opt/ros/jazzy/setup.bash && " + " ".join(shlex.quote(part) for part in args)
+    try:
+        result = subprocess.run(
+            ["/bin/bash", "-c", command],
+            env=env or os.environ.copy(),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+        return result.returncode == 0, (result.stdout + "\n" + result.stderr)[:4000]
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        output = ""
+        if isinstance(exc, subprocess.TimeoutExpired):
+            output = ((exc.stdout or "") + "\n" + (exc.stderr or ""))[:4000]
+        return False, output or str(exc)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
