@@ -35,6 +35,19 @@ type PhysicalRobot = {
   pose: Pose | null;
   pose_checked_at?: string | null;
   pose_source?: string | null;
+  pose_valid?: boolean;
+  pose_freshness?: string | null;
+  battery_valid?: boolean;
+  battery_percentage?: number | null;
+  battery_source?: string | null;
+  battery_timestamp?: string | null;
+  battery_freshness?: string | null;
+  plan_valid?: boolean;
+  plan?: { frame_id?: string; poses?: { x: number; y: number }[]; pose_count?: number } | null;
+  plan_source?: string | null;
+  plan_timestamp?: string | null;
+  plan_freshness?: string | null;
+  receiver_ready?: boolean | null;
   nav2_ready: boolean | null;
   ros_online?: boolean;
   nav2_state?: string | null;
@@ -139,6 +152,12 @@ export function FleetConsole() {
     pose: Pose | null;
     pose_checked_at?: string | null;
     pose_source?: string;
+    pose_valid?: boolean;
+    battery_valid?: boolean;
+    battery_percentage?: number | null;
+    battery_source?: string | null;
+    battery_timestamp?: string | null;
+    battery_freshness?: string | null;
     live_tf_status?: string | null;
     live_tf_age_s?: number | null;
     live_tf_withheld_reason?: string | null;
@@ -345,18 +364,52 @@ export function FleetConsole() {
     if (!physicalMap) return [];
     const theta = physicalMap.origin.yaw;
     return (fleet?.robots ?? []).flatMap((robot) => {
-      const observation = robot.robot_id === "pinky-1" && livePose?.robot_id === "pinky-1" ? livePose : robot;
-      if (!observation.pose || !observation.pose_checked_at || observation.pose_source !== "tf:map->base_footprint") return [];
+      const fromLive = robot.robot_id === "pinky-1" && livePose?.robot_id === "pinky-1" && livePose.pose_valid
+        ? livePose
+        : null;
+      const observation = fromLive ?? robot;
+      const source = observation.pose_source ?? "";
+      const accepted =
+        source === "topic:amcl_pose" ||
+        source.includes("amcl_pose") ||
+        source === "tf:map->base_footprint" ||
+        source.startsWith("robot_status:");
+      if (!observation.pose || !observation.pose_checked_at || !accepted) return [];
+      const isStale = robot.kind === "physical" && robot.pose_valid === false && !fromLive;
+      if (isStale && robot.pose_freshness !== "stale") return [];
       const stamp = Date.parse(observation.pose_checked_at);
       const age = Date.now() - stamp;
-      if (!Number.isFinite(stamp) || age < -5000 || age > 5000) return [];
+      // Fresh samples: 5s gate. Stale last-value: keep visible up to 10 minutes.
+      const maxAge = isStale ? 600_000 : 5000;
+      if (!Number.isFinite(stamp) || age < -5000 || age > maxAge) return [];
       const { x: worldX, y: worldY, yaw } = observation.pose;
-      if (![worldX, worldY, yaw].every(Number.isFinite)) return [];
+      if (![worldX, worldY].every(Number.isFinite)) return [];
+      const yawValue = Number.isFinite(yaw) ? yaw : 0;
       const { px, py } = worldToPixel(physicalMap, worldX, worldY);
       if (!insidePixel(physicalMap, px, py)) return [];
-      return [{ robot, px, py, rotation: -(yaw - theta) * 180 / Math.PI }];
+      return [{ robot, px, py, rotation: -(yawValue - theta) * 180 / Math.PI, stale: isStale }];
     });
   }, [fleet, physicalMap, livePose]);
+
+  const navPlanPolylines = useMemo(() => {
+    if (!physicalMap) return [];
+    return (fleet?.robots ?? []).flatMap((robot) => {
+      if (!robot.plan?.poses?.length) return [];
+      if (!robot.plan_valid && robot.plan_freshness !== "stale") return [];
+      const points = robot.plan.poses.map((point) => {
+        const pixel = worldToPixel(physicalMap, point.x, point.y);
+        return `${pixel.px},${pixel.py}`;
+      }).join(" ");
+      if (!points) return [];
+      const base = VIRTUAL_COLOR[robot.robot_id] ?? "#2f6f4e";
+      return [{
+        robotId: robot.robot_id,
+        points,
+        color: robot.plan_valid ? base : "#9aa5a0",
+        stale: !robot.plan_valid,
+      }];
+    });
+  }, [fleet, physicalMap]);
 
   const homeMarkers = useMemo(() => {
     if (!physicalMap) return [];
@@ -440,7 +493,15 @@ export function FleetConsole() {
                 <Badge variant={robot.ros_online || robot.worker?.connection_state === "ros_connected" || robot.worker?.connection_state === "nav2_ready" ? "default" : "outline"}>
                   ROS {robot.ros_online || robot.worker?.connection_state === "ros_connected" || robot.worker?.connection_state === "nav2_ready" ? "노드 확인" : robot.kind === "virtual" ? "해당 없음" : "대기"}
                 </Badge>
-                <Badge variant="outline">배터리 미연동</Badge>
+                <Badge variant={robot.battery_valid ? "default" : "outline"}>
+                  {robot.kind === "virtual"
+                    ? "배터리 해당 없음"
+                    : typeof robot.battery_percentage === "number"
+                      ? robot.battery_valid
+                        ? `배터리 ${(robot.battery_percentage * 100).toFixed(0)}%`
+                        : `배터리 ${(robot.battery_percentage * 100).toFixed(0)}% · Stale`
+                      : "배터리 정보 없음"}
+                </Badge>
                 <Badge variant={robot.nav2_ready ? "default" : "outline"}>
                   Nav2 {robot.nav2_ready ? "READY" : robot.kind === "virtual" ? "해당 없음" : "준비 대기"}
                 </Badge>
@@ -448,14 +509,39 @@ export function FleetConsole() {
               <p className="font-mono text-xs text-muted-foreground">
                 {robot.kind === "virtual" && robot.home
                   ? `등록 위치 ${robot.home.x.toFixed(2)}, ${robot.home.y.toFixed(2)} m${robot.home.grid ? ` · grid ${robot.home.grid.col.toFixed(0)}, ${robot.home.grid.row.toFixed(0)}` : ""}`
-                  : `pose ${robot.pose ? `${robot.pose.x.toFixed(2)}, ${robot.pose.y.toFixed(2)}` : "미수신"}${robot.pose ? ` · TF 관측 · yaw ${(robot.pose.yaw * 180 / Math.PI).toFixed(1)}°` : " · 실시간 TF 위치 대기"}`}
+                  : robot.pose
+                    ? `pose ${robot.pose.x.toFixed(2)}, ${robot.pose.y.toFixed(2)} · yaw ${typeof robot.pose.yaw === "number" ? `${(robot.pose.yaw * 180 / Math.PI).toFixed(1)}°` : "—"} · ${robot.pose_freshness ?? "valid"}`
+                    : `pose 미수신 · ${robot.pose_freshness ?? "missing"}`}
               </p>
+              {robot.kind === "physical" && (
+                <p className="font-mono text-xs text-muted-foreground">
+                  {typeof robot.battery_percentage === "number"
+                    ? `배터리 ${(robot.battery_percentage * 100).toFixed(1)}% · ${robot.battery_source ?? "/battery/percent"} · ${robot.battery_freshness ?? "valid"}${robot.battery_timestamp ? ` · ${robot.battery_timestamp}` : ""}`
+                    : `배터리 정보 없음 · ${robot.battery_freshness ?? "missing"}`}
+                  {robot.receiver_ready != null ? ` · Receiver ${robot.receiver_ready ? "Ready" : "Down"}` : ""}
+                </p>
+              )}
+              {robot.kind === "physical" && (
+                <p className="font-mono text-xs text-muted-foreground">
+                  {robot.plan
+                    ? `Nav2 /plan ${robot.plan.pose_count ?? robot.plan.poses?.length ?? 0} poses · ${robot.plan_freshness ?? "valid"}`
+                    : `Nav2 /plan ${robot.plan_freshness === "stale" ? "Stale" : "정보 없음"}`}
+                  {robot.pose_source ? ` · pose src ${robot.pose_source}` : ""}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">Nav2: {robot.nav2_detail ?? "상태 점검 중"}</p>
-              {robot.robot_id === "pinky-1" && livePose?.pose && livePose.pose_checked_at &&
+              {robot.robot_id === "pinky-1" && livePose?.pose_valid && livePose.pose && livePose.pose_checked_at &&
                 Date.now() - Date.parse(livePose.pose_checked_at) < 5000 && (
                 <p className="font-mono text-xs text-primary">
                   현재 TF: X={livePose.pose.x.toFixed(3)}m, Y={livePose.pose.y.toFixed(3)}m
-                  {` · 시작점 대비 ${Math.hypot(livePose.pose.x - 1.696, livePose.pose.y - 0.103).toFixed(3)}m`}
+                  {typeof livePose.pose.yaw === "number" ? ` · yaw ${(livePose.pose.yaw * 180 / Math.PI).toFixed(1)}°` : ""}
+                </p>
+              )}
+              {robot.robot_id === "pinky-1" && (
+                <p className="font-mono text-xs text-muted-foreground">
+                  {livePose?.battery_valid && typeof livePose.battery_percentage === "number"
+                    ? `Telemetry 배터리 ${(livePose.battery_percentage * 100).toFixed(1)}% · ${livePose.battery_source ?? ""}`
+                    : `Telemetry 배터리 ${livePose?.battery_freshness === "stale" ? "Stale" : "정보 없음"}`}
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
@@ -561,6 +647,17 @@ export function FleetConsole() {
                   }}
                 >
                   <image href={physicalMap.image_url} width={physicalMap.width_px} height={physicalMap.height_px} />
+                  {navPlanPolylines.map((path) => (
+                    <polyline
+                      key={`nav-plan-${path.robotId}`}
+                      points={path.points}
+                      fill="none"
+                      stroke={path.color}
+                      strokeWidth={1.0}
+                      strokeDasharray="4 2"
+                      opacity={path.stale ? 0.4 : 0.85}
+                    />
+                  ))}
                   {routeOverlay && [routeOverlay.candidates, [routeOverlay.selected]].map((group, groupIndex) => group.map((path, pathIndex) => {
                     const color = VIRTUAL_COLOR[routeOverlay.robotId ?? ""] ?? "#526173";
                     const points = path.map((point) => {
@@ -616,8 +713,8 @@ export function FleetConsole() {
                       </g>
                     );
                   })}
-                  {liveMarkers.map(({ robot, px, py, rotation }) => (
-                    <g key={robot.robot_id} aria-label={`${robot.name} 현재 TF 위치`}>
+                  {liveMarkers.map(({ robot, px, py, rotation, stale }) => (
+                    <g key={robot.robot_id} aria-label={`${robot.name} ${stale ? "마지막 amcl 위치(stale)" : "현재 amcl 위치"}`} opacity={stale ? 0.45 : 1}>
                       {/* Distinct from the red destination crosshair: teal arrow + label. */}
                       <circle cx={px} cy={py} r={7} fill="#09b8b4" fillOpacity={0.2} stroke="#007d82" strokeWidth={0.7} />
                       <g transform={`translate(${px} ${py}) rotate(${rotation})`}>
@@ -626,7 +723,7 @@ export function FleetConsole() {
                       <text x={Math.min(px + 9, physicalMap.width_px - 4)} y={Math.max(py - 9, 10)}
                         fontSize={5.5} fill="#003e45" stroke="#ffffff" strokeWidth={1.5} paintOrder="stroke"
                         textAnchor={px + 9 < physicalMap.width_px - 24 ? "start" : "end"}>
-                        {robot.name}
+                        {stale ? `${robot.name} stale` : robot.name}
                       </text>
                     </g>
                   ))}

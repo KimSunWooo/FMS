@@ -107,3 +107,26 @@ def confirm_boarding(call_id: str, body: _BoardIn, request: Request) -> dict:
     return _call(lambda: _calls(request).confirm_boarding(
         call_id, event_id=body.event_id, source=body.source,
     ))
+
+
+@router.post("/{call_id}/dropoff-arrived-simulated")
+def dropoff_arrived_simulated(call_id: str, request: Request) -> dict:
+    """Mock dropoff arrival for virtual receivers only."""
+    return _call(lambda: _calls(request).mark_dropoff_arrived_simulated(call_id))
+
+
+@router.post("/{call_id}/exit")
+def confirm_exit(call_id: str, body: _BoardIn, request: Request) -> dict:
+    """Mock/operator exit confirmation. No ROS exit topic is added."""
+    return _call(lambda: _calls(request).confirm_exit(
+        call_id, event_id=body.event_id, source=body.source,
+    ))
+
+
+class _CancelIn(BaseModel):
+    reason: str = "operator cancel"
+
+
+@router.post("/{call_id}/cancel")
+def cancel_call(call_id: str, body: _CancelIn, request: Request) -> dict:
+    return _call(lambda: _calls(request).cancel(call_id, reason=body.reason))

@@ -180,14 +180,62 @@ async def connected_robots(request: Request) -> dict:
         geometry = load_geometry(Path(settings.physical_map_yaml))
     except MapFileError:
         geometry = None
+    from app.services.robot_state import robot_state
+
     robots = []
     for record in registry:
         ssh_robot = ssh_by_id.get(record["robot_id"]) if record["kind"] == "physical" else None
         nav2 = snapshot if ssh_robot is not None and monitor is not None and record["robot_id"] == monitor.primary_id else None
-        robots.append(present_robot(
+        item = present_robot(
             record, ssh_robot=ssh_robot, nav2=nav2, geometry=geometry,
             worker=workers.get(record["robot_id"]),
-        ))
+        )
+        state = robot_state(record["robot_id"], settings, snapshot if record["robot_id"] == "pinky-1" else None)
+        # Physical-only RobotStatus telemetry. Virtual robots keep registry home separate.
+        if record["kind"] == "physical":
+            if state.get("pose_valid") and isinstance(state.get("pose"), dict) and state.get("pose_source") != "registry_home":
+                item["pose"] = {
+                    "x": state["pose"].get("x"),
+                    "y": state["pose"].get("y"),
+                    "yaw": state["pose"].get("yaw"),
+                }
+                item["pose_checked_at"] = state.get("pose_timestamp")
+                item["pose_source"] = state.get("pose_source")
+                item["pose_valid"] = True
+                item["pose_freshness"] = state.get("pose_freshness")
+                if geometry is not None and all(isinstance(item["pose"].get(k), (int, float)) for k in ("x", "y")):
+                    located = describe_map_point(
+                        geometry,
+                        float(item["pose"]["x"]),
+                        float(item["pose"]["y"]),
+                        float(item["pose"].get("yaw") or 0.0),
+                    )
+                    item["pose"]["grid"] = located["grid"]
+                    item["pose"]["inside_map"] = located["inside_map"]
+            else:
+                item["pose_valid"] = False
+                item["pose_freshness"] = state.get("pose_freshness") or "missing"
+            item["battery_valid"] = bool(state.get("battery_valid"))
+            item["battery_percentage"] = state.get("battery_percentage") if state.get("battery_valid") else None
+            item["battery_source"] = state.get("battery_source") if state.get("battery_valid") else None
+            item["battery_timestamp"] = state.get("battery_timestamp") if state.get("battery_valid") else None
+            item["battery_freshness"] = state.get("battery_freshness") or "missing"
+            item["plan_valid"] = bool(state.get("plan_valid"))
+            item["plan"] = state.get("plan") if state.get("plan_valid") else None
+            item["plan_source"] = state.get("plan_source") if state.get("plan_valid") else None
+            item["plan_timestamp"] = state.get("plan_timestamp") if state.get("plan_valid") else None
+            item["plan_freshness"] = state.get("plan_freshness") or "missing"
+            item["receiver_ready"] = state.get("receiver_ready")
+            item["task_assignable"] = bool(state.get("assignable"))
+        else:
+            item["pose_valid"] = False
+            item["battery_valid"] = False
+            item["battery_percentage"] = None
+            item["battery_freshness"] = "not_applicable"
+            item["plan_valid"] = False
+            item["plan"] = None
+            item["plan_freshness"] = "not_applicable"
+        robots.append(item)
     return {
         "robots": robots,
         "configured_count": len(registry),
@@ -257,26 +305,48 @@ async def physical_5cm_test_cancel(request: Request) -> dict:
 # FMS_DIRECT_5CM_LIVE_POSE_V1: fast read-only pose endpoint; no SSH probe on every UI refresh.
 @router.get("/nav2/pose")
 async def physical_live_pose(request: Request) -> dict:
+    settings = request.app.state.settings
+    from app.services.robot_state import robot_state
+
+    state = robot_state("pinky-1", settings)
+    # Prefer RobotStatus-reported pose; never invent or substitute registry home.
+    pose = state.get("pose") if state.get("pose_valid") and state.get("tf_fresh") else None
+    pose_checked_at = state.get("pose_timestamp")
+    pose_source = state.get("pose_source")
     monitor = getattr(request.app.state, "physical_nav2", None)
-    if monitor is None:
-        return {"robot_id": "pinky-1", "pose": None, "pose_checked_at": None}
-    latest = monitor.snapshot()
-    pose = latest.get("pose")
+    latest = {} if monitor is None else monitor.snapshot()
+    if pose is None and monitor is not None:
+        # Diagnostic Nav2 monitor path only when RobotStatus pose is unavailable.
+        mon_pose = latest.get("pose")
+        if isinstance(mon_pose, dict) and mon_pose.get("x") is not None:
+            pose = dict(mon_pose)
+            pose_checked_at = latest.get("pose_checked_at")
+            pose_source = "tf:map->base_footprint"
     if isinstance(pose, dict):
         pose = dict(pose)
         try:
             geometry = _geometry(request)
-            if all(isinstance(pose.get(key), (int, float)) for key in ("x", "y", "yaw")):
-                located = describe_map_point(geometry, float(pose["x"]), float(pose["y"]), float(pose["yaw"]))
+            if all(isinstance(pose.get(key), (int, float)) for key in ("x", "y")):
+                yaw = float(pose["yaw"]) if isinstance(pose.get("yaw"), (int, float)) else 0.0
+                located = describe_map_point(geometry, float(pose["x"]), float(pose["y"]), yaw)
                 pose["grid"] = located["grid"]
                 pose["inside_map"] = located["inside_map"]
         except HTTPException:
             pass
     return {
-        "robot_id": monitor.primary_id,
+        "robot_id": "pinky-1",
         "pose": pose,
-        "pose_checked_at": latest.get("pose_checked_at"),
-        "pose_source": "tf:map->base_footprint",
+        "pose_checked_at": pose_checked_at,
+        "pose_source": pose_source,
+        "pose_valid": bool(pose is not None and state.get("pose_valid")),
+        "pose_freshness": state.get("pose_freshness"),
+        "yaw": None if not isinstance(pose, dict) else pose.get("yaw"),
+        "ros_domain_id": state.get("ros_domain_id"),
+        "battery_valid": bool(state.get("battery_valid")),
+        "battery_percentage": state.get("battery_percentage") if state.get("battery_valid") else None,
+        "battery_source": state.get("battery_source") if state.get("battery_valid") else None,
+        "battery_timestamp": state.get("battery_timestamp") if state.get("battery_valid") else None,
+        "battery_freshness": state.get("battery_freshness"),
         "live_tf_status": latest.get("live_tf_status"),
         "live_tf_age_s": latest.get("live_tf_age_s"),
         "live_tf_withheld_reason": latest.get("live_tf_withheld_reason"),
@@ -287,6 +357,7 @@ async def physical_live_pose(request: Request) -> dict:
         "expected_map_yaml": latest.get("expected_map_yaml"),
         "map_mismatch_detail": latest.get("map_mismatch_detail"),
         "five_cm_blockers": latest.get("five_cm_blockers") or [],
+        "receiver_ready": state.get("receiver_ready"),
     }
 
 

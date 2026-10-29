@@ -11,14 +11,25 @@ from robot_receiver.task_codec import QOS, TOPIC_ACK, TOPIC_CANCEL, TOPIC_CANCEL
 
 
 def test_topic_defaults_match_the_five_message_contract():
+    from robot_receiver.telemetry_topics import (
+        TELEMETRY_QOS,
+        TOPIC_AMCL_POSE,
+        TOPIC_BATTERY_PERCENT,
+        TOPIC_PLAN,
+    )
+
     fields = Settings.model_fields
     assert fields["ros_task_command_topic"].default == TOPIC_COMMAND == "/fms/task/command"
     assert fields["ros_task_ack_topic"].default == TOPIC_ACK == "/fms/task/ack"
     assert fields["ros_task_cancel_topic"].default == TOPIC_CANCEL == "/fms/task/cancel"
     assert fields["ros_task_cancel_ack_topic"].default == TOPIC_CANCEL_ACK == "/fms/task/cancel_ack"
     assert fields["ros_robot_status_topic"].default == TOPIC_STATUS == "/fms/robot/status"
+    assert fields["ros_amcl_pose_topic"].default == TOPIC_AMCL_POSE == "/amcl_pose"
+    assert fields["ros_plan_topic"].default == TOPIC_PLAN == "/plan"
+    assert fields["ros_battery_percent_topic"].default == TOPIC_BATTERY_PERCENT == "/battery/percent"
     assert fields["fleet_dispatch_mode"].default == "ros_topic"
     assert QOS == {"reliability": "reliable", "durability": "volatile", "history": "keep_last", "depth": 10}
+    assert TELEMETRY_QOS == QOS
 
 
 def test_republish_after_a_rewritten_command_or_a_returned_subscriber():

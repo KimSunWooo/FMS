@@ -43,6 +43,11 @@ class DomainSupervisor:
         env["FMS_TOPIC_TASK_CANCEL"] = str(getattr(self.settings, "ros_task_cancel_topic", "/fms/task/cancel"))
         env["FMS_TOPIC_TASK_CANCEL_ACK"] = str(getattr(self.settings, "ros_task_cancel_ack_topic", "/fms/task/cancel_ack"))
         env["FMS_TOPIC_ROBOT_STATUS"] = str(getattr(self.settings, "ros_robot_status_topic", "/fms/robot/status"))
+        env["FMS_TOPIC_AMCL_POSE"] = str(getattr(self.settings, "ros_amcl_pose_topic", "/amcl_pose"))
+        env["FMS_TOPIC_PLAN"] = str(getattr(self.settings, "ros_plan_topic", "/plan"))
+        env["FMS_TOPIC_BATTERY_PERCENT"] = str(
+            getattr(self.settings, "ros_battery_percent_topic", "/battery/percent")
+        )
         for key in list(env):
             if any(token in key.upper() for token in ("PASSWORD", "TOKEN", "SECRET")):
                 env.pop(key, None)

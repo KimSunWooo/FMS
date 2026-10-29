@@ -12,7 +12,7 @@ from sqlalchemy.pool import NullPool
 from app.models.base import Base
 from app.models.tables import SchemaMigration
 
-LATEST_SCHEMA = 8
+LATEST_SCHEMA = 9
 
 _PARTIAL_INDEXES = (
     """
@@ -115,6 +115,29 @@ class Database:
                 row[1]
                 for row in connection.execute(text("PRAGMA table_info(fleet_reservations)")).fetchall()
             }
+            call_columns = {
+                row[1]
+                for row in connection.execute(text("PRAGMA table_info(fleet_call_requests)")).fetchall()
+            }
+            if call_columns and "exit_confirmed" not in call_columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_call_requests ADD COLUMN dropoff_arrival_evidence VARCHAR(40) NOT NULL DEFAULT ''"
+                )
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_call_requests ADD COLUMN exit_confirmed BOOLEAN NOT NULL DEFAULT 0"
+                )
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_call_requests ADD COLUMN exit_event_id VARCHAR(128) NOT NULL DEFAULT ''"
+                )
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_call_requests ADD COLUMN exit_source VARCHAR(32) NOT NULL DEFAULT ''"
+                )
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_call_requests ADD COLUMN exit_confirmed_at DATETIME"
+                )
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_call_requests ADD COLUMN events_json TEXT NOT NULL DEFAULT '[]'"
+                )
             if reservation_columns and "planning_profile" not in reservation_columns:
                 # Empty means the row was stored before the 0.14 m lattice profile.
                 # Do not rewrite task status, ACK history, or release reservations.

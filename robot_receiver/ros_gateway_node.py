@@ -18,14 +18,24 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
+from robot_receiver.ipc_atomic import write_json_atomic
 from robot_receiver.ros_messages import (
     ack_to_dict,
     cancel_ack_to_dict,
     cancel_from_dict,
     command_from_dict,
+    status_to_dict,
 )
 from robot_receiver.gateway_policy import publish_decision
 from robot_receiver.task_codec import TOPIC_ACK, TOPIC_CANCEL, TOPIC_CANCEL_ACK, TOPIC_COMMAND, TOPIC_STATUS
+from robot_receiver.telemetry_topics import (
+    TOPIC_AMCL_POSE,
+    TOPIC_BATTERY_PERCENT,
+    TOPIC_PLAN,
+    amcl_pose_to_dict,
+    battery_percent_to_dict,
+    plan_to_dict,
+)
 
 
 def reliable_qos() -> QoSProfile:
@@ -53,11 +63,63 @@ class GatewayNode(Node):
         self.create_subscription(self._type("TaskAck"), os.environ.get("FMS_TOPIC_TASK_ACK", TOPIC_ACK), self._on_ack, qos)
         self.create_subscription(self._type("TaskCancelAck"), os.environ.get("FMS_TOPIC_TASK_CANCEL_ACK", TOPIC_CANCEL_ACK), self._on_cancel_ack, qos)
         self.create_subscription(self._type("RobotStatus"), os.environ.get("FMS_TOPIC_ROBOT_STATUS", TOPIC_STATUS), self._on_status, qos)
+        # Manufacturer/Nav2 status topics (same names on every domain; robot_id from env).
+        self._subscribe_telemetry(qos)
         self.create_timer(0.2, self._pump)
 
     def _type(self, name: str):
         from fms_msgs import msg
         return getattr(msg, name)
+
+    def _subscribe_telemetry(self, qos) -> None:
+        amcl_topic = os.environ.get("FMS_TOPIC_AMCL_POSE", TOPIC_AMCL_POSE)
+        plan_topic = os.environ.get("FMS_TOPIC_PLAN", TOPIC_PLAN)
+        battery_topic = os.environ.get("FMS_TOPIC_BATTERY_PERCENT", TOPIC_BATTERY_PERCENT)
+        try:
+            from geometry_msgs.msg import PoseWithCovarianceStamped
+
+            self.create_subscription(PoseWithCovarianceStamped, amcl_topic, self._on_amcl_pose, qos)
+        except Exception as exc:  # noqa: BLE001
+            self.get_logger().warning(f"{amcl_topic} subscription unavailable: {exc}")
+        try:
+            from nav_msgs.msg import Path
+
+            self.create_subscription(Path, plan_topic, self._on_plan, qos)
+        except Exception as exc:  # noqa: BLE001
+            self.get_logger().warning(f"{plan_topic} subscription unavailable: {exc}")
+        try:
+            from std_msgs.msg import Float32
+
+            self.create_subscription(Float32, battery_topic, self._on_battery_percent, qos)
+        except Exception as exc:  # noqa: BLE001
+            self.get_logger().warning(f"{battery_topic} subscription unavailable: {exc}")
+
+    def _on_amcl_pose(self, msg) -> None:
+        from datetime import datetime, timezone
+
+        body = amcl_pose_to_dict(
+            msg, robot_id=self.robot_id, ros_domain_id=self.domain_id,
+            received_at=datetime.now(timezone.utc),
+        )
+        write_json_atomic(self.root / "amcl_pose.json", body)
+
+    def _on_plan(self, msg) -> None:
+        from datetime import datetime, timezone
+
+        body = plan_to_dict(
+            msg, robot_id=self.robot_id, ros_domain_id=self.domain_id,
+            received_at=datetime.now(timezone.utc),
+        )
+        write_json_atomic(self.root / "plan.json", body)
+
+    def _on_battery_percent(self, msg) -> None:
+        from datetime import datetime, timezone
+
+        body = battery_percent_to_dict(
+            msg, robot_id=self.robot_id, ros_domain_id=self.domain_id,
+            received_at=datetime.now(timezone.utc),
+        )
+        write_json_atomic(self.root / "battery_percent.json", body)
 
     def _pump(self) -> None:
         now = self.get_clock().now().nanoseconds / 1e9
@@ -140,14 +202,28 @@ class GatewayNode(Node):
         if msg.robot_id != self.robot_id or int(msg.ros_domain_id) != self.domain_id:
             return
         from datetime import datetime, timezone
-        (self.root / "robot_status.json").write_text(json.dumps({
-            "robot_id": msg.robot_id,
-            "ros_domain_id": int(msg.ros_domain_id),
-            "receiver_ready": bool(msg.receiver_ready),
-            "task_execution_enabled": False,
-            "last_received_task_id": msg.last_received_task_id,
-            "observed_at": datetime.now(timezone.utc).isoformat(),
-        }), encoding="utf-8")
+        body = status_to_dict(msg)
+        # Gateway receive time is distinct from status stamp and pose ROS stamp.
+        # Do not treat ROS Time as UTC; FMS freshness uses wall-clock receive time.
+        received = datetime.now(timezone.utc).isoformat()
+        body["observed_at"] = received
+        body["gateway_received_at"] = received
+        body["task_execution_enabled"] = False
+        if body.get("pose_valid") and isinstance(body.get("pose"), dict):
+            body["pose_observed_at"] = received
+        else:
+            body["pose"] = None
+            body["pose_source"] = ""
+            body["pose_observed_at"] = None
+            body["pose_valid"] = False
+        if body.get("battery_valid") and body.get("battery_percentage") is not None:
+            body["battery_observed_at"] = received
+        else:
+            body["battery_valid"] = False
+            body["battery_percentage"] = None
+            body["battery_source"] = ""
+            body["battery_observed_at"] = None
+        write_json_atomic(self.root / "robot_status.json", body)
 
     def _finish(self, command_id: str, body: dict) -> None:
         path = self.root / "results" / f"{command_id}.json"

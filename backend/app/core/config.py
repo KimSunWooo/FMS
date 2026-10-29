@@ -94,6 +94,10 @@ class Settings(BaseSettings):
     ros_task_cancel_topic: str = "/fms/task/cancel"
     ros_task_cancel_ack_topic: str = "/fms/task/cancel_ack"
     ros_robot_status_topic: str = "/fms/robot/status"
+    # Pinky → FMS status telemetry (same names per robot domain; QoS reliable/volatile/10).
+    ros_amcl_pose_topic: str = "/amcl_pose"
+    ros_plan_topic: str = "/plan"
+    ros_battery_percent_topic: str = "/battery/percent"
     ros_task_ack_timeout_s: float = 8.0
     ros_task_max_attempts: int = 2
     facilities_path: Path = Field(default_factory=lambda: ROOT / "config" / "facilities.json")

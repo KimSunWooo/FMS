@@ -112,6 +112,7 @@ def main() -> int:
         status["task_transport"] = _transport_label(robot, gateway)
         status["task_execution_enabled"] = False
         status["receiver_ready"] = _receiver_ready(data_dir, robot["robot_id"])
+        _merge_receiver_pose(status, data_dir, robot)
         write_status(status_path(data_dir, robot["robot_id"]), status)
         deadline = time.monotonic() + interval
         while not stop and time.monotonic() < deadline:
@@ -153,6 +154,41 @@ def _transport_label(robot: dict, gateway: subprocess.Popen | None) -> str:
     if gateway is not None and gateway.poll() is None:
         return "ros_topic"
     return "gateway_unavailable"
+
+
+def _merge_receiver_pose(status: dict, data_dir: Path, robot: dict) -> None:
+    """Prefer RobotStatus IPC pose as the primary reported location.
+
+    Worker TF probe remains under worker_tf_* for diagnosis/cross-check.
+    Registry home is never copied into pose.
+    """
+    from app.services.receiver_pose import interpret_receiver_pose, read_receiver_status
+
+    robot_id = robot["robot_id"]
+    domain = int(robot["ros_domain_id"])
+    status["worker_tf_pose"] = status.get("pose")
+    status["worker_tf_status"] = status.get("tf_status")
+    ipc = read_receiver_status(data_dir, robot_id, expected_domain=domain)
+    reported = interpret_receiver_pose(ipc, robot_id=robot_id, ros_domain_id=domain)
+    status["pose_freshness"] = reported["pose_freshness"]
+    status["pose_source"] = reported.get("pose_source")
+    status["pose_valid"] = bool(reported.get("pose_valid"))
+    status["pose_observed_at"] = reported.get("pose_timestamp")
+    status["receiver_status_observed_at"] = reported.get("status_observed_at")
+    if reported.get("tf_fresh") and isinstance(reported.get("pose"), dict):
+        status["pose"] = {
+            "x": reported["pose"]["x"],
+            "y": reported["pose"]["y"],
+            "yaw": reported["pose"].get("yaw"),
+        }
+        status["tf_status"] = "fresh"
+        status["pose_primary"] = "robot_status"
+        return
+    # Primary contract path unavailable: do not publish worker TF as authoritative pose.
+    status["pose"] = None
+    status["pose_primary"] = None
+    # Preserve worker diagnostic tf_status for Nav2 tooling.
+    status["tf_status"] = status.get("worker_tf_status") or status.get("tf_status") or "missing"
 
 
 def _receiver_ready(data_dir: Path, robot_id: str) -> bool:

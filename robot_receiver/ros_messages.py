@@ -171,12 +171,165 @@ def _iso_from_time(stamp) -> str:
     return datetime.fromtimestamp(seconds, timezone.utc).isoformat()
 
 
-def status_message(robot_id: str, domain_id: int, *, ready: bool, last_task_id: str) -> RobotStatus:
+def status_message(
+    robot_id: str,
+    domain_id: int,
+    *,
+    ready: bool,
+    last_task_id: str,
+    active_task_id: str = "",
+    pose_report: dict | None = None,
+    battery_report: dict | None = None,
+) -> RobotStatus:
+    """Build RobotStatus. Invalid reports keep *_valid=false (never invents values)."""
     msg = RobotStatus()
     msg.robot_id = robot_id
     msg.ros_domain_id = int(domain_id)
     msg.receiver_ready = ready
     msg.task_execution_enabled = False
-    msg.active_task_id = ""
+    msg.active_task_id = str(active_task_id or "")
     msg.last_received_task_id = last_task_id
+    apply_pose_report(msg, pose_report)
+    apply_battery_report(msg, battery_report)
     return msg
+
+
+def apply_battery_report(msg: RobotStatus, battery_report: dict | None) -> None:
+    """Attach validated SOC (0..1) or clear battery_valid without inventing a level."""
+    from builtin_interfaces.msg import Time
+
+    msg.battery_valid = False
+    msg.battery_percentage = 0.0
+    msg.battery_stamp = Time()
+    msg.battery_source = ""
+    if not battery_report or not battery_report.get("battery_valid"):
+        return
+    msg.battery_valid = True
+    msg.battery_percentage = float(battery_report["battery_percentage"])
+    msg.battery_source = str(battery_report.get("battery_source") or "")
+    ros_stamp = battery_report.get("battery_ros_stamp")
+    if ros_stamp is not None:
+        msg.battery_stamp = ros_stamp
+    else:
+        observed = str(battery_report.get("battery_observed_at") or "")
+        if observed:
+            msg.battery_stamp = _time_from_iso(observed)
+
+
+def apply_pose_report(msg: RobotStatus, pose_report: dict | None) -> None:
+    """Attach a validated TF pose, or clear pose_valid without treating zeros as location."""
+    from robot_receiver.pose_report import POSE_SOURCE_TF
+
+    msg.pose = PoseStamped()
+    msg.pose.header = Header(frame_id="map")
+    msg.pose.pose = Pose(
+        position=Point(x=0.0, y=0.0, z=0.0),
+        orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
+    )
+    msg.pose_valid = False
+    msg.pose_source = ""
+    if not pose_report or not pose_report.get("pose_valid"):
+        return
+    orientation = pose_report["orientation"]
+    msg.pose_valid = True
+    msg.pose_source = str(pose_report.get("pose_source") or POSE_SOURCE_TF)
+    msg.pose.header.frame_id = "map"
+    tf_stamp = pose_report.get("tf_stamp")
+    if tf_stamp is not None:
+        msg.pose.header.stamp = tf_stamp
+    else:
+        observed = str(pose_report.get("pose_observed_at") or "")
+        if observed:
+            msg.pose.header.stamp = _time_from_iso(observed)
+    msg.pose.pose.position.x = float(pose_report["x"])
+    msg.pose.pose.position.y = float(pose_report["y"])
+    msg.pose.pose.position.z = float(pose_report["z"])
+    msg.pose.pose.orientation.x = float(orientation["x"])
+    msg.pose.pose.orientation.y = float(orientation["y"])
+    msg.pose.pose.orientation.z = float(orientation["z"])
+    msg.pose.pose.orientation.w = float(orientation["w"])
+
+
+def status_to_dict(msg: RobotStatus) -> dict:
+    """Deserialize RobotStatus for IPC. pose_valid=false ⇒ pose is null."""
+    from robot_receiver.pose_report import quaternion_is_valid, yaw_from_quaternion
+    import math
+
+    stamp = _iso_from_time(msg.stamp) if hasattr(msg, "stamp") else ""
+    claimed = bool(getattr(msg, "pose_valid", False))
+    pose_source = str(getattr(msg, "pose_source", "") or "")
+    pose_block = None
+    pose_observed_at = None
+    pose_valid = False
+    if claimed and hasattr(msg, "pose"):
+        pose = msg.pose
+        frame_id = str(pose.header.frame_id or "")
+        x = float(pose.pose.position.x)
+        y = float(pose.pose.position.y)
+        z = float(pose.pose.position.z)
+        qx = float(pose.pose.orientation.x)
+        qy = float(pose.pose.orientation.y)
+        qz = float(pose.pose.orientation.z)
+        qw = float(pose.pose.orientation.w)
+        if (
+            frame_id == "map"
+            and all(math.isfinite(v) for v in (x, y, z))
+            and quaternion_is_valid(qx, qy, qz, qw)
+        ):
+            pose_valid = True
+            # ROS stamp is kept separately; Gateway fills wall-clock pose_observed_at.
+            pose_observed_at = _iso_from_time(pose.header.stamp) or None
+            pose_block = {
+                "x": x,
+                "y": y,
+                "z": z,
+                "yaw": yaw_from_quaternion(qx, qy, qz, qw),
+                "orientation": {"x": qx, "y": qy, "z": qz, "w": qw},
+                "frame_id": "map",
+            }
+        else:
+            pose_source = ""
+    else:
+        pose_source = ""
+    battery_valid = bool(getattr(msg, "battery_valid", False))
+    battery_source = str(getattr(msg, "battery_source", "") or "")
+    battery_percentage = None
+    battery_observed_at = None
+    if battery_valid:
+        try:
+            raw = float(msg.battery_percentage)
+        except (TypeError, ValueError, AttributeError):
+            battery_valid = False
+            battery_source = ""
+        else:
+            from robot_receiver.battery_report import normalize_soc
+
+            soc = normalize_soc(raw, assume_percent_if_gt_one=False)
+            if soc is None:
+                battery_valid = False
+                battery_source = ""
+            else:
+                battery_percentage = soc
+                battery_observed_at = _iso_from_time(getattr(msg, "battery_stamp", None)) or None
+    else:
+        battery_source = ""
+
+    return {
+        "robot_id": msg.robot_id,
+        "ros_domain_id": int(msg.ros_domain_id),
+        "receiver_ready": bool(msg.receiver_ready),
+        "task_execution_enabled": False,
+        "active_task_id": str(getattr(msg, "active_task_id", "") or ""),
+        "last_received_task_id": msg.last_received_task_id,
+        "stamp": stamp or None,
+        "pose_valid": pose_valid,
+        "pose_source": pose_source if pose_valid else "",
+        "pose": pose_block if pose_valid else None,
+        "pose_ros_stamp": pose_observed_at if pose_valid else None,
+        "pose_observed_at": None,
+        "battery_valid": battery_valid,
+        "battery_percentage": battery_percentage if battery_valid else None,
+        "battery_source": battery_source if battery_valid else "",
+        "battery_ros_stamp": battery_observed_at if battery_valid else None,
+        "battery_observed_at": None,
+    }

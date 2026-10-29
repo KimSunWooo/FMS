@@ -13,6 +13,7 @@ from app.api.fleet import router as fleet_router
 from app.api.physical import router as physical_router
 from app.api.fleet_tasks import router as fleet_tasks_router
 from app.api.call_requests import router as call_requests_router
+from app.api.transport_missions import router as transport_missions_router
 from app.api.planning import router as planning_router
 from app.api.robots import install_error_handler
 from app.api.robots import router as robots_router
@@ -146,6 +147,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(planning_router)
     app.include_router(fleet_tasks_router)
     app.include_router(call_requests_router)
+    app.include_router(transport_missions_router)
     app.include_router(traffic_router)
     app.include_router(system_router)
     return app

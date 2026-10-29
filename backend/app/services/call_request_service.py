@@ -1,7 +1,8 @@
-"""User-call orchestration on top of existing FleetTask rows.
+"""Transport Mission orchestration on top of existing FleetTask rows.
 
-One call creates two tasks: pickup A→B and dropoff B→C. Dropoff stays held
-until boarding is confirmed. No new ROS topics. execute stays false.
+Maps hospital fleet_server.py business gates (BOARD/EXIT) onto FMS without
+importing /hospital/ui or /pinky/mission_* topics. One mission = pickup A→B
+plus dropoff B→C on the same robot. Dropoff stays held until boarding.
 """
 from __future__ import annotations
 
@@ -13,19 +14,25 @@ from sqlalchemy import select
 
 from app.models.tables import FleetCallRequest, FleetReservationRecord, FleetTaskRecord
 from app.services.call_scenario import (
-    BOARDING_CONFIRMED,
+    BOARD_CONFIRMED,
     CALL_BLOCKED,
-    CALL_CREATED,
     CALL_FAILED,
+    CANCELED,
+    CANCELING,
+    DONE,
     DROPOFF_ARRIVED,
     DROPOFF_DISPATCHED,
     DROPOFF_READY,
+    EXIT_CONFIRMED,
+    FINAL_STATES,
     LEG_DROPOFF,
     LEG_PICKUP,
     PICKUP_ARRIVED,
     PICKUP_DISPATCHED,
-    PICKUP_PLANNED,
-    WAITING_FOR_BOARDING,
+    PICKUP_READY,
+    REQUESTED,
+    WAIT_BOARD,
+    WAIT_EXIT,
 )
 from app.services.fleet_registry import load_registry
 from app.services.fleet_task_machine import CREATED, DELIVERED, RESERVED
@@ -187,7 +194,7 @@ class CallRequestService:
         with self.db.write() as session:
             call = FleetCallRequest(
                 id=call_id,
-                scenario_status=PICKUP_PLANNED,
+                scenario_status=PICKUP_READY,
                 assigned_robot_id=planned_pickup["assigned_robot_id"],
                 pickup_x=pickup_x,
                 pickup_y=pickup_y,
@@ -283,7 +290,7 @@ class CallRequestService:
             call.boarding_event_id = event_id
             call.boarding_source = source
             call.boarding_confirmed_at = _now()
-            call.scenario_status = BOARDING_CONFIRMED
+            call.scenario_status = BOARD_CONFIRMED
             schedule = json.loads(dropoff.schedule_json or "{}")
             schedule["boarding_confirmed"] = True
             schedule["boarding_event_id"] = event_id
@@ -292,6 +299,7 @@ class CallRequestService:
             dropoff.schedule_json = json.dumps(schedule)
             dropoff.updated_at = _now()
             call.updated_at = _now()
+            _append_event(call, "BOARD", event_id, source)
 
         planned = self.fleet.plan(dropoff_id)  # type: ignore[arg-type]
         with self.db.write() as session:
@@ -327,8 +335,8 @@ class CallRequestService:
             already = (
                 bool(call.pickup_arrival_evidence)
                 and call.scenario_status in {
-                    PICKUP_ARRIVED, WAITING_FOR_BOARDING, BOARDING_CONFIRMED, DROPOFF_READY,
-                    DROPOFF_DISPATCHED, DROPOFF_ARRIVED,
+                    PICKUP_ARRIVED, WAIT_BOARD, BOARD_CONFIRMED, DROPOFF_READY,
+                    DROPOFF_DISPATCHED, DROPOFF_ARRIVED, WAIT_EXIT, EXIT_CONFIRMED, DONE,
                 }
             )
         if not pickup_id:
@@ -358,7 +366,7 @@ class CallRequestService:
             for row in rows:
                 row.t_end = max(float(row.t_end), hold_until)
             call.pickup_arrival_evidence = "simulated"
-            call.scenario_status = WAITING_FOR_BOARDING
+            call.scenario_status = WAIT_BOARD
             call.updated_at = _now()
             detail = json.loads(call.detail_json or "{}")
             detail["pickup_arrival"] = {
@@ -367,6 +375,115 @@ class CallRequestService:
                 "recorded_at": _now().isoformat(),
             }
             call.detail_json = json.dumps(detail)
+            _append_event(call, "PICKUP_ARRIVED_SIMULATED", "sim-pickup", "mock")
+        return self.get(call_id)
+
+    def mark_dropoff_arrived_simulated(self, call_id: str) -> dict:
+        """Simulated dropoff arrival only. Enables WAIT_EXIT, not physical proof."""
+        with self.db.read() as session:
+            call = session.get(FleetCallRequest, call_id)
+            if call is None:
+                raise CallRequestError(404, "Call request not found")
+            dropoff_id = call.dropoff_task_id
+            if call.scenario_status in {WAIT_EXIT, EXIT_CONFIRMED, DONE}:
+                return self.get(call_id)
+        if not dropoff_id:
+            raise CallRequestError(409, "Call has no dropoff task")
+        with self.db.write() as session:
+            task = session.get(FleetTaskRecord, dropoff_id)
+            call = session.get(FleetCallRequest, call_id)
+            if task is None or call is None:
+                raise CallRequestError(404, "Dropoff task not found")
+            if not call.boarding_confirmed:
+                raise CallRequestError(409, "boarding is required before dropoff arrival")
+            if task.ack_channel != "simulated" or task.status != DELIVERED:
+                raise CallRequestError(
+                    409,
+                    "Simulated dropoff arrival requires a simulated DELIVERED receipt",
+                )
+            task.motion_verified = True
+            task.updated_at = _now()
+            hold_until = _now().timestamp() + float(
+                getattr(self.settings, "call_boarding_hold_s", 300.0) or 300.0
+            )
+            rows = session.scalars(select(FleetReservationRecord).where(
+                FleetReservationRecord.task_id == task.id,
+                FleetReservationRecord.status == "confirmed",
+            )).all()
+            for row in rows:
+                row.t_end = max(float(row.t_end), hold_until)
+            call.dropoff_arrival_evidence = "simulated"
+            call.scenario_status = WAIT_EXIT
+            call.updated_at = _now()
+            _append_event(call, "DROPOFF_ARRIVED_SIMULATED", "sim-dropoff", "mock")
+        return self.get(call_id)
+
+    def confirm_exit(self, call_id: str, *, event_id: str, source: str = "mock") -> dict:
+        """Operator/mock exit gate. No ROS exit topic is added."""
+        if not event_id:
+            raise CallRequestError(422, "exit event_id is required")
+        with self.db.read() as session:
+            call = session.get(FleetCallRequest, call_id)
+            if call is None:
+                raise CallRequestError(404, "Call request not found")
+            if call.exit_confirmed and call.exit_event_id == event_id:
+                already = True
+            else:
+                already = False
+            if call.exit_confirmed and call.exit_event_id != event_id:
+                raise CallRequestError(409, "exit already confirmed with a different event_id")
+            if call.scenario_status in FINAL_STATES and not already:
+                raise CallRequestError(409, f"Cannot exit from {call.scenario_status}")
+            arrival = call.dropoff_arrival_evidence
+            status = call.scenario_status
+        if already:
+            return self.get(call_id)
+        if status not in {WAIT_EXIT, DROPOFF_ARRIVED}:
+            raise CallRequestError(409, f"EXIT rejected in phase {status}")
+        if arrival not in {"simulated", "operator"}:
+            raise CallRequestError(409, "dropoff arrival evidence is missing; ACK is not arrival")
+        with self.db.write() as session:
+            call = session.get(FleetCallRequest, call_id)
+            assert call is not None
+            call.exit_confirmed = True
+            call.exit_event_id = event_id
+            call.exit_source = source
+            call.exit_confirmed_at = _now()
+            call.scenario_status = DONE
+            call.updated_at = _now()
+            _append_event(call, "EXIT", event_id, source)
+        return self.get(call_id)
+
+    def cancel(self, call_id: str, *, reason: str = "operator cancel") -> dict:
+        """Cancel linked FleetTasks. Does not invent Nav2 motion cancel success."""
+        with self.db.read() as session:
+            call = session.get(FleetCallRequest, call_id)
+            if call is None:
+                raise CallRequestError(404, "Call request not found")
+            if call.scenario_status in {DONE, CANCELED}:
+                return self.get(call_id)
+            pickup_id = call.pickup_task_id
+            dropoff_id = call.dropoff_task_id
+        with self.db.write() as session:
+            call = session.get(FleetCallRequest, call_id)
+            assert call is not None
+            call.scenario_status = CANCELING
+            call.failure_reason = reason
+            call.updated_at = _now()
+            _append_event(call, "CANCEL_REQUESTED", reason, "operator")
+        for task_id in (dropoff_id, pickup_id):
+            if not task_id:
+                continue
+            try:
+                self.fleet.cancel(task_id, reason=reason)
+            except FleetTaskError:
+                pass
+        with self.db.write() as session:
+            call = session.get(FleetCallRequest, call_id)
+            assert call is not None
+            call.scenario_status = CANCELED
+            call.updated_at = _now()
+            _append_event(call, "CANCELED", reason, "operator")
         return self.get(call_id)
 
     def refresh_scenario(self, call_id: str) -> dict:
@@ -377,24 +494,28 @@ class CallRequestService:
                 raise CallRequestError(404, "Call request not found")
             pickup = session.get(FleetTaskRecord, call.pickup_task_id) if call.pickup_task_id else None
             dropoff = session.get(FleetTaskRecord, call.dropoff_task_id) if call.dropoff_task_id else None
-            if call.scenario_status in {CALL_FAILED, CALL_BLOCKED}:
+            if call.scenario_status in FINAL_STATES | {CANCELING}:
                 return self._public(call)
-            if dropoff is not None and dropoff.motion_verified:
-                call.scenario_status = DROPOFF_ARRIVED
+            if call.exit_confirmed:
+                call.scenario_status = DONE
+            elif call.dropoff_arrival_evidence:
+                call.scenario_status = WAIT_EXIT
+            elif dropoff is not None and dropoff.motion_verified:
+                call.scenario_status = WAIT_EXIT
             elif dropoff is not None and dropoff.status in {"DISPATCHING", "DELIVERED", "ACKNOWLEDGED"}:
                 call.scenario_status = DROPOFF_DISPATCHED
             elif call.boarding_confirmed and dropoff is not None and dropoff.status == RESERVED:
                 call.scenario_status = DROPOFF_READY
             elif call.boarding_confirmed:
-                call.scenario_status = BOARDING_CONFIRMED
+                call.scenario_status = BOARD_CONFIRMED
             elif pickup is not None and pickup.motion_verified:
-                call.scenario_status = WAITING_FOR_BOARDING
+                call.scenario_status = WAIT_BOARD
             elif pickup is not None and pickup.status in {"DISPATCHING", "DELIVERED", "ACKNOWLEDGED"}:
                 call.scenario_status = PICKUP_DISPATCHED
             elif pickup is not None and pickup.status == RESERVED:
-                call.scenario_status = PICKUP_PLANNED
+                call.scenario_status = PICKUP_READY
             elif pickup is None:
-                call.scenario_status = CALL_CREATED
+                call.scenario_status = REQUESTED
             call.updated_at = _now()
         return self.get(call_id)
 
@@ -601,7 +722,16 @@ class CallRequestService:
             "boarding_source": call.boarding_source or "",
             "boarding_confirmed_at": None if call.boarding_confirmed_at is None else call.boarding_confirmed_at.isoformat(),
             "pickup_arrival_evidence": call.pickup_arrival_evidence or "",
+            "dropoff_arrival_evidence": getattr(call, "dropoff_arrival_evidence", "") or "",
+            "exit_confirmed": bool(getattr(call, "exit_confirmed", False)),
+            "exit_event_id": getattr(call, "exit_event_id", "") or "",
+            "exit_source": getattr(call, "exit_source", "") or "",
+            "exit_confirmed_at": (
+                None if getattr(call, "exit_confirmed_at", None) is None
+                else call.exit_confirmed_at.isoformat()
+            ),
             "detail_json": call.detail_json or "{}",
+            "events_json": getattr(call, "events_json", None) or "[]",
             "failure_reason": call.failure_reason or "",
             "created_at": call.created_at.isoformat(),
             "updated_at": call.updated_at.isoformat(),
@@ -628,12 +758,17 @@ class CallRequestService:
             "eta_is_not_arrival": True,
             "boarding_required_for_dropoff": True,
             "dropoff_dispatch_blocked_until_boarding": True,
+            "exit_required_for_done": True,
             "physical_arrival_sensor": "BLOCKED",
             "boarding_ros_topic": "not_added",
+            "hospital_ui_topics": "not_imported",
+            "returning_auto": "not_enabled",
         }
         return {
             "call_id": call["id"],
+            "mission_id": call["id"],
             "scenario_status": call["scenario_status"],
+            "mission_status": call["scenario_status"],
             "assigned_robot_id": call["assigned_robot_id"],
             "pickup": {"x": call["pickup_x"], "y": call["pickup_y"]},
             "dropoff": {"x": call["dropoff_x"], "y": call["dropoff_y"]},
@@ -650,13 +785,33 @@ class CallRequestService:
                 "is_physical_user_signal": call["boarding_source"] == "operator",
                 "mock_only": call["boarding_source"] == "mock",
             },
+            "exit": {
+                "confirmed": bool(call.get("exit_confirmed")),
+                "event_id": call.get("exit_event_id") or None,
+                "source": call.get("exit_source") or None,
+                "confirmed_at": call.get("exit_confirmed_at"),
+                "mock_only": call.get("exit_source") == "mock",
+            },
             "pickup_arrival_evidence": call["pickup_arrival_evidence"] or None,
+            "dropoff_arrival_evidence": call.get("dropoff_arrival_evidence") or None,
+            "events": json.loads(call.get("events_json") or "[]"),
             "gates": gates,
             "detail": json.loads(call["detail_json"] or "{}"),
             "failure_reason": call["failure_reason"],
             "created_at": call["created_at"],
             "updated_at": call["updated_at"],
         }
+
+
+def _append_event(call: FleetCallRequest, kind: str, event_id: str, source: str) -> None:
+    events = json.loads(getattr(call, "events_json", None) or "[]")
+    events.append({
+        "kind": kind,
+        "event_id": event_id,
+        "source": source,
+        "at": _now().isoformat(),
+    })
+    call.events_json = json.dumps(events)
 
 
 def _now() -> datetime:

@@ -40,6 +40,7 @@ def call_env(tmp_path: Path):
 
 
 def _seed_pinky1(runtime, x: float = 0.9, y: float = 1.2) -> None:
+    now = datetime.now(timezone.utc).isoformat()
     write_status(status_path(runtime.settings.data_dir, "pinky-1"), {
         "robot_id": "pinky-1",
         "ros_domain_id": 24,
@@ -47,9 +48,26 @@ def _seed_pinky1(runtime, x: float = 0.9, y: float = 1.2) -> None:
         "physical_connection_enabled": True,
         "tf_status": "fresh",
         "pose": {"x": x, "y": y, "yaw": 0},
-        "last_seen": datetime.now(timezone.utc).isoformat(),
+        "worker_tf_pose": {"x": x, "y": y, "yaw": 0},
+        "worker_tf_status": "fresh",
+        "last_seen": now,
         "connection_state": "connected",
+        "receiver_ready": True,
     })
+    # Primary physical pose path: Gateway IPC RobotStatus (not registry home).
+    ipc = Path(runtime.settings.data_dir) / "ros_ipc" / "pinky-1"
+    ipc.mkdir(parents=True, exist_ok=True)
+    (ipc / "robot_status.json").write_text(json.dumps({
+        "robot_id": "pinky-1",
+        "ros_domain_id": 24,
+        "receiver_ready": True,
+        "task_execution_enabled": False,
+        "pose_valid": True,
+        "pose_source": "tf:map->base_footprint",
+        "observed_at": now,
+        "pose_observed_at": now,
+        "pose": {"x": x, "y": y, "z": 0.0, "yaw": 0.0, "frame_id": "map"},
+    }), encoding="utf-8")
 
 
 def test_scenario_a_creates_two_legs_and_holds_dropoff(call_env):
@@ -62,7 +80,7 @@ def test_scenario_a_creates_two_legs_and_holds_dropoff(call_env):
     })
     assert created.status_code == 200, created.text
     body = created.json()
-    assert body["scenario_status"] == "PICKUP_PLANNED"
+    assert body["scenario_status"] == "PICKUP_READY"
     assert body["assigned_robot_id"] in {"pinky-1", "pinky-2", "pinky-3"}
     assert body["pickup_task"]["status"] == "RESERVED"
     assert body["dropoff_task"]["status"] == "CREATED"
@@ -87,7 +105,7 @@ def test_scenario_b_boarding_unlocks_dropoff_after_simulated_arrival(call_env):
         "robot_id": "pinky-2",
         "priority": 4,
     }).json()
-    assert created["scenario_status"] == "PICKUP_PLANNED"
+    assert created["scenario_status"] == "PICKUP_READY"
     # Boarding before arrival must fail.
     early = client.post(f"/api/call-requests/{created['call_id']}/boarding", json={
         "event_id": "board-1", "source": "mock",
@@ -103,7 +121,7 @@ def test_scenario_b_boarding_unlocks_dropoff_after_simulated_arrival(call_env):
     assert still.status_code == 409
     arrived = client.post(f"/api/call-requests/{created['call_id']}/pickup-arrived-simulated")
     assert arrived.status_code == 200, arrived.text
-    assert arrived.json()["scenario_status"] == "WAITING_FOR_BOARDING"
+    assert arrived.json()["scenario_status"] == "WAIT_BOARD"
     assert arrived.json()["pickup_arrival_evidence"] == "simulated"
     boarded = client.post(f"/api/call-requests/{created['call_id']}/boarding", json={
         "event_id": "board-1", "source": "mock",
@@ -141,7 +159,7 @@ def test_scenario_c_without_boarding_keeps_dropoff_held_and_occupancy(call_env):
     }).json()
     client.post(f"/api/fleet-tasks/{created['pickup_task_id']}/dispatch")
     arrived = client.post(f"/api/call-requests/{created['call_id']}/pickup-arrived-simulated").json()
-    assert arrived["scenario_status"] == "WAITING_FOR_BOARDING"
+    assert arrived["scenario_status"] == "WAIT_BOARD"
     dropoff = client.get(f"/api/fleet-tasks/{created['dropoff_task_id']}").json()
     assert dropoff["status"] == "CREATED"
     assert dropoff["schedule"]["hold_until_boarding"] is True
@@ -164,7 +182,7 @@ def test_scenario_d_three_parallel_calls_six_legs(call_env):
         response = client.post("/api/call-requests", json=body)
         assert response.status_code == 200, response.text
         calls.append(response.json())
-    planned = [item for item in calls if item["scenario_status"] == "PICKUP_PLANNED"]
+    planned = [item for item in calls if item["scenario_status"] == "PICKUP_READY"]
     assert len(planned) >= 2
     robots = {item["assigned_robot_id"] for item in planned}
     assert robots <= {"pinky-1", "pinky-2", "pinky-3"}
@@ -212,8 +230,8 @@ def test_scenario_e_error_gates(call_env):
     assert blocked.status_code in {200, 422, 409}
     if blocked.status_code == 200:
         body = blocked.json()
-        assert body["scenario_status"] in {"CALL_FAILED", "CALL_BLOCKED", "PICKUP_PLANNED"}
-        if body["scenario_status"] == "PICKUP_PLANNED":
+        assert body["scenario_status"] in {"CALL_FAILED", "CALL_BLOCKED", "PICKUP_READY"}
+        if body["scenario_status"] == "PICKUP_READY":
             # Only acceptable if TF was seeded; this fixture did not seed it.
             assert False, "pinky-1 must not plan without TF"
     # Wrong call boarding
@@ -238,3 +256,62 @@ def test_lattice_defaults_still_fourteen_cm_for_calls(call_env):
     assert runtime.settings.planning_resolution_m == 0.14
     starts = client.get("/api/planning/starts").json()["map"]
     assert starts["planning_resolution_m"] == 0.14
+
+
+def test_exit_completes_mission_after_dropoff_arrival(call_env):
+    client, _runtime = call_env
+    created = client.post("/api/transport-missions", json={
+        "pickup": PICKUP,
+        "dropoff": DROPOFF,
+        "robot_id": "pinky-2",
+        "priority": 4,
+    }).json()
+    assert created["mission_id"] == created["call_id"]
+    assert created["mission_status"] == "PICKUP_READY"
+    client.post(f"/api/fleet-tasks/{created['pickup_task_id']}/dispatch")
+    client.post(f"/api/transport-missions/{created['mission_id']}/pickup-arrived-simulated")
+    # EXIT before dropoff arrival rejected.
+    early_exit = client.post(f"/api/transport-missions/{created['mission_id']}/exit", json={
+        "event_id": "exit-1", "source": "mock",
+    })
+    assert early_exit.status_code == 409
+    client.post(f"/api/transport-missions/{created['mission_id']}/board", json={
+        "event_id": "board-1", "source": "mock",
+    })
+    dropoff = client.get(f"/api/call-requests/{created['call_id']}").json()["dropoff_task"]
+    client.post(f"/api/fleet-tasks/{dropoff['task_id']}/dispatch")
+    waiting = client.post(
+        f"/api/transport-missions/{created['mission_id']}/dropoff-arrived-simulated"
+    )
+    assert waiting.status_code == 200, waiting.text
+    assert waiting.json()["scenario_status"] == "WAIT_EXIT"
+    done = client.post(f"/api/transport-missions/{created['mission_id']}/exit", json={
+        "event_id": "exit-1", "source": "mock",
+    })
+    assert done.status_code == 200, done.text
+    body = done.json()
+    assert body["scenario_status"] == "DONE"
+    assert body["exit"]["confirmed"] is True
+    assert body["exit"]["mock_only"] is True
+    assert any(item["kind"] == "EXIT" for item in body["events"])
+    # Wrong mission board rejected.
+    other = client.post("/api/transport-missions/does-not-exist/board", json={
+        "event_id": "board-x", "source": "mock",
+    })
+    assert other.status_code == 404
+
+
+def test_cancel_mission_does_not_dispatch_dropoff(call_env):
+    client, _runtime = call_env
+    created = client.post("/api/call-requests", json={
+        "pickup": PICKUP,
+        "dropoff": DROPOFF,
+        "robot_id": "pinky-3",
+    }).json()
+    cancelled = client.post(f"/api/call-requests/{created['call_id']}/cancel", json={
+        "reason": "operator cancel",
+    })
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["scenario_status"] == "CANCELED"
+    blocked = client.post(f"/api/fleet-tasks/{created['dropoff_task_id']}/dispatch")
+    assert blocked.status_code == 409
