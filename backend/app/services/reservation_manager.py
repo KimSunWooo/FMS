@@ -31,6 +31,7 @@ class Interval:
     t_end: float
     node: Node | None = None
     time_basis: str = "absolute"
+    planning_profile: str = ""
     ax: float | None = None
     ay: float | None = None
     bx: float | None = None
@@ -207,6 +208,8 @@ def schedule_candidates(
     max_depart_slots: int,
     origin_epoch: float | None = None,
     now_epoch: float | None = None,
+    depart_slot_s: float | None = None,
+    current_profile: str = "",
 ) -> dict | None:
     """Pick the conflict-free candidate with the earliest estimated arrival.
 
@@ -217,8 +220,15 @@ def schedule_candidates(
     origin = datetime.now(timezone.utc).timestamp() if origin_epoch is None else float(origin_epoch)
     # A future queue origin is not "now". Past-due occupancy uses the wall clock.
     wall = origin if now_epoch is None else float(now_epoch)
-    slot = graph.planning_resolution_m / speed_m_s
-    prepared = [hydrate_interval(graph, item) for item in existing]
+    # Spatial lattice spacing and departure slots are separate. Callers that
+    # omit the slot keep the old resolution/speed step for existing tests.
+    if depart_slot_s is None:
+        slot = graph.planning_resolution_m / speed_m_s
+    else:
+        slot = float(depart_slot_s)
+        if slot <= 0:
+            raise ValueError("depart_slot_s must be positive")
+    prepared = [prepare_interval(graph, item, current_profile) for item in existing]
     attempts = 0
     limit = max(1, max_depart_slots) * max(1, len(candidates))
     best: dict | None = None
@@ -234,6 +244,8 @@ def schedule_candidates(
                 robot_id=robot_id, task_id=task_id,
             )
             proposed = shift_intervals(relative, origin)
+            if current_profile:
+                proposed = [replace(item, planning_profile=current_profile) for item in proposed]
             hits = find_conflicts(
                 proposed, prepared, robot_radius_m=robot_radius_m, now_epoch=wall,
             )
@@ -264,11 +276,36 @@ def schedule_candidates(
         return None
     best["options"] = options
     best["attempts"] = attempts
+    best["planning_profile"] = current_profile
+    best["depart_slot_s"] = slot
     return best
+
+
+def planning_profile(resolution_m: float, radius_m: float) -> str:
+    """Identity of the lattice used to name vertices and edges. Not a map hash."""
+    return f"lattice-{float(resolution_m):.3f}-r{float(radius_m):.3f}"
+
+
+def profiles_share_lattice(left: Interval, right: Interval) -> bool:
+    """Empty profiles are the pre-profile tests. A blank stored row is not the new lattice."""
+    if not left.planning_profile and not right.planning_profile:
+        return True
+    return left.planning_profile == right.planning_profile
+
+
+def prepare_interval(graph: WaypointGraph, item: Interval, current_profile: str) -> Interval:
+    """Do not project an older vertex id through the current lattice."""
+    if item.planning_profile != current_profile:
+        return item
+    return hydrate_interval(graph, item)
 
 
 def _spatial_kinds(left: Interval, right: Interval, robot_radius_m: float) -> list[str]:
     kinds: list[str] = []
+    if not profiles_share_lattice(left, right):
+        if robot_radius_m > 0 and math.hypot(left.x - right.x, left.y - right.y) < 2 * robot_radius_m:
+            kinds.append("profile_mismatch")
+        return kinds
     corner = footprint_corner_m(robot_radius_m)
     if left.kind == "vertex" and right.kind == "vertex" and left.resource_id == right.resource_id:
         kinds.append("vertex")

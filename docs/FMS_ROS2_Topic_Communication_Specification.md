@@ -35,7 +35,7 @@ TRANSIENT_LOCAL은 쓰지 않는다. 늦게 붙은 Subscriber가 지난 Task를 
 | `/fms/task/cancel_ack` | `fms_msgs/msg/TaskCancelAck` | `fms_task_receiver` | `fms_task_gateway` | 위와 같음 | 저장본의 `executable=false` 반영 뒤 | 없음 |
 | `/fms/robot/status` | `fms_msgs/msg/RobotStatus` | `fms_task_receiver` | `fms_task_gateway` | 위와 같음 | Receiver가 살아 있는 동안 1 Hz | 없음 |
 
-`receiver_ready`는 이 Status의 `receiver_ready=true`이고 `task_execution_enabled=false`일 때만 참이다. `ros2 node list`에 노드가 있다는 사실만으로 ready가 되지 않는다.
+`receiver_ready`는 이 Status의 `receiver_ready=true`이고 `task_execution_enabled=false`이며, Gateway가 그 메시지를 받은 시각 `observed_at`이 `FMS_ROBOT_STATUS_MAX_AGE_S`(기본 5초) 이내일 때만 참이다. 시각이 없거나 오래된 파일은 ready가 아니다. `ros2 node list`에 노드가 있다는 사실만으로 ready가 되지 않는다.
 
 Pinky-2·3은 virtual이고 `physical_connection_enabled`가 false다. Domain Worker는 이 로봇에 Gateway를 띄우지 않는다. 상태 라벨은 `physical_transport_disabled`다. 가상 수신은 `channel=simulated`, receiver `fms-virtual-receiver`이며 DDS ACK로 기록하지 않는다.
 
@@ -123,7 +123,7 @@ Cancel ACK:
 
 FMS는 Cancel ACK의 `accepted`와 task id, robot id가 맞을 때만 `CANCELLED`와 `ack_status=CANCEL_ACKNOWLEDGED`로 둔다. 그 전에는 `CANCEL_PENDING`이다. Timeout이면 취소 확정으로 바꾸지 않는다.
 
-기본 대기 시간은 `FMS_ROS_TASK_ACK_TIMEOUT_S=8`, 시도 횟수는 `FMS_ROS_TASK_MAX_ATTEMPTS=2`다. 거절 status는 재시도하지 않는다. Timeout만 다시 발행한다. 재발행은 같은 canonical payload와 새 `command_id`다. Receiver는 같은 hash면 기존 ACK를 다시 낸다.
+기본 대기 시간은 `FMS_ROS_TASK_ACK_TIMEOUT_S=8`, 시도 횟수는 `FMS_ROS_TASK_MAX_ATTEMPTS=2`다. 거절 status는 재시도하지 않는다. Timeout만 같은 `command_id`와 같은 canonical payload로 명령 파일을 다시 쓴다. Gateway는 파일이 다시 쓰이거나 Subscriber가 사라졌다가 돌아오면 VOLATILE 특성 때문에 같은 명령을 다시 발행한다. Receiver는 같은 hash면 기존 저장을 유지하고 그 `command_id`로 ACK를 다시 낸다. 늦게 도착한 ACK도 같은 `command_id`이면 그 시도의 결과로 받는다.
 
 ## E. DDS Domain
 

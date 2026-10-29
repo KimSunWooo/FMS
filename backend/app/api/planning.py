@@ -73,6 +73,8 @@ def planning_starts(request: Request) -> dict:
             "source": graph.grid.geometry.yaml_path.name,
             "planning_resolution_m": graph.planning_resolution_m,
             "robot_radius_m": graph.robot_radius_m,
+            "planning_depart_slot_s": settings.planning_depart_slot_s,
+            "planning_profile": f"lattice-{graph.planning_resolution_m:.3f}-r{graph.robot_radius_m:.3f}",
             "collision_safety_verified": False,
         },
         "robots": validate_robot_starts(graph, registry, _snapshot(request)),

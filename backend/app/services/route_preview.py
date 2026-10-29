@@ -12,6 +12,7 @@ from app.services.fleet_registry import RegistryError, load_registry
 from app.services.map_frame import MapFileError
 from app.services.occupancy_grid import OccupancyGrid
 from app.services.route_planner import PlanningFailure, k_shortest_paths, path_record
+from app.services.reservation_manager import planning_profile
 from app.services.waypoint_graph import WaypointGraph
 
 TF_MAX_AGE_SECONDS = 60.0
@@ -44,6 +45,7 @@ def map_summary(graph: WaypointGraph) -> dict:
         "resolution_m": geometry.resolution,
         "origin": {"x": geometry.origin_x, "y": geometry.origin_y, "yaw": geometry.origin_yaw},
         "planning_resolution_m": graph.planning_resolution_m,
+        "planning_profile": planning_profile(graph.planning_resolution_m, graph.robot_radius_m),
         "occupancy_resolution_m": graph.grid.resolution,
         "robot_radius_m": graph.robot_radius_m,
         "robot_radius_source": "configured_value",
@@ -56,8 +58,18 @@ def map_summary(graph: WaypointGraph) -> dict:
 
 def inspect_point(graph: WaypointGraph, x: float, y: float) -> dict:
     index = graph.grid.cell_at(x, y)
-    reason, _node = graph.locate(x, y)
+    reason, node = graph.locate(x, y)
     distance = graph.grid.nearest_occupied_distance(x, y)
+    connection = None
+    if reason == "ok" and node is not None:
+        sx, sy = graph.world(node)
+        connection = {
+            "x": round(sx, 6),
+            "y": round(sy, 6),
+            "waypoint_id": graph.node_id(node),
+            "is_robot_pose": False,
+            "segment_checked": True,
+        }
     return {
         "x": x,
         "y": y,
@@ -66,6 +78,7 @@ def inspect_point(graph: WaypointGraph, x: float, y: float) -> dict:
         "traversable": reason == "ok",
         "reason": reason,
         "nearest_occupied_m": None if distance is None else round(distance, 6),
+        "lattice_connection": connection,
         "suggestions": [] if reason == "ok" else graph.suggestions(x, y),
     }
 

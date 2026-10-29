@@ -70,8 +70,12 @@ class Settings(BaseSettings):
     physical_fleet_path: Path = Field(
         default_factory=lambda: ROOT / "config" / "physical_fleet.json"
     )
-    planning_resolution_m: float = 0.05
-    planning_robot_radius_m: float = 0.06
+    # 140 mm lattice: 110x120 mm body plus 20 mm margin on each axis.
+    # The map file stays 0.01 m/px. This spacing is only the planner lattice.
+    planning_resolution_m: float = 0.14
+    planning_robot_radius_m: float = 0.096
+    # Time slots stay at the previous 0.05 m / 0.15 m/s step. They do not grow with the lattice.
+    planning_depart_slot_s: float = 0.05 / 0.15
     planning_max_candidates: int = 3
     planning_allow_diagonal: bool = True
     # Planning speed is a schedule estimate, not a measured Pinky velocity.
@@ -82,6 +86,8 @@ class Settings(BaseSettings):
     fleet_replan_enabled: bool = True
     fleet_replan_interval_s: float = 5.0
     fleet_replan_max_attempts: int = 5
+    # How long a simulated pickup arrival keeps occupancy while waiting for boarding.
+    call_boarding_hold_s: float = 300.0
     fleet_dispatch_mode: str = "ros_topic"
     ros_task_command_topic: str = "/fms/task/command"
     ros_task_ack_topic: str = "/fms/task/ack"

@@ -12,6 +12,7 @@ from app.api.agent import router as agent_router
 from app.api.fleet import router as fleet_router
 from app.api.physical import router as physical_router
 from app.api.fleet_tasks import router as fleet_tasks_router
+from app.api.call_requests import router as call_requests_router
 from app.api.planning import router as planning_router
 from app.api.robots import install_error_handler
 from app.api.robots import router as robots_router
@@ -33,6 +34,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.runtime.startup()
+        log.info(
+            "planning lattice profile=lattice-%.3f-r%.3f resolution_m=%.3f radius_m=%.3f depart_slot_s=%.3f",
+            settings.planning_resolution_m,
+            settings.planning_robot_radius_m,
+            settings.planning_resolution_m,
+            settings.planning_robot_radius_m,
+            settings.planning_depart_slot_s,
+        )
         app.state.physical_nav2 = None
         app.state.forward_5cm = None
         app.state.domain_supervisor = None
@@ -136,6 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(physical_router)
     app.include_router(planning_router)
     app.include_router(fleet_tasks_router)
+    app.include_router(call_requests_router)
     app.include_router(traffic_router)
     app.include_router(system_router)
     return app

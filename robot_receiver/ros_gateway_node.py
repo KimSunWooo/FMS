@@ -24,6 +24,7 @@ from robot_receiver.ros_messages import (
     cancel_from_dict,
     command_from_dict,
 )
+from robot_receiver.gateway_policy import publish_decision
 from robot_receiver.task_codec import TOPIC_ACK, TOPIC_CANCEL, TOPIC_CANCEL_ACK, TOPIC_COMMAND, TOPIC_STATUS
 
 
@@ -77,31 +78,51 @@ class GatewayNode(Node):
                 continue
             slot = self.pending.get(command_id)
             if slot is None:
-                self.pending[command_id] = {"request": request, "since": now, "published": False, "path": path}
+                self.pending[command_id] = {
+                    "request": request, "since": now, "published": False,
+                    "published_mtime": None, "path": path,
+                }
                 slot = self.pending[command_id]
             publisher = self.command_pub if request.get("kind") == "task_command" else self.cancel_pub
-            if publisher.get_subscription_count() < 1:
-                if now - slot["since"] > self.discovery_s:
-                    self._finish(command_id, {
-                        "accepted": False,
-                        "status": "timeout",
-                        "reason": "Receiver subscriber is not visible on this domain",
-                        "command_id": command_id,
-                    })
-                    path.unlink(missing_ok=True)
-                    self.pending.pop(command_id, None)
+            subscribers = publisher.get_subscription_count()
+            # A dropped subscriber will not see the VOLATILE sample already sent.
+            if subscribers < 1 and slot["published"]:
+                slot["published"] = False
+            try:
+                file_mtime = path.stat().st_mtime_ns
+            except OSError:
                 continue
-            if not slot["published"]:
-                message = request["message"]
-                if request.get("kind") == "task_command":
-                    message = dict(message)
-                    message["execute"] = False
-                    publisher.publish(command_from_dict(message))
-                else:
-                    message = dict(message)
-                    message["execute"] = False
-                    publisher.publish(cancel_from_dict(message))
-                slot["published"] = True
+            decision = publish_decision(
+                published=bool(slot["published"]),
+                published_mtime=slot.get("published_mtime"),
+                file_mtime=file_mtime,
+                subscribers=subscribers,
+                age_s=now - slot["since"],
+                discovery_s=self.discovery_s,
+            )
+            if decision == "timeout":
+                self._finish(command_id, {
+                    "accepted": False,
+                    "status": "timeout",
+                    "reason": "Receiver subscriber is not visible on this domain",
+                    "command_id": command_id,
+                })
+                path.unlink(missing_ok=True)
+                self.pending.pop(command_id, None)
+                continue
+            if decision != "publish":
+                continue
+            message = request["message"]
+            if request.get("kind") == "task_command":
+                message = dict(message)
+                message["execute"] = False
+                publisher.publish(command_from_dict(message))
+            else:
+                message = dict(message)
+                message["execute"] = False
+                publisher.publish(cancel_from_dict(message))
+            slot["published"] = True
+            slot["published_mtime"] = file_mtime
 
     def _on_ack(self, msg) -> None:
         if msg.robot_id != self.robot_id:
@@ -118,12 +139,14 @@ class GatewayNode(Node):
     def _on_status(self, msg) -> None:
         if msg.robot_id != self.robot_id or int(msg.ros_domain_id) != self.domain_id:
             return
+        from datetime import datetime, timezone
         (self.root / "robot_status.json").write_text(json.dumps({
             "robot_id": msg.robot_id,
             "ros_domain_id": int(msg.ros_domain_id),
             "receiver_ready": bool(msg.receiver_ready),
             "task_execution_enabled": False,
             "last_received_task_id": msg.last_received_task_id,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
         }), encoding="utf-8")
 
     def _finish(self, command_id: str, body: dict) -> None:

@@ -161,7 +161,22 @@ def _receiver_ready(data_dir: Path, robot_id: str) -> bool:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
-    return bool(payload.get("receiver_ready")) and payload.get("robot_id") == robot_id and payload.get("task_execution_enabled") is False
+    if not (
+        payload.get("receiver_ready")
+        and payload.get("robot_id") == robot_id
+        and payload.get("task_execution_enabled") is False
+    ):
+        return False
+    raw = payload.get("observed_at")
+    try:
+        observed = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return False
+    if observed.tzinfo is None:
+        observed = observed.replace(tzinfo=timezone.utc)
+    age = (datetime.now(timezone.utc) - observed).total_seconds()
+    max_age = float(os.environ.get("FMS_ROBOT_STATUS_MAX_AGE_S", "5"))
+    return -1.0 <= age <= max_age
 
 
 def _ros(args: tuple[str, ...], *, env: dict[str, str] | None, timeout: float) -> tuple[bool, str]:

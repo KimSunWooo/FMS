@@ -60,6 +60,7 @@ class OccupancyGrid:
         self.width = geometry.width_px
         self.height = geometry.height_px
         self.resolution = geometry.resolution
+        self._blocked_cache: dict[tuple[int, int, int], str | None] = {}
 
     @classmethod
     def load(cls, yaml_path: Path) -> "OccupancyGrid":
@@ -157,28 +158,41 @@ class OccupancyGrid:
         index = self.cell_at(x, y)
         if index is None:
             return "outside"
+        cache_key = (index[0], index[1], round(radius_m * 1000))
+        cached = self._blocked_cache.get(cache_key)
+        if cached is not None or cache_key in self._blocked_cache:
+            return cached
         state = self.state(*index)
         if state == OCCUPIED:
+            self._blocked_cache[cache_key] = "occupied"
             return "occupied"
         if state == UNKNOWN:
+            self._blocked_cache[cache_key] = "unknown"
             return "unknown"
         if radius_m < 0:
             raise ValueError("radius_m must be >= 0")
         if radius_m == 0:
+            self._blocked_cache[cache_key] = None
             return None
         reach = math.ceil(radius_m / self.resolution) + 1
         center_col, center_row = index
+        result: str | None = None
         for col in range(center_col - reach, center_col + reach + 1):
             for row in range(center_row - reach, center_row + reach + 1):
                 sample_x, sample_y = grid_to_world(self.geometry, col + 0.5, row + 0.5)
                 if math.hypot(sample_x - x, sample_y - y) > radius_m + 1e-9:
                     continue
                 if col < 0 or row < 0 or col >= self.width or row >= self.height:
-                    return "clearance"
+                    result = "clearance"
+                    break
                 sample = self.state(col, row)
                 if sample != FREE:
-                    return "clearance"
-        return None
+                    result = "clearance"
+                    break
+            if result is not None:
+                break
+        self._blocked_cache[cache_key] = result
+        return result
 
     def nearest_occupied_distance(self, x: float, y: float) -> float | None:
         best: float | None = None

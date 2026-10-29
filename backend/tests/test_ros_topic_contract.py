@@ -149,6 +149,57 @@ def test_ros_topic_dispatch_waits_for_ack_and_does_not_use_ssh(env):
         thread.join(timeout=2)
 
 
+def test_ack_timeout_rewrites_the_same_command_before_accepting_it(env):
+    client, _runtime = env
+    settings = client.app.state.settings
+    settings.fleet_dispatch_mode = "ros_topic"
+    settings.ros_task_ack_timeout_s = 0.4
+    settings.ros_task_max_attempts = 2
+    store = Path(settings.data_dir) / "topic_inbox"
+    stamps: list[int] = []
+    stop = threading.Event()
+
+    def pump() -> None:
+        root = Path(settings.data_dir) / "ros_ipc" / "pinky-1"
+        while not stop.is_set():
+            folder = root / "commands"
+            if folder.is_dir():
+                for path in list(folder.glob("*.json")):
+                    stamp = path.stat().st_mtime_ns
+                    if stamp not in stamps:
+                        stamps.append(stamp)
+                    if len(stamps) < 2:
+                        continue
+                    request = json.loads(path.read_text(encoding="utf-8"))
+                    message = request["message"]
+                    result = apply_command(store, message, expected_robot_id="pinky-1")
+                    assert result["accepted"] is True
+                    assert result["command_id"] == request["command_id"]
+                    assert result["task_id"] == message["task_id"]
+                    assert result["robot_id"] == "pinky-1"
+                    assert result["payload_hash"] == message["payload_hash"]
+                    (root / "results").mkdir(parents=True, exist_ok=True)
+                    (root / "results" / f"{request['command_id']}.json").write_text(
+                        json.dumps(result), encoding="utf-8",
+                    )
+                    path.unlink(missing_ok=True)
+            time.sleep(0.02)
+
+    thread = threading.Thread(target=pump, daemon=True)
+    thread.start()
+    try:
+        task = client.post(f"/api/fleet-tasks/{_create(client, robot_id='pinky-1')['task_id']}/plan").json()
+        delivered = client.post(f"/api/fleet-tasks/{task['task_id']}/dispatch")
+        body = delivered.json()
+        assert body["status"] == "ACKNOWLEDGED", body
+        assert body["ack_channel"] == "ros_topic"
+        assert body["motion_verified"] is False
+        assert len(stamps) >= 2
+    finally:
+        stop.set()
+        thread.join(timeout=2)
+
+
 def test_ros_topic_timeout_is_not_success_and_virtual_stays_simulated(env):
     client, _runtime = env
     settings = client.app.state.settings

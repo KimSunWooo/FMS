@@ -12,7 +12,7 @@ from sqlalchemy.pool import NullPool
 from app.models.base import Base
 from app.models.tables import SchemaMigration
 
-LATEST_SCHEMA = 6
+LATEST_SCHEMA = 8
 
 _PARTIAL_INDEXES = (
     """
@@ -115,6 +115,12 @@ class Database:
                 row[1]
                 for row in connection.execute(text("PRAGMA table_info(fleet_reservations)")).fetchall()
             }
+            if reservation_columns and "planning_profile" not in reservation_columns:
+                # Empty means the row was stored before the 0.14 m lattice profile.
+                # Do not rewrite task status, ACK history, or release reservations.
+                connection.exec_driver_sql(
+                    "ALTER TABLE fleet_reservations ADD COLUMN planning_profile VARCHAR(64) NOT NULL DEFAULT ''"
+                )
             if reservation_columns and "time_basis" not in reservation_columns:
                 connection.exec_driver_sql(
                     "ALTER TABLE fleet_reservations ADD COLUMN time_basis VARCHAR(16) NOT NULL DEFAULT 'absolute'"

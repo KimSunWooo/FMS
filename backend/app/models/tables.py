@@ -279,7 +279,39 @@ class FleetReservationRecord(Base):
     time_basis: Mapped[str] = mapped_column(String(16), default="absolute", server_default="absolute")
     occupancy_class: Mapped[str] = mapped_column(String(24), default="planned")
     map_revision: Mapped[str] = mapped_column(String(64))
+    planning_profile: Mapped[str] = mapped_column(String(64), default="", server_default="")
     created_at: Mapped[datetime] = mapped_column(_dt())
+
+
+class FleetCallRequest(Base):
+    """User call orchestration. Separate from FleetTask status values.
+
+    Pickup and dropoff are two FleetTask rows. This table only stores the
+    transport scenario link and boarding gate. It does not invent ROS topics.
+    """
+
+    __tablename__ = "fleet_call_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    scenario_status: Mapped[str] = mapped_column(String(40), index=True)
+    assigned_robot_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    pickup_x: Mapped[float] = mapped_column(Float)
+    pickup_y: Mapped[float] = mapped_column(Float)
+    dropoff_x: Mapped[float] = mapped_column(Float)
+    dropoff_y: Mapped[float] = mapped_column(Float)
+    priority: Mapped[int] = mapped_column(Integer, default=5)
+    pickup_task_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    dropoff_task_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    boarding_confirmed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    boarding_event_id: Mapped[str] = mapped_column(String(128), default="", server_default="")
+    boarding_source: Mapped[str] = mapped_column(String(32), default="", server_default="")
+    boarding_confirmed_at: Mapped[datetime | None] = mapped_column(_dt(), nullable=True)
+    pickup_arrival_evidence: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    detail_json: Mapped[str] = mapped_column(Text, default="{}")
+    failure_reason: Mapped[str] = mapped_column(Text, default="")
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(_dt())
+    updated_at: Mapped[datetime] = mapped_column(_dt())
 
 
 class SystemEvent(Base):

@@ -322,8 +322,9 @@ DriveOnHeading
 
 | 필드 | 환경 접두 | 값 | 의미 |
 |---|---|---|---|
-| `planning_resolution_m` | `FMS_PLANNING_RESOLUTION_M` | 0.05 m | 계획 격자 |
-| `planning_robot_radius_m` | `FMS_PLANNING_ROBOT_RADIUS_M` | 0.06 m | 계획용 반경. 검증된 안전 반경이 아님 |
+| `planning_resolution_m` | `FMS_PLANNING_RESOLUTION_M` | 0.14 m | 계획 격자. 지도 파일 0.01 m와 별개 |
+| `planning_robot_radius_m` | `FMS_PLANNING_ROBOT_RADIUS_M` | 0.096 m | 130×140 mm 여유 차체의 계획 반경. 검증된 안전 반경이 아님 |
+| `planning_depart_slot_s` | `FMS_PLANNING_DEPART_SLOT_S` | 0.333 s | 출발 시간 슬롯. 격자 간격과 분리 |
 | `planning_max_candidates` | `FMS_PLANNING_MAX_CANDIDATES` | 3 | Yen 후보 수 |
 | `planning_allow_diagonal` | `FMS_PLANNING_ALLOW_DIAGONAL` | true | 대각 이동 |
 | `planning_speed_m_s` | `FMS_PLANNING_SPEED_M_S` | 0.15 m/s | 예약 시간 추정. 실측 속도가 아님 |

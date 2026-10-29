@@ -40,6 +40,7 @@ class WaypointGraph:
         self.width = grid.width // self.stride
         self.height = grid.height // self.stride
         self._traversable: dict[tuple[int, int], bool] = {}
+        self._segment_clear: dict[tuple[tuple[float, float], tuple[float, float]], bool] = {}
 
     def in_lattice(self, node: tuple[int, int]) -> bool:
         col, row = node
@@ -65,32 +66,77 @@ class WaypointGraph:
         return self._center_index(node)
 
     def locate(self, x: float, y: float) -> tuple[str, tuple[int, int] | None]:
-        """Return (reason, node). reason is 'ok' or outside/occupied/unknown/clearance."""
+        """Return (reason, node). The node is a lattice index, not the queried pose.
+
+        A free point may sit in a cell whose center does not clear the robot.
+        The connection is accepted only when the segment from the original
+        point to that center is free on the source occupancy grid.
+        """
         index = self.grid.cell_at(x, y)
         if index is None:
             return "outside", None
         state = self.grid.state(*index)
         if state != FREE:
             return state, None
-        # The queried coordinate itself must clear the robot disk. Snapping to a
-        # planning-cell center must not hide a point that sits against a wall.
         blocked = self.grid.point_is_blocked(x, y, self.robot_radius_m)
         if blocked is not None:
             return blocked, None
-        node = (index[0] // self.stride, index[1] // self.stride)
-        if not self.in_lattice(node):
-            return "outside", None
-        if not self.traversable(node):
-            return "clearance", node
-        return "ok", node
+        base = (index[0] // self.stride, index[1] // self.stride)
+        candidates: list[tuple[float, int, tuple[int, int]]] = []
+        for dc in (-1, 0, 1):
+            for dr in (-1, 0, 1):
+                node = (base[0] + dc, base[1] + dr)
+                if not self.traversable(node):
+                    continue
+                sx, sy = self.world(node)
+                if not self.segment_clear(x, y, sx, sy):
+                    continue
+                candidates.append((math.hypot(sx - x, sy - y), 0 if node == base else 1, node))
+        if not candidates:
+            return "snap_blocked", None
+        candidates.sort()
+        return "ok", candidates[0][2]
+
+    def segment_clear(self, x0: float, y0: float, x1: float, y1: float) -> bool:
+        """Sample the source grid along the segment, including the robot disk.
+
+        Two lattice centers being free is not enough. The step is the occupancy
+        resolution, so a 1 cm map is not crossed between samples.
+        """
+        key = ((round(x0, 4), round(y0, 4)), (round(x1, 4), round(y1, 4)))
+        cached = self._segment_clear.get(key)
+        if cached is not None:
+            return cached
+        reverse = (key[1], key[0])
+        cached = self._segment_clear.get(reverse)
+        if cached is not None:
+            return cached
+        allowed = self._segment_clear_uncached(x0, y0, x1, y1)
+        self._segment_clear[key] = allowed
+        return allowed
+
+    def _segment_clear_uncached(self, x0: float, y0: float, x1: float, y1: float) -> bool:
+        length = math.hypot(x1 - x0, y1 - y0)
+        step = max(float(self.grid.resolution), 1e-6)
+        count = max(1, math.ceil(length / step))
+        for index in range(count + 1):
+            scale = index / count
+            if self.grid.point_is_blocked(
+                x0 + (x1 - x0) * scale,
+                y0 + (y1 - y0) * scale,
+                self.robot_radius_m,
+            ) is not None:
+                return False
+        return True
 
     def neighbors(self, node: tuple[int, int]) -> list[tuple[tuple[int, int], float]]:
         if not self.traversable(node):
             return []
         found: list[tuple[tuple[int, int], float]] = []
+        origin = self.world(node)
         for step in ORTHOGONAL:
             other = (node[0] + step[0], node[1] + step[1])
-            if self.traversable(other):
+            if self.traversable(other) and self.segment_clear(*origin, *self.world(other)):
                 found.append((other, self.planning_resolution_m))
         if self.allow_diagonal:
             for step in DIAGONAL:
@@ -98,6 +144,8 @@ class WaypointGraph:
                 side_b = (node[0], node[1] + step[1])
                 other = (node[0] + step[0], node[1] + step[1])
                 if not (self.traversable(side_a) and self.traversable(side_b) and self.traversable(other)):
+                    continue
+                if not self.segment_clear(*origin, *self.world(other)):
                     continue
                 found.append((other, self.planning_resolution_m * math.sqrt(2.0)))
         return found
@@ -149,5 +197,6 @@ class WaypointGraph:
                 "distance_m": round(distance, 6),
                 "suggestion_only": True,
                 "replaces_registered_pose": False,
+                "segment_clear": self.segment_clear(x, y, sx, sy),
             })
         return chosen

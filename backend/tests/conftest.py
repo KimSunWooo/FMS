@@ -17,7 +17,19 @@ from app.main import create_app
 FIXED = datetime(2026, 10, 23, 10, 0, tzinfo=timezone.utc)
 
 
-def make_settings(tmp_path: Path, *, seed_fleet: bool = True, execution_mode: str = "mock") -> Settings:
+def make_settings(
+    tmp_path: Path,
+    *,
+    seed_fleet: bool = True,
+    execution_mode: str = "mock",
+    planning_resolution_m: float = 0.05,
+    planning_robot_radius_m: float = 0.06,
+) -> Settings:
+    """The shared fixture stays on the previous 0.05 m lattice.
+
+    Production defaults are 0.14 m and 0.096 m. Tests of that lattice must pass
+    those values explicitly so this pin cannot hide them.
+    """
     return Settings(
         env="development",
         environment_id="care-move-fms-test",
@@ -45,8 +57,8 @@ def make_settings(tmp_path: Path, *, seed_fleet: bool = True, execution_mode: st
         physical_ssh_password="",
         physical_map_yaml=ROOT / "config/maps/physical_site/1f_map_f.yaml",
         physical_fleet_path=ROOT / "config" / "physical_fleet.json",
-        planning_resolution_m=0.05,
-        planning_robot_radius_m=0.06,
+        planning_resolution_m=planning_resolution_m,
+        planning_robot_radius_m=planning_robot_radius_m,
         planning_max_candidates=3,
         planning_allow_diagonal=True,
         planning_speed_m_s=0.15,

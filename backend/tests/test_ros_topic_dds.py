@@ -203,6 +203,94 @@ def test_gateway_times_out_when_no_receiver_is_subscribed(tmp_path):
                 gateway.kill()
 
 
+def test_rewritten_command_is_published_again_on_an_isolated_domain(tmp_path):
+    """Lost ACK: the same command file is published twice. Not domain 24."""
+    data = tmp_path / "ipc-republish"
+    count_path = tmp_path / "count.txt"
+    count_path.write_text("0", encoding="utf-8")
+    script = tmp_path / "count_commands.py"
+    script.write_text(
+        "import os\n"
+        "from pathlib import Path\n"
+        "import rclpy\n"
+        "from rclpy.node import Node\n"
+        "from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy\n"
+        "from fms_msgs.msg import TaskCommand\n"
+        "class Counter(Node):\n"
+        "    def __init__(self):\n"
+        "        super().__init__('fms_command_counter')\n"
+        "        qos = QoSProfile(reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.VOLATILE, history=HistoryPolicy.KEEP_LAST, depth=10)\n"
+        "        self.n = 0\n"
+        "        self.out = Path(os.environ['FMS_COUNT_FILE'])\n"
+        "        self.create_subscription(TaskCommand, '/fms/task/command', self._on, qos)\n"
+        "        self.create_timer(0.2, self._flush)\n"
+        "    def _on(self, msg):\n"
+        "        if msg.robot_id == 'pinky-test' and msg.execute is False:\n"
+        "            self.n += 1\n"
+        "    def _flush(self):\n"
+        "        self.out.write_text(str(self.n), encoding='utf-8')\n"
+        "rclpy.init()\n"
+        "node = Counter()\n"
+        "try:\n"
+        "    rclpy.spin(node)\n"
+        "finally:\n"
+        "    node.destroy_node()\n"
+        "    rclpy.shutdown()\n",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env.update({
+        "ROS_DOMAIN_ID": "84",
+        "FMS_WORKER_ROBOT_ID": "pinky-test",
+        "FMS_DATA_DIR": str(data),
+        "FMS_ROS_DISCOVERY_TIMEOUT_S": "8",
+        "FMS_COUNT_FILE": str(count_path),
+        "RMW_IMPLEMENTATION": "rmw_fastrtps_cpp",
+    })
+    counter = subprocess.Popen(
+        ["/bin/bash", "-lc", f"source /opt/ros/jazzy/setup.bash && source {ROOT}/ros_ws/install/setup.bash && exec python3 {script}"],
+        env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True,
+    )
+    gateway = subprocess.Popen(
+        ["/bin/bash", str(ROOT / "scripts" / "run_ros_gateway.sh")],
+        env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, start_new_session=True,
+    )
+    command_id = "republish-1"
+    folder = data / "ros_ipc" / "pinky-test" / "commands"
+    folder.mkdir(parents=True, exist_ok=True)
+    payload = command_message_for(command_id)
+    body = json.dumps({
+        "kind": "task_command",
+        "robot_id": "pinky-test",
+        "ros_domain_id": 84,
+        "command_id": command_id,
+        "message": payload,
+    })
+    target = folder / f"{command_id}.json"
+    try:
+        time_sleep(1.5)
+        target.write_text(body, encoding="utf-8")
+        deadline = time_after(15)
+        while time_after(0) < deadline and count_path.read_text(encoding="utf-8").strip() == "0":
+            time_sleep(0.1)
+        assert count_path.read_text(encoding="utf-8").strip() != "0", "first publish was not observed"
+        time_sleep(0.3)
+        target.write_text(body, encoding="utf-8")
+        deadline = time_after(10)
+        while time_after(0) < deadline and int(count_path.read_text(encoding="utf-8") or "0") < 2:
+            time_sleep(0.1)
+        assert int(count_path.read_text(encoding="utf-8") or "0") >= 2
+    finally:
+        for proc in (gateway, counter):
+            if proc.poll() is None:
+                proc.terminate()
+        for proc in (gateway, counter):
+            try:
+                proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+
+
 def command_message_for(command_id: str) -> dict:
     from robot_receiver.task_codec import command_message
     payload = _payload()
