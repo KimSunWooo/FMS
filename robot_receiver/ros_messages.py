@@ -53,7 +53,7 @@ def command_from_dict(message: dict) -> TaskCommand:
     msg.payload_hash = message["payload_hash"]
     msg.command_id = message["command_id"]
     msg.canonical_payload = message["canonical_payload"]
-    msg.execute = False
+    msg.execute = bool(message.get("execute"))
     return msg
 
 
@@ -109,7 +109,6 @@ def ack_to_dict(msg: TaskAck) -> dict:
         "received_at": _iso_from_time(msg.received_at),
         "receiver_id": msg.receiver_id,
         "receiver": msg.receiver_id,
-        "execute": False,
     }
 
 
@@ -180,13 +179,20 @@ def status_message(
     active_task_id: str = "",
     pose_report: dict | None = None,
     battery_report: dict | None = None,
+    task_execution_enabled: bool | None = None,
 ) -> RobotStatus:
     """Build RobotStatus. Invalid reports keep *_valid=false (never invents values)."""
+    import os
+
     msg = RobotStatus()
     msg.robot_id = robot_id
     msg.ros_domain_id = int(domain_id)
     msg.receiver_ready = ready
-    msg.task_execution_enabled = False
+    if task_execution_enabled is None:
+        task_execution_enabled = os.environ.get("FMS_TASK_EXECUTION_ENABLED", "true").lower() in {
+            "1", "true", "yes", "on",
+        }
+    msg.task_execution_enabled = bool(task_execution_enabled)
     msg.active_task_id = str(active_task_id or "")
     msg.last_received_task_id = last_task_id
     apply_pose_report(msg, pose_report)
@@ -318,7 +324,7 @@ def status_to_dict(msg: RobotStatus) -> dict:
         "robot_id": msg.robot_id,
         "ros_domain_id": int(msg.ros_domain_id),
         "receiver_ready": bool(msg.receiver_ready),
-        "task_execution_enabled": False,
+        "task_execution_enabled": bool(getattr(msg, "task_execution_enabled", False)),
         "active_task_id": str(getattr(msg, "active_task_id", "") or ""),
         "last_received_task_id": msg.last_received_task_id,
         "stamp": stamp or None,

@@ -72,4 +72,5 @@ def test_stale_or_unsigned_robot_status_is_not_ready(tmp_path):
     enabled = json.loads(path.read_text(encoding="utf-8"))
     enabled["task_execution_enabled"] = True
     path.write_text(json.dumps(enabled), encoding="utf-8")
-    assert _receiver_ready(tmp_path, "pinky-1") is False
+    # Execution enabled is independent of Receiver Ready.
+    assert _receiver_ready(tmp_path, "pinky-1") is True

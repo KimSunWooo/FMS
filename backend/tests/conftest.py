@@ -49,6 +49,7 @@ def make_settings(
         physical_control_enabled=False,
         ros_bridge_enabled=False,
         execution_mode=execution_mode,
+        fleet_task_execute=False,
         ros_domain_id=73,
         physical_nav2_auto_start=False,
         domain_workers_enabled=False,

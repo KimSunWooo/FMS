@@ -254,8 +254,9 @@ def test_receiver_is_idempotent_and_rejects_a_different_payload(tmp_path):
     changed = {"task_id": "t-1", "robot_id": "pinky-1", "execute": False, "goal": {"x": 2}}
     with pytest.raises(ValueError):
         accept(tmp_path, changed)
-    with pytest.raises(ValueError):
-        accept(tmp_path, {"task_id": "t-2", "robot_id": "pinky-1", "execute": True})
+    drive = accept(tmp_path, {"task_id": "t-2", "robot_id": "pinky-1", "execute": True})
+    assert drive["execute"] is True
+    assert drive["accepted"] is True
 
 
 def test_dispatch_without_reservation_is_rejected(env):

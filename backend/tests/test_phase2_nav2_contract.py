@@ -203,12 +203,17 @@ def test_unit_wrong_domain_and_physical_mode_are_refused(tmp_path):
         build_bridge("physical", ready, expected_domain=73, observed_domain=73)
     with pytest.raises(GazeboNav2Unavailable, match="physical"):
         GazeboNav2Client(mode="physical", expected_domain=73, observed_domain=73, preflight=ready).assert_can_send()
-    with pytest.raises(ValueError):
-        Settings(
-            execution_mode="physical",
-            database_url=f"sqlite:///{tmp_path / 'physical.sqlite3'}",
-            data_dir=tmp_path,
-        )
+    from pathlib import Path as _Path
+
+    physical = Settings(
+        execution_mode="physical",
+        fleet_task_execute=True,
+        database_url=f"sqlite:///{tmp_path / 'physical.sqlite3'}",
+        data_dir=tmp_path,
+        physical_map_yaml=_Path("/home/sw/DevSpace/FMS/config/maps/physical_site/1f_map_f.yaml"),
+    )
+    assert physical.execution_mode == "physical"
+    assert physical.fleet_task_execute is True
     with pytest.raises(GazeboNav2Unavailable, match="SUCCEEDED"):
         GazeboNav2Client(
             mode="gazebo", expected_domain=73, observed_domain=73, preflight=ready

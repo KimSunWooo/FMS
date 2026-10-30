@@ -66,12 +66,16 @@ def assess_map_identity(*, expected_yaml: Path, server_yaml: str | None, probe: 
     loaded_sha = probe.get("content_sha256")
     report["map_content_sha256"] = loaded_sha if isinstance(loaded_sha, str) else None
     content_same = isinstance(loaded_sha, str) and loaded_sha == expected_sha
-    if yaml_same and info_same and content_same:
+    # Absolute path may differ across hosts; geometry+occupancy content is enough.
+    if info_same and content_same:
         report["map_matches_fms"] = True
-        report["map_mismatch_detail"] = ""
+        report["map_mismatch_detail"] = "" if yaml_same else (
+            f"map content matches FMS; yaml path differs "
+            f"(server={server_yaml}, fms={expected_yaml})"
+        )
         return report
     parts: list[str] = []
-    if not yaml_same:
+    if not yaml_same and not (info_same and content_same):
         parts.append(yaml_detail)
     if not info_same:
         parts.append(

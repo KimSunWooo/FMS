@@ -1,8 +1,8 @@
-"""Receive-only Pinky task inbox.
+"""Pinky task inbox.
 
-Stores a validated payload and prints an ACK. It does not publish cmd_vel,
-call Nav2, or move the robot. Run from the robot home directory, not from a
-ROS package.
+Stores a validated payload and returns a receive ACK. Motion is performed by
+fms_nav2_executor when execute=true. Run from the robot or swPC home directory,
+not as a ROS package entry point alone.
 """
 from __future__ import annotations
 
@@ -21,13 +21,12 @@ def payload_hash(payload: dict) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def accept(store: Path, payload: dict) -> dict:
-    if payload.get("execute") is True:
-        raise ValueError("Receiver refuses payloads marked execute=true")
+def accept(store: Path, payload: dict, *, command_id: str = "") -> dict:
     task_id = str(payload.get("task_id") or "")
     robot_id = str(payload.get("robot_id") or "")
     if not task_id or not robot_id:
         raise ValueError("task_id and robot_id are required")
+    execute = bool(payload.get("execute"))
     digest = payload_hash(payload)
     store.mkdir(parents=True, exist_ok=True)
     path = store / f"{task_id}.json"
@@ -36,11 +35,13 @@ def accept(store: Path, payload: dict) -> dict:
         if previous.get("payload_hash") != digest:
             raise ValueError(f"Task {task_id} already stored with a different payload")
         ack = dict(previous["ack"])
-        command_id = str(payload.get("command_id") or "")
         if command_id:
             ack["command_id"] = command_id
             return ack
-        return previous["ack"]
+        cid = str(payload.get("command_id") or "")
+        if cid:
+            ack["command_id"] = cid
+        return ack
     ack = {
         "task_id": task_id,
         "robot_id": robot_id,
@@ -48,20 +49,30 @@ def accept(store: Path, payload: dict) -> dict:
         "accepted": True,
         "received_at": datetime.now(timezone.utc).isoformat(),
         "payload_hash": digest,
-        "execute": False,
+        "execute": execute,
+        "status": "stored",
     }
-    path.write_text(json.dumps({"payload": payload, "payload_hash": digest, "ack": ack}, indent=2), encoding="utf-8")
+    if command_id:
+        ack["command_id"] = command_id
+    record = {
+        "payload": payload,
+        "payload_hash": digest,
+        "ack": ack,
+        "executable": execute,
+        "execution": None,
+    }
+    path.write_text(json.dumps(record, indent=2), encoding="utf-8")
     return ack
 
 
 def cancel(store: Path, request: dict) -> dict:
     """Mark a stored task non-executable and return a cancel ACK.
 
-    This is distinct from the receive ACK. It does not publish a motion command.
+    Distinct from the receive ACK. Does not publish a motion command.
     Repeating the request returns the stored cancel ACK.
     """
     if request.get("execute") is True:
-        raise ValueError("Receiver refuses payloads marked execute=true")
+        raise ValueError("Cancel request must not set execute=true")
     task_id = str(request.get("task_id") or "")
     robot_id = str(request.get("robot_id") or "")
     request_id = str(request.get("cancellation_request_id") or "")
@@ -102,7 +113,7 @@ def main() -> int:
         if payload.get("action") == "cancel":
             ack = cancel(store, payload)
         else:
-            ack = accept(store, payload)
+            ack = accept(store, payload, command_id=str(payload.get("command_id") or ""))
     except Exception as exc:
         print(json.dumps({"accepted": False, "receiver": RECEIVER_NAME, "detail": str(exc)}))
         return 2

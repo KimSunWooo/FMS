@@ -110,9 +110,16 @@ def main() -> int:
         status["last_seen"] = datetime.now(timezone.utc).isoformat()
         gateway = _ensure_gateway(gateway, robot, data_dir)
         status["task_transport"] = _transport_label(robot, gateway)
-        status["task_execution_enabled"] = False
         status["receiver_ready"] = _receiver_ready(data_dir, robot["robot_id"])
         _merge_receiver_pose(status, data_dir, robot)
+        # Pass through Receiver status; do not force execution disabled.
+        ipc_status = _read_ipc_status(data_dir, robot["robot_id"])
+        if ipc_status is not None and "task_execution_enabled" in ipc_status:
+            status["task_execution_enabled"] = bool(ipc_status.get("task_execution_enabled"))
+        else:
+            status["task_execution_enabled"] = os.environ.get("FMS_TASK_EXECUTION_ENABLED", "true").lower() in {
+                "1", "true", "yes", "on",
+            }
         write_status(status_path(data_dir, robot["robot_id"]), status)
         deadline = time.monotonic() + interval
         while not stop and time.monotonic() < deadline:
@@ -137,11 +144,18 @@ def _ensure_gateway(current: subprocess.Popen | None, robot: dict, data_dir: Pat
     env["FMS_WORKER_ROBOT_ID"] = robot["robot_id"]
     env["FMS_DATA_DIR"] = str(data_dir)
     env["RMW_IMPLEMENTATION"] = "rmw_fastrtps_cpp"
+    log_dir = Path(data_dir).parent / "logs" if (Path(data_dir).name == "data") else Path(data_dir) / "logs"
+    # Prefer repo logs/ next to data/
+    candidate = Path(data_dir).resolve().parent / "logs"
+    log_dir = candidate if candidate.parent.exists() else (Path(data_dir) / "logs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"ros_gateway_{robot['robot_id']}.log"
+    log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 — kept for child lifetime
     return subprocess.Popen(
         ["/bin/bash", str(ROOT / "scripts" / "run_ros_gateway.sh")],
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
         start_new_session=True,
     )
 
@@ -191,19 +205,25 @@ def _merge_receiver_pose(status: dict, data_dir: Path, robot: dict) -> None:
     status["tf_status"] = status.get("worker_tf_status") or status.get("tf_status") or "missing"
 
 
-def _receiver_ready(data_dir: Path, robot_id: str) -> bool:
+def _read_ipc_status(data_dir: Path, robot_id: str) -> dict | None:
     path = data_dir / "ros_ipc" / robot_id / "robot_status.json"
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _receiver_ready(data_dir: Path, robot_id: str) -> bool:
+    """Receiver Ready when a fresh RobotStatus claims ready for this robot.
+
+    task_execution_enabled is independent — receive-only and execute-capable
+    receivers are both ready when status is fresh.
+    """
+    payload = _read_ipc_status(data_dir, robot_id)
+    if not payload or not (payload.get("receiver_ready") and payload.get("robot_id") == robot_id):
         return False
-    if not (
-        payload.get("receiver_ready")
-        and payload.get("robot_id") == robot_id
-        and payload.get("task_execution_enabled") is False
-    ):
-        return False
-    raw = payload.get("observed_at")
+    raw = payload.get("observed_at") or payload.get("gateway_received_at")
     try:
         observed = datetime.fromisoformat(str(raw))
     except (TypeError, ValueError):

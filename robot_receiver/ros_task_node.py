@@ -60,7 +60,11 @@ class TaskReceiverNode(Node):
         super().__init__("fms_task_receiver")
         self.robot_id = os.environ["FMS_RECEIVER_ROBOT_ID"]
         self.domain_id = int(os.environ["ROS_DOMAIN_ID"])
-        self.store = Path(os.environ.get("FMS_RECEIVER_INBOX") or (Path.home() / "fms_task_receiver" / "inbox"))
+        data_dir = Path(os.environ.get("FMS_DATA_DIR") or (ROOT / "data"))
+        self.store = Path(
+            os.environ.get("FMS_RECEIVER_INBOX")
+            or (data_dir / "ros_ipc" / self.robot_id / "inbox")
+        )
         self.audit_log = Path(
             os.environ.get("FMS_RECEIVER_AUDIT_LOG")
             or (self.store.parent / "events.jsonl")
@@ -323,7 +327,7 @@ class TaskReceiverNode(Node):
             "robot_id": msg.robot_id,
             "ros_domain_id": int(msg.ros_domain_id),
             "receiver_ready": bool(msg.receiver_ready),
-            "task_execution_enabled": False,
+            "task_execution_enabled": bool(msg.task_execution_enabled),
             "active_task_id": msg.active_task_id,
             "last_received_task_id": msg.last_received_task_id,
             "stamp": {"sec": int(msg.stamp.sec), "nanosec": int(msg.stamp.nanosec)},
@@ -367,7 +371,7 @@ class TaskReceiverNode(Node):
             "robot_id": self.robot_id,
             "ros_domain_id": self.domain_id,
             "receiver_ready": True,
-            "task_execution_enabled": False,
+            "task_execution_enabled": bool(msg.task_execution_enabled),
             "last_received_task_id": self.last_task_id,
             "stamp": datetime.now(timezone.utc).isoformat(),
             "pose_valid": valid,

@@ -154,6 +154,13 @@ def test_map_match_requires_yaml_geometry_and_cells():
     }
     matched = assess_map_identity(expected_yaml=MAP, server_yaml=str(MAP), probe=probe)
     assert matched["map_matches_fms"] is True
+    # Absolute path may differ; geometry+occupancy content is enough.
+    path_only = assess_map_identity(
+        expected_yaml=MAP,
+        server_yaml="/tmp/other_host/1f_map_f.yaml",
+        probe=probe,
+    )
+    assert path_only["map_matches_fms"] is True
     changed = dict(probe, content_sha256="0" * 64)
     mismatched = assess_map_identity(expected_yaml=MAP, server_yaml=str(MAP), probe=changed)
     assert mismatched["map_matches_fms"] is False

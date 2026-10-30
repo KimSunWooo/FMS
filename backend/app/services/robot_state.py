@@ -73,14 +73,25 @@ def robot_state(robot_id: str, settings, snapshot: dict | None = None) -> dict:
         plan_source = telem.get("plan_source")
         plan_timestamp = telem.get("plan_timestamp")
         plan_freshness = telem.get("plan_freshness") or "missing"
-        if isinstance(telem.get("pose"), dict) and telem.get("pose_freshness") not in {None, "missing"}:
+        # Prefer fresh/valid amcl. Stale amcl must not mask a fresher TF sample.
+        if isinstance(telem.get("pose"), dict) and telem.get("pose_freshness") == "valid" and telem.get("pose_valid"):
             sample = telem["pose"]
             pose = {"x": float(sample["x"]), "y": float(sample["y"]), "yaw": sample.get("yaw")}
             source = telem.get("pose_source") or "topic:amcl_pose"
             observed = telem.get("pose_timestamp")
-            pose_valid = bool(telem.get("pose_valid"))
-            fresh = pose_valid
-        # Secondary: RobotStatus pose (legacy Receiver TF path) if amcl absent.
+            pose_valid = True
+            fresh = True
+        stale_amcl = None
+        if pose is None and isinstance(telem.get("pose"), dict) and telem.get("pose_freshness") not in {None, "missing"}:
+            sample = telem["pose"]
+            stale_amcl = {
+                "pose": {"x": float(sample["x"]), "y": float(sample["y"]), "yaw": sample.get("yaw")},
+                "source": telem.get("pose_source") or "topic:amcl_pose",
+                "observed": telem.get("pose_timestamp"),
+                "pose_freshness": pose_freshness,
+                "pose_valid": bool(telem.get("pose_valid")),
+            }
+        # Secondary: RobotStatus pose (legacy Receiver TF path) if amcl absent/stale.
         ipc = read_receiver_status(settings.data_dir, robot_id, expected_domain=domain)
         if pose is None:
             reported = interpret_receiver_pose(ipc, robot_id=robot_id, ros_domain_id=domain)
@@ -131,6 +142,14 @@ def robot_state(robot_id: str, settings, snapshot: dict | None = None) -> dict:
                 fresh = True
                 pose_valid = True
                 pose_freshness = "valid"
+        # Last resort: keep last amcl sample marked stale (never preferred over fresh TF).
+        if pose is None and stale_amcl is not None:
+            pose = stale_amcl["pose"]
+            source = stale_amcl["source"]
+            observed = stale_amcl["observed"]
+            pose_valid = bool(stale_amcl["pose_valid"])
+            pose_freshness = str(stale_amcl["pose_freshness"] or "stale")
+            fresh = False
         # Battery: /battery/percent primary (incl. last+stale); RobotStatus only if absent.
         if telem.get("battery_percentage") is not None and telem.get("battery_freshness") not in {None, "missing"}:
             battery_percentage = telem["battery_percentage"]

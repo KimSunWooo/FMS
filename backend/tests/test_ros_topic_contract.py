@@ -28,7 +28,7 @@ def _sample_payload() -> dict:
     return body
 
 
-def test_receiver_rejects_wrong_robot_hash_and_execute(tmp_path):
+def test_receiver_rejects_wrong_robot_hash_and_accepts_execute(tmp_path):
     payload = _sample_payload()
     message = command_message(payload, "cmd-1")
     foreign = dict(message)
@@ -43,11 +43,26 @@ def test_receiver_rejects_wrong_robot_hash_and_execute(tmp_path):
     hashed = apply_command(tmp_path, tampered, expected_robot_id="pinky-1")
     assert hashed["status"] == "hash_mismatch"
 
+    # execute mismatch between message field and canonical body is rejected.
     forced = dict(message)
     forced["execute"] = True
     refused = apply_command(tmp_path, forced, expected_robot_id="pinky-1")
-    assert refused["status"] == "execute_refused"
+    assert refused["status"] == "rejected"
     assert list(tmp_path.glob("*.json")) == []
+
+    # Consistent execute=true is accepted and stored (Executor runs Nav2 separately).
+    from robot_receiver.pinky_task_receiver import payload_hash
+
+    drive = dict(payload)
+    drive["execute"] = True
+    drive["payload_hash"] = payload_hash(drive)
+    stored = apply_command(tmp_path, command_message(drive, "cmd-drive"), expected_robot_id="pinky-1")
+    assert stored["accepted"] is True
+    assert stored["status"] == "stored"
+    assert stored["execute"] is True
+    body = json.loads((tmp_path / "task-1.json").read_text(encoding="utf-8"))
+    assert body["payload"]["execute"] is True
+    assert body["executable"] is True
 
 
 def test_duplicate_command_reuses_the_stored_task(tmp_path):

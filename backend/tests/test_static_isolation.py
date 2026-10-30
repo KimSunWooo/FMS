@@ -15,6 +15,7 @@ WORKER_ENTRYPOINTS = {
     ROOT / "robot_receiver" / "ros_gateway_node.py",
     ROOT / "robot_receiver" / "ros_task_node.py",
     ROOT / "robot_receiver" / "ros_messages.py",
+    ROOT / "robot_receiver" / "nav2_executor_node.py",
 }
 BANNED = ("rmf", "rclpy", "nav2", "open_rmf", "rmf_fleet")
 
@@ -63,6 +64,7 @@ def test_api_does_not_import_ros_worker_entrypoints():
         "robot_receiver.ros_gateway_node",
         "robot_receiver.ros_task_node",
         "robot_receiver.ros_messages",
+        "robot_receiver.nav2_executor_node",
     }
     offenders = []
     for path, text in _python_sources():

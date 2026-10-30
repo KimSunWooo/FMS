@@ -32,8 +32,8 @@ _PLACEHOLDER_SECRETS = {
 class Settings(BaseSettings):
     """Process-local configuration.
 
-    Physical motion and the ROS bridge cannot be turned on by environment
-    variables in this build. A shared legacy database URL is refused.
+    A shared legacy database URL is refused. Fleet task execute is controlled by
+    fleet_task_execute (single source for JSON → Gateway → Receiver → Executor).
     """
 
     model_config = SettingsConfigDict(
@@ -55,9 +55,12 @@ class Settings(BaseSettings):
     api_port: int = 8741
     physical_control_enabled: bool = False
     ros_bridge_enabled: bool = False
-    # mock: in-process agents only. gazebo: external agent may claim a Nav2
-    # send after preflight. physical: process refuses to start.
+    # mock | gazebo | physical — physical allows live Pinky dispatch when
+    # fleet_dispatch_mode=ros_topic. Does not by itself publish cmd_vel.
     execution_mode: str = "mock"
+    # Single source of truth for TaskCommand.execute / payload execute flag.
+    # Receive-only trials set FMS_FLEET_TASK_EXECUTE=false.
+    fleet_task_execute: bool = True
     physical_ssh_targets: str = ""
     physical_ssh_password: str = ""
     physical_nav2_auto_start: bool = False
@@ -153,8 +156,6 @@ class Settings(BaseSettings):
             )
         if self.execution_mode not in {"mock", "gazebo", "physical"}:
             raise ValueError("FMS_EXECUTION_MODE must be mock, gazebo, or physical.")
-        if self.execution_mode == "physical":
-            raise ValueError("This build refuses to start in physical execution mode.")
         if not self.database_url:
             self.database_url = f"sqlite:///{self.data_dir / 'fms.sqlite3'}"
         haystack = self.database_url.lower()

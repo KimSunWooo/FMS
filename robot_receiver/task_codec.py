@@ -36,6 +36,8 @@ def fields_match_payload(message: dict, body: dict) -> str | None:
         return "map_id does not match canonical payload"
     if str(message.get("map_revision") or "") != str(body.get("map_revision") or ""):
         return "map_revision does not match canonical payload"
+    if bool(message.get("execute")) != bool(body.get("execute")):
+        return "execute does not match canonical payload"
     goal = body.get("goal") or {}
     if str(message.get("goal_label") or "") != str(goal.get("label") or ""):
         return "goal label does not match canonical payload"
@@ -59,10 +61,10 @@ def fields_match_payload(message: dict, body: dict) -> str | None:
 
 
 def command_message(payload: dict, command_id: str) -> dict:
-    if payload.get("execute") is True:
-        raise ValueError("execute=true is not allowed")
+    """Build TaskCommand dict. Preserves payload.execute; never mutates after hash."""
     body = canonical_body(payload)
-    body["execute"] = False
+    execute = bool(body.get("execute"))
+    body["execute"] = execute
     digest = payload.get("payload_hash") or payload_hash(body)
     start = body.get("start") or {}
     goal = body.get("goal") or {}
@@ -87,40 +89,39 @@ def command_message(payload: dict, command_id: str) -> dict:
         "payload_hash": digest,
         "command_id": command_id,
         "canonical_payload": json.dumps(body, sort_keys=True, separators=(",", ":")),
-        "execute": False,
+        "execute": execute,
     }
 
 
 def apply_command(store, message: dict, *, expected_robot_id: str) -> dict:
-    """Validate and store. The returned dict is an application ACK, not a publish receipt."""
+    """Validate and store. Returns receive ACK only — never starts Nav2."""
     command_id = str(message.get("command_id") or "")
     task_id = str(message.get("task_id") or "")
     robot_id = str(message.get("robot_id") or "")
     if robot_id != expected_robot_id:
         return _ack(command_id, task_id, robot_id, False, "robot_mismatch", "robot_id does not match this receiver")
-    if message.get("execute") is not False:
-        return _ack(command_id, task_id, robot_id, False, "execute_refused", "execute must be false")
+    if not isinstance(message.get("execute"), bool):
+        return _ack(command_id, task_id, robot_id, False, "rejected", "execute must be a boolean")
     try:
         body = json.loads(message.get("canonical_payload") or "")
     except json.JSONDecodeError:
         return _ack(command_id, task_id, robot_id, False, "rejected", "canonical payload is not JSON")
     if not isinstance(body, dict):
         return _ack(command_id, task_id, robot_id, False, "rejected", "canonical payload must be an object")
-    if body.get("execute") is True:
-        return _ack(command_id, task_id, robot_id, False, "execute_refused", "execute must be false")
     mismatch = fields_match_payload(message, body)
     if mismatch:
         return _ack(command_id, task_id, robot_id, False, "rejected", mismatch)
     if payload_hash(body) != str(message.get("payload_hash") or ""):
         return _ack(command_id, task_id, robot_id, False, "hash_mismatch", "payload hash does not match")
     try:
-        stored = accept(store, body)
+        stored = accept(store, body, command_id=command_id)
     except ValueError as exc:
         return _ack(command_id, task_id, robot_id, False, "rejected", str(exc))
     return _ack(
         command_id, task_id, robot_id, True, "stored", "",
         payload_hash_value=stored.get("payload_hash") or "",
         received_at=stored.get("received_at") or "",
+        execute=bool(stored.get("execute")),
     )
 
 
@@ -131,7 +132,7 @@ def apply_cancel(store, message: dict, *, expected_robot_id: str) -> dict:
     if robot_id != expected_robot_id:
         return _cancel_ack(task_id, robot_id, request_id, False, "robot_mismatch", "robot_id does not match this receiver")
     if message.get("execute") is True:
-        return _cancel_ack(task_id, robot_id, request_id, False, "execute_refused", "execute must be false")
+        return _cancel_ack(task_id, robot_id, request_id, False, "execute_refused", "cancel execute must be false")
     try:
         stored = cancel(store, {
             "action": "cancel",
@@ -155,7 +156,10 @@ def apply_cancel(store, message: dict, *, expected_robot_id: str) -> dict:
     )
 
 
-def _ack(command_id, task_id, robot_id, accepted, status, reason, payload_hash_value="", received_at="") -> dict:
+def _ack(
+    command_id, task_id, robot_id, accepted, status, reason,
+    payload_hash_value="", received_at="", execute=False,
+) -> dict:
     return {
         "command_id": command_id,
         "task_id": task_id,
@@ -167,7 +171,7 @@ def _ack(command_id, task_id, robot_id, accepted, status, reason, payload_hash_v
         "received_at": received_at,
         "receiver_id": RECEIVER_NAME,
         "receiver": RECEIVER_NAME,
-        "execute": False,
+        "execute": bool(execute),
         "channel": "ros_topic",
         "transport": "ros_topic",
     }

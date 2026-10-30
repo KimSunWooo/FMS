@@ -26,19 +26,17 @@ def ipc_dir(data_dir: Path, robot_id: str) -> Path:
 
 
 def deliver_ros_topic(settings, payload: dict) -> dict:
-    if payload.get("execute") is True:
-        raise DispatchError("execute_refused", "execute=true is not allowed")
     robot = _physical_robot(settings, str(payload.get("robot_id") or ""))
     command_id = str(uuid.uuid4())
     message = command_message(payload, command_id)
-    result = _exchange(settings, robot, "task_command", message, command_id)
+    result = _exchange(settings, robot, "task_command", message, command_id, payload=payload)
     _require_task_ack(result, payload, command_id)
-    return _decorate(settings, robot, result)
+    return _decorate(settings, robot, result, payload=payload)
 
 
 def cancel_ros_topic(settings, request: dict) -> dict:
     if request.get("execute") is True:
-        raise DispatchError("execute_refused", "execute=true is not allowed")
+        raise DispatchError("execute_refused", "cancel execute must be false")
     robot = _physical_robot(settings, str(request.get("robot_id") or ""))
     command_id = str(request.get("cancellation_request_id") or "")
     if not command_id:
@@ -73,7 +71,41 @@ def _physical_robot(settings, robot_id: str) -> dict:
     return robot
 
 
-def _exchange(settings, robot: dict, kind: str, message: dict, command_id: str) -> dict:
+def _peek_stored_ack(settings, robot: dict, payload: dict, command_id: str) -> dict | None:
+    """If the receiver already stored this task (e.g. ACK timed out), reuse that receipt."""
+    inbox = Path(settings.data_dir) / "ros_ipc" / robot["robot_id"] / "inbox"
+    task_id = str(payload.get("task_id") or "")
+    path = inbox / f"{task_id}.json"
+    if not path.is_file():
+        return None
+    try:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if stored.get("payload_hash") != payload.get("payload_hash"):
+        return None
+    ack = dict(stored.get("ack") or {})
+    if not ack.get("accepted"):
+        return None
+    ack["command_id"] = command_id
+    ack["task_id"] = task_id
+    ack["robot_id"] = robot["robot_id"]
+    ack["payload_hash"] = stored.get("payload_hash") or payload.get("payload_hash")
+    ack["status"] = ack.get("status") or "stored"
+    ack["channel"] = "ros_topic"
+    ack["transport"] = "ros_topic"
+    return ack
+
+
+def _exchange(
+    settings,
+    robot: dict,
+    kind: str,
+    message: dict,
+    command_id: str,
+    *,
+    payload: dict | None = None,
+) -> dict:
     root = ipc_dir(Path(settings.data_dir), robot["robot_id"])
     commands = root / "commands"
     results = root / "results"
@@ -85,6 +117,10 @@ def _exchange(settings, robot: dict, kind: str, message: dict, command_id: str) 
     command_path = commands / f"{command_id}.json"
     last = {"accepted": False, "reason": "ACK not received", "status": "timeout"}
     for _attempt in range(attempts):
+        if payload and kind == "task_command":
+            peeked = _peek_stored_ack(settings, robot, payload, command_id)
+            if peeked is not None:
+                return peeked
         if result_path.exists():
             result_path.unlink()
         command_path.write_text(json.dumps({
@@ -105,6 +141,10 @@ def _exchange(settings, robot: dict, kind: str, message: dict, command_id: str) 
             time.sleep(0.05)
         else:
             last = {"accepted": False, "reason": "Receiver ACK timed out", "status": "timeout", "command_id": command_id}
+            if payload and kind == "task_command":
+                peeked = _peek_stored_ack(settings, robot, payload, command_id)
+                if peeked is not None:
+                    return peeked
         if last.get("accepted"):
             return last
         if last.get("status") in {"rejected", "hash_mismatch", "robot_mismatch", "execute_refused"}:
@@ -119,9 +159,11 @@ def _require_task_ack(result: dict, payload: dict, command_id: str) -> None:
         raise DispatchError("ack_mismatch", "ACK command id or task id does not match")
     if result.get("payload_hash") != payload.get("payload_hash"):
         raise DispatchError("ack_mismatch", "ACK payload hash does not match")
+    if result.get("robot_id") not in {None, payload.get("robot_id")}:
+        raise DispatchError("ack_mismatch", "ACK robot id does not match")
 
 
-def _decorate(settings, robot: dict, result: dict) -> dict:
+def _decorate(settings, robot: dict, result: dict, *, payload: dict | None = None) -> dict:
     ack = dict(result)
     ack["channel"] = "ros_topic"
     ack["transport"] = "ros_topic"
@@ -131,7 +173,25 @@ def _decorate(settings, robot: dict, result: dict) -> dict:
     ack["cancel_topic"] = getattr(settings, "ros_task_cancel_topic", TOPIC_CANCEL)
     ack["cancel_ack_topic"] = getattr(settings, "ros_task_cancel_ack_topic", TOPIC_CANCEL_ACK)
     ack["publish_state"] = "ack_received"
-    ack["executed"] = False
-    ack["completed"] = False
+    # Receive ACK ≠ motion. Execution state comes from Executor IPC.
+    execution = _read_execution(settings, robot["robot_id"], str((payload or result).get("task_id") or ""))
+    ack["executed"] = bool(execution and execution.get("status") in {
+        "accepted", "executing", "succeeded", "failed", "cancelled",
+    })
+    ack["completed"] = bool(execution and execution.get("status") == "succeeded")
+    ack["execution"] = execution
     ack["receiver_ready"] = True
+    if payload is not None and "execute" in payload:
+        ack["execute"] = bool(payload.get("execute"))
     return ack
+
+
+def _read_execution(settings, robot_id: str, task_id: str) -> dict | None:
+    if not task_id:
+        return None
+    path = Path(settings.data_dir) / "ros_ipc" / robot_id / "execution" / f"{task_id}.json"
+    try:
+        body = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return body if isinstance(body, dict) else None

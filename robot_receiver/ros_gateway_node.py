@@ -176,9 +176,8 @@ class GatewayNode(Node):
                 continue
             message = request["message"]
             if request.get("kind") == "task_command":
-                message = dict(message)
-                message["execute"] = False
-                publisher.publish(command_from_dict(message))
+                # Preserve execute from the hashed payload. Do not rewrite after hash.
+                publisher.publish(command_from_dict(dict(message)))
             else:
                 message = dict(message)
                 message["execute"] = False
@@ -190,13 +189,14 @@ class GatewayNode(Node):
         if msg.robot_id != self.robot_id:
             return
         body = ack_to_dict(msg)
-        self._finish(msg.command_id, body)
+        # Receive ACK only. Do not let a later mismatched ACK overwrite an accepted store.
+        self._finish(msg.command_id, body, kind="task_ack")
 
     def _on_cancel_ack(self, msg) -> None:
         if msg.robot_id != self.robot_id:
             return
         body = cancel_ack_to_dict(msg)
-        self._finish(msg.cancellation_request_id, body)
+        self._finish(msg.cancellation_request_id, body, kind="cancel_ack")
 
     def _on_status(self, msg) -> None:
         if msg.robot_id != self.robot_id or int(msg.ros_domain_id) != self.domain_id:
@@ -208,7 +208,7 @@ class GatewayNode(Node):
         received = datetime.now(timezone.utc).isoformat()
         body["observed_at"] = received
         body["gateway_received_at"] = received
-        body["task_execution_enabled"] = False
+        # Pass through Receiver's task_execution_enabled; do not force false.
         if body.get("pose_valid") and isinstance(body.get("pose"), dict):
             body["pose_observed_at"] = received
         else:
@@ -225,8 +225,33 @@ class GatewayNode(Node):
             body["battery_observed_at"] = None
         write_json_atomic(self.root / "robot_status.json", body)
 
-    def _finish(self, command_id: str, body: dict) -> None:
+    def _finish(self, command_id: str, body: dict, *, kind: str = "task_ack") -> None:
         path = self.root / "results" / f"{command_id}.json"
+        if path.is_file():
+            try:
+                existing = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                existing = None
+            if (
+                isinstance(existing, dict)
+                and existing.get("accepted")
+                and kind == "task_ack"
+                and existing.get("status") == "stored"
+                and body.get("status") not in {None, "stored"}
+            ):
+                # Keep the receive ACK; execution progress uses execution IPC.
+                slot = self.pending.pop(command_id, None)
+                if slot is not None:
+                    Path(slot["path"]).unlink(missing_ok=True)
+                return
+            if (
+                isinstance(existing, dict)
+                and existing.get("accepted")
+                and existing.get("command_id") == command_id
+                and kind == "task_ack"
+                and body.get("task_id") not in {None, existing.get("task_id")}
+            ):
+                return
         path.write_text(json.dumps(body), encoding="utf-8")
         slot = self.pending.pop(command_id, None)
         if slot is not None:

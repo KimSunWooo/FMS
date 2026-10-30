@@ -17,5 +17,7 @@ source /opt/ros/jazzy/setup.bash
 source "$ROOT/ros_ws/install/setup.bash"
 set -u
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
+export FMS_DATA_DIR="${FMS_DATA_DIR:-$ROOT/data}"
 export PYTHONPATH="$ROOT:${PYTHONPATH:-}"
-exec python3 "$ROOT/robot_receiver/ros_gateway_node.py"
+# System Python with ROS packages (not the project venv).
+exec /usr/bin/python3 "$ROOT/robot_receiver/ros_gateway_node.py"

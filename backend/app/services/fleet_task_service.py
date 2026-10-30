@@ -309,7 +309,11 @@ class FleetTaskService:
             if scheduled is None:
                 raise FleetTaskError(409, "Selected path conflicts with current reservations", {"replan": True})
             _release(session, task.id, "released")
-            _store_schedule(session, task, graph, chosen, scheduled, map_revision(self.settings.physical_map_yaml))
+            _store_schedule(
+                session, task, graph, chosen, scheduled,
+                map_revision(self.settings.physical_map_yaml),
+                execute=bool(self.settings.fleet_task_execute),
+            )
             if task.status != RESERVED:
                 _move(session, task, RESERVED, f"selected {path_id}")
             session.flush()
@@ -737,7 +741,10 @@ class FleetTaskService:
         task.start_source = choice["start"]["source"]
         task.assignment_reason = choice.get("reason") or task.assignment_reason
         task.candidate_paths_json = json.dumps(choice["paths"])
-        _store_schedule(session, task, graph, selected, scheduled, revision)
+        _store_schedule(
+            session, task, graph, selected, scheduled, revision,
+            execute=bool(self.settings.fleet_task_execute),
+        )
         stored = json.loads(task.schedule_json or "{}")
         if choice.get("alternatives"):
             stored["alternatives"] = choice["alternatives"]
@@ -893,8 +900,6 @@ class FleetTaskService:
         raise DispatchError("dispatch_mode", f"Unknown fleet dispatch mode {mode}")
 
     def _deliver_physical(self, payload: dict) -> dict:
-        if payload.get("execute") is True:
-            raise DispatchError("execute_refused", "execute=true is not allowed")
         mode = self.settings.fleet_dispatch_mode
         if mode == "local":
             return deliver_local_receiver(Path(self.settings.data_dir) / "physical_inbox", payload)
@@ -986,7 +991,13 @@ def map_revision(yaml_path: Path) -> str:
     return digest.hexdigest()[:16]
 
 
-def canonical_payload(task: FleetTaskRecord, waypoints: list[dict]) -> dict:
+def canonical_payload(task: FleetTaskRecord, waypoints: list[dict], *, execute: bool | None = None) -> dict:
+    """Build the wire payload. execute comes from Settings.fleet_task_execute unless overridden."""
+    if execute is None:
+        import os
+
+        raw = os.environ.get("FMS_FLEET_TASK_EXECUTE", "true").strip().lower()
+        execute = raw in {"1", "true", "yes", "on"}
     payload = {
         "task_id": task.id,
         "robot_id": task.assigned_robot_id,
@@ -996,7 +1007,7 @@ def canonical_payload(task: FleetTaskRecord, waypoints: list[dict]) -> dict:
         "start": {"x": task.start_x, "y": task.start_y},
         "goal": {"x": task.goal_x, "y": task.goal_y, "label": task.goal_label},
         "waypoints": [{"x": item["x"], "y": item["y"], "waypoint_id": item["waypoint_id"]} for item in waypoints],
-        "execute": False,
+        "execute": bool(execute),
     }
     payload["payload_hash"] = hashlib.sha256(
         json.dumps({key: value for key, value in payload.items() if key != "payload_hash"}, sort_keys=True, separators=(",", ":")).encode()
@@ -1004,7 +1015,7 @@ def canonical_payload(task: FleetTaskRecord, waypoints: list[dict]) -> dict:
     return payload
 
 
-def _store_schedule(session, task, graph, selected, scheduled, revision: str) -> None:
+def _store_schedule(session, task, graph, selected, scheduled, revision: str, *, execute: bool = True) -> None:
     task.selected_path_id = selected["path_id"]
     task.planned_path_json = json.dumps(selected["waypoints"])
     depart = scheduled["depart_s"]
@@ -1012,7 +1023,7 @@ def _store_schedule(session, task, graph, selected, scheduled, revision: str) ->
     arrival = float(scheduled.get("arrival_epoch") or max(item.t_end for item in scheduled["intervals"]))
     task.estimated_start_time = datetime.fromtimestamp(origin + depart, tz=timezone.utc).isoformat()
     task.estimated_arrival_time = datetime.fromtimestamp(arrival, tz=timezone.utc).isoformat()
-    payload = canonical_payload(task, selected["waypoints"])
+    payload = canonical_payload(task, selected["waypoints"], execute=execute)
     task.payload_hash = payload["payload_hash"]
     task.schedule_json = json.dumps({
             "depart_s": depart,
@@ -1164,6 +1175,21 @@ def _transport_view(task: FleetTaskRecord) -> dict:
         else:
             mode = task.ack_channel
     topics = mode == "ros_topic"
+    execution = ack.get("execution") if isinstance(ack.get("execution"), dict) else None
+    if execution is None and task.assigned_robot_id:
+        try:
+            # Best-effort: Executor writes under data/ros_ipc/<robot>/execution/.
+            root = Path(__file__).resolve().parents[3] / "data" / "ros_ipc" / task.assigned_robot_id / "execution"
+            exec_path = root / f"{task.id}.json"
+            if exec_path.is_file():
+                execution = json.loads(exec_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, TypeError):
+            execution = None
+    exec_status = str((execution or {}).get("status") or "")
+    executed = bool(ack.get("executed")) or exec_status in {
+        "accepted", "executing", "succeeded", "failed", "cancelled",
+    }
+    completed = bool(task.motion_verified) or exec_status == "succeeded" or bool(ack.get("completed"))
     return {
         "mode": mode,
         "ros_domain_id": _domain_for(task.assigned_robot_id),
@@ -1174,8 +1200,10 @@ def _transport_view(task: FleetTaskRecord) -> dict:
         "publish_state": ack.get("publish_state") or ("not_sent" if not ack else "ack_received"),
         "receiver_ready": ack.get("receiver_ready"),
         "received": bool(ack.get("accepted")),
-        "executed": False,
-        "completed": bool(task.motion_verified),
+        "executed": executed,
+        "completed": completed,
+        "execution_status": exec_status or None,
+        "nav2_action": (execution or {}).get("nav2_action"),
     }
 
 
