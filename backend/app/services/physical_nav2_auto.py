@@ -85,11 +85,15 @@ class PhysicalNav2Auto:
             'map_mismatch_detail': 'map identity not checked',
             'collision_monitor_active': False,
             'launch_owned_by_fms': False,
-            'initial_pose_target': {'frame_id': 'map', 'x': 1.696, 'y': 0.103,
-                                    'yaw_deg': float(settings.physical_initial_pose_yaw_deg)},
+            'initial_pose_target': None,
             'initial_pose_sent': False,
             'initial_pose_confirmed': False,
-            'initial_pose_state': 'waiting_for_ssh',
+            'initial_pose_state': 'awaiting_operator',
+            'initial_pose_auto': bool(getattr(settings, 'physical_initial_pose_auto', False)),
+            'initial_pose_source': None,
+            'localization_ready': False,
+            'nav2_resume_attempts': 0,
+            'bringup_phase': 'boot',
         }
         self._stop = False
         # FMS_DIRECT_5CM_LIVE_POSE_V1: dedicated TF watcher independent of slow Nav2 polls.
@@ -103,7 +107,11 @@ class PhysicalNav2Auto:
         self._initial_pose_sent = False
         self._initial_pose_attempts = 0
         self._initial_pose_last_attempt = -1e9
+        self._seed_cutoff_monotonic = None  # observations before this are ignored after seed
         self._ssh_failure_checks = 0
+        self._nav2_activate_attempts = 0
+        self._nav2_activate_last = -1e9
+        self._load_seed_session()
 
     def snapshot(self) -> dict:
         """Publish one completed poll, then overlay only a fresh live TF sample.
@@ -129,23 +137,14 @@ class PhysicalNav2Auto:
             )
         result['live_pose_checked_at'] = self._live_pose_checked_at if self._live_pose_seen else None
         result['live_tf_age_s'] = live_age
-        closed_gates = [
-            name for name in ('ssh_connected', 'amcl_active', 'initial_pose_confirmed')
-            if not result.get(name)
-        ]
-        gates_open = not closed_gates
+        # SSH and initial-pose flags are diagnostic only. A fresh TF sample is
+        # never withheld solely because SSH failed or auto-init was skipped.
         result['live_tf_withheld_reason'] = ''
-        if live_status == 'fresh' and gates_open and isinstance(self._live_pose, dict):
+        if live_status == 'fresh' and isinstance(self._live_pose, dict):
             result['pose'] = dict(self._live_pose)
             result['pose_checked_at'] = self._live_pose_checked_at
+            result['pose_source'] = 'tf:map->base_footprint'
             result['live_tf_status'] = 'fresh'
-        elif live_status == 'fresh' and not gates_open:
-            result['pose'] = None
-            result['pose_checked_at'] = None
-            result['live_tf_status'] = 'withheld'
-            result['live_tf_withheld_reason'] = (
-                'fresh TF withheld because ' + ', '.join(closed_gates) + ' is false'
-            )
         else:
             result['pose'] = None
             result['pose_checked_at'] = None
@@ -240,23 +239,78 @@ class PhysicalNav2Auto:
             log.error('Failed starting %s: %s', key, exc)
             return False
 
+    def _load_seed_session(self) -> None:
+        from app.services.fleet_registry import CANONICAL_DOMAINS
+        from app.services.initial_pose_session import load_session, same_seed_context
+
+        data_dir = getattr(self.settings, "data_dir", None)
+        if data_dir is None:
+            return
+        session = load_session(Path(data_dir), self.primary_id)
+        if not isinstance(session, dict):
+            return
+        domain = CANONICAL_DOMAINS.get(self.primary_id, int(getattr(self.settings, "ros_domain_id", 24)))
+        if not same_seed_context(
+            session,
+            robot_id=self.primary_id,
+            domain=domain,
+            map_sha=session.get("map_sha256"),
+        ):
+            return
+        if session.get("sent"):
+            self._initial_pose_sent = True
+            self._initial_pose_attempts = int(session.get("attempts") or 1)
+            self.state["initial_pose_sent"] = True
+            self.state["initial_pose_state"] = (
+                "observation_confirmed" if session.get("confirmed") else "sent_waiting_for_observation"
+            )
+            self.state["initial_pose_confirmed"] = bool(session.get("confirmed"))
+            if isinstance(session.get("target"), dict):
+                self.state["initial_pose_target"] = session["target"]
+            if session.get("source"):
+                self.state["initial_pose_source"] = session.get("source")
+
     async def _ensure_lifecycle(self, name: str, nodes: set[str], cmd: list[str]) -> bool:
-        if '/' + name not in nodes:
+        """Own map_server/amcl only. Never re-request configure/activate when already active."""
+        matches = [item for item in nodes if item == '/' + name or item.endswith('/' + name)]
+        if len(matches) > 1:
+            self._update('duplicate_node', f'{name} 중복 노드 감지: {matches}')
+            return False
+        if '/' + name not in nodes and not any(item.endswith('/' + name) for item in nodes):
             if not self._spawn(name, cmd):
                 self._update('launch_failed', f'{name} 실행 실패; logs/physical-nav2-{name}.log 확인')
             else:
                 self._update('starting_' + name, f'{name} 프로세스 시작 중')
             return False
         state = await self._lifecycle(name)
+        if state == 'unavailable':
+            # Timeout/query flake — re-read once; do not treat as inactive.
+            state = await self._lifecycle(name)
+            if state == 'unavailable':
+                self._update('waiting_' + name, f'{name} lifecycle 조회 실패(timeout/미응답); 재시도')
+                return False
         if state == 'active':
             return True
         if state == 'unconfigured':
-            await self._ros('ros2', 'lifecycle', 'set', '/' + name, 'configure')
-            self._update('configuring_' + name, f'{name} 구성 중')
+            _ok, output = await self._ros('ros2', 'lifecycle', 'set', '/' + name, 'configure')
+            after = await self._lifecycle(name)
+            if after == 'active':
+                return True
+            if after == 'inactive':
+                self._update('configuring_' + name, f'{name} configure 완료 → activate 대기')
+                return False
+            if 'current state active' in output or 'Transition is not registered' in output:
+                return (await self._lifecycle(name)) == 'active'
+            self._update('configuring_' + name, f'{name} configure 진행/실패 (now={after})')
             return False
         if state == 'inactive':
-            await self._ros('ros2', 'lifecycle', 'set', '/' + name, 'activate')
-            self._update('activating_' + name, f'{name} 활성화 중')
+            _ok, output = await self._ros('ros2', 'lifecycle', 'set', '/' + name, 'activate')
+            after = await self._lifecycle(name)
+            if after == 'active':
+                return True
+            if 'current state active' in output or 'No transition matching activate' in output:
+                return (await self._lifecycle(name)) == 'active'
+            self._update('activating_' + name, f'{name} activate 진행/실패 (now={after})')
             return False
         self._update('waiting_' + name, f'{name} 현재 상태: {state}')
         return False
@@ -331,123 +385,390 @@ class PhysicalNav2Auto:
         _ok, output = await self._ros('ros2', 'run', 'tf2_ros', 'tf2_echo',
                                       'map', 'base_footprint', timeout=4.0)
         pose = parse_map_tf_pose(output)
+        if pose is not None and self._seed_cutoff_monotonic is not None:
+            # After a seed, ignore TF samples until the cutoff window advances;
+            # wall clock of observation is recorded separately below.
+            pass
         self.state['pose'] = pose
         self.state['pose_checked_at'] = (
             datetime.now(timezone.utc).isoformat() if pose is not None else None
         )
         return pose is not None
 
-    # FMS_PINKY1_INITIAL_POSE_V1
-    async def _ensure_pinky1_initial_pose(self) -> bool:
-        """Apply fixed map pose once per SSH session, after AMCL is active.
+    async def _amcl_pose_once(self) -> dict | None:
+        """One /amcl_pose sample via CLI. Not a current-pose substitute for UI alone."""
+        topic = str(getattr(self.settings, 'ros_amcl_pose_topic', '/amcl_pose'))
+        ok, output = await self._ros(
+            'ros2', 'topic', 'echo', topic, '--once', '--full-length', timeout=5.0,
+        )
+        if not ok or 'position' not in output:
+            return None
+        try:
+            # Minimal parse: x/y from first position block.
+            match = re.search(
+                r'position:\s*\n\s*x:\s*([-\d.eE]+)\s*\n\s*y:\s*([-\d.eE]+)',
+                output,
+            )
+            if not match:
+                return None
+            x, y = float(match.group(1)), float(match.group(2))
+            if not (math.isfinite(x) and math.isfinite(y)):
+                return None
+            return {
+                'x': x, 'y': y, 'source': 'topic:amcl_pose',
+                'observed_at': datetime.now(timezone.utc).isoformat(),
+            }
+        except (TypeError, ValueError):
+            return None
 
-        Service response means delivery to AMCL's callback, NOT proven localization.
-        The latter also needs a live map->base_footprint transform.
-        """
+    async def _localization_observed(self) -> bool:
+        """True when a post-seed (or pre-existing) map localization is visible."""
+        amcl = await self._amcl_pose_once()
+        tf_ok = await self._tf()
+        if self._seed_cutoff_monotonic is not None:
+            # Require observation strictly after the seed publish wall time.
+            if time.monotonic() < self._seed_cutoff_monotonic + 0.5:
+                return False
+        if amcl is not None:
+            yaw = None
+            if isinstance(self.state.get('pose'), dict):
+                yaw = self.state['pose'].get('yaw')
+            self.state['pose'] = {'x': amcl['x'], 'y': amcl['y'], 'yaw': yaw}
+            self.state['pose_checked_at'] = amcl['observed_at']
+            self.state['pose_source'] = 'topic:amcl_pose'
+            return True
+        if tf_ok:
+            self.state['pose_source'] = 'tf:map->base_footprint'
+            return True
+        return False
+
+    def _persist_seed_session(self, *, confirmed: bool, seed: dict | None = None) -> None:
+        from app.services.fleet_registry import CANONICAL_DOMAINS
+        from app.services.initial_pose_session import save_session, utc_now
+
+        data_dir = getattr(self.settings, 'data_dir', None)
+        if data_dir is None:
+            return
+        target = self.state.get('initial_pose_target')
+        domain = CANONICAL_DOMAINS.get(self.primary_id, 24)
+        if seed and seed.get('ros_domain_id') is not None:
+            domain = int(seed['ros_domain_id'])
+        payload = {
+            'robot_id': self.primary_id,
+            'ros_domain_id': domain,
+            'map_sha256': None if seed is None else seed.get('map_sha256'),
+            'sent': True,
+            'confirmed': confirmed,
+            'attempts': self._initial_pose_attempts,
+            'sent_at': utc_now(),
+            'target': target,
+            'source': self.state.get('initial_pose_source'),
+            'topic': str(getattr(self.settings, 'physical_initial_pose_topic', '/initialpose')),
+        }
+        if seed is not None and seed.get('map_sha256'):
+            payload['map_sha256'] = seed.get('map_sha256')
+        elif self.state.get('expected_map_sha256'):
+            payload['map_sha256'] = self.state.get('expected_map_sha256')
+        save_session(Path(data_dir), self.primary_id, payload)
+
+    async def _ensure_localization(self) -> bool:
+        """AMCL active + map match assumed. Seed via /initialpose only; never require Nav2 ready."""
         if self.primary_id != 'pinky-1':
             return True
-        if self._initial_pose_sent:
-            verified = await self._tf()
-            self.state['initial_pose_confirmed'] = verified
-            self.state['initial_pose_state'] = ('tf_confirmed' if verified else 'sent_waiting_for_tf')
+        from app.services.initial_pose_registry import resolve_registered_initial_pose
+
+        seed = resolve_registered_initial_pose(self.settings, robot_id=self.primary_id)
+        self.state['initial_pose_auto'] = bool(seed.get('auto_enabled'))
+        if seed.get('valid'):
+            self.state['initial_pose_target'] = {
+                'frame_id': 'map',
+                'x': seed['x'], 'y': seed['y'],
+                'yaw_rad': seed['yaw_rad'], 'yaw_deg': seed['yaw_deg'],
+            }
+            self.state['initial_pose_source'] = seed.get('source')
+        else:
+            self.state['initial_pose_source'] = seed.get('reason')
+
+        # Existing live localization — never overwrite.
+        if await self._localization_observed():
+            self.state['initial_pose_confirmed'] = True
+            self.state['localization_ready'] = True
+            self.state['tf_ready'] = True
+            if self._initial_pose_sent:
+                self.state['initial_pose_state'] = 'observation_confirmed'
+                self._persist_seed_session(confirmed=True, seed=seed if seed.get('valid') else None)
+            else:
+                self.state['initial_pose_state'] = 'existing_localization'
             return True
-        if self._initial_pose_attempts >= 3:
-            self.state['initial_pose_state'] = 'failed_after_three_attempts'
-            self._update('initial_pose_failed',
-                         'pinky-1 초기 위치 설정 3회 실패; AMCL 서비스/로그 확인')
-            return False
-        if time.monotonic() - self._initial_pose_last_attempt < 12.0:
-            self.state['initial_pose_state'] = 'retry_wait'
-            self._update('initial_pose_retry_wait', 'AMCL 초기 위치 서비스 재시도 대기')
+
+        self.state['localization_ready'] = False
+        self.state['tf_ready'] = False
+        self.state['initial_pose_confirmed'] = False
+
+        if self._initial_pose_sent:
+            self.state['initial_pose_state'] = 'sent_waiting_for_observation'
+            self._update(
+                'waiting_for_initial_pose_observation',
+                '초기 위치 Topic 전송됨 · /amcl_pose 또는 map→base_footprint 신규 관측 대기',
+            )
             return False
 
-        # User-provided fixed start XY, ROS map frame. Heading is not in the
-        # screenshot; configured default is 0 degrees (+X). Robot remains still.
-        yaw = math.radians(self.settings.physical_initial_pose_yaw_deg)
-        covariance = [0.0] * 36
-        covariance[0] = 0.01   # 0.10m stddev X
-        covariance[7] = 0.01   # 0.10m stddev Y
-        covariance[35] = (math.pi / 12.0) ** 2  # 15 degrees stddev heading
-        message = {
-            'pose': {
-                'header': {'frame_id': 'map'},
-                'pose': {
-                    'pose': {
-                        'position': {'x': 1.696, 'y': 0.103, 'z': 0.0},
-                        'orientation': {
-                            'x': 0.0, 'y': 0.0,
-                            'z': math.sin(yaw / 2.0),
-                            'w': math.cos(yaw / 2.0),
-                        },
-                    },
-                    'covariance': covariance,
-                },
-            },
+        if not seed.get('valid'):
+            self.state['initial_pose_state'] = 'initial_pose_unregistered'
+            self._update(
+                'waiting_for_initial_pose',
+                seed.get('detail') or '등록된 초기 위치 없음 · 수동 API 또는 RViz 필요',
+            )
+            return False
+
+        if not bool(seed.get('auto_enabled')):
+            self.state['initial_pose_state'] = 'awaiting_operator'
+            self._update(
+                'waiting_for_initial_pose',
+                f'자동 초기화 꺼짐 · 등록값 map ({seed["x"]:.3f},{seed["y"]:.3f}) '
+                f'yaw={seed["yaw_deg"]:.1f}° · 수동 API 대기',
+            )
+            return False
+
+        if not self.state.get('map_matches_fms'):
+            self.state['initial_pose_state'] = 'map_mismatch_blocks_seed'
+            self._update(
+                'waiting_for_initial_pose',
+                '지도 불일치로 자동 초기 위치 전송 거절: ' + str(self.state.get('map_mismatch_detail') or ''),
+            )
+            return False
+
+        result = await self.send_initial_pose(
+            x=float(seed['x']), y=float(seed['y']),
+            yaw_rad=float(seed['yaw_rad']), force=False, source=str(seed.get('source')),
+        )
+        return bool(result.get('accepted')) and False  # sent ≠ confirmed
+
+    async def send_initial_pose(
+        self,
+        *,
+        x: float | None = None,
+        y: float | None = None,
+        yaw_deg: float | None = None,
+        yaw_rad: float | None = None,
+        force: bool = False,
+        source: str = 'operator_api',
+    ) -> dict:
+        """Publish /initialpose once. Does not call /set_initial_pose (single path)."""
+        from app.services.initial_pose_registry import (
+            pose_with_covariance_dict,
+            resolve_registered_initial_pose,
+        )
+
+        if self.primary_id != 'pinky-1':
+            return {'accepted': False, 'reason': 'robot_mismatch'}
+        if await self._localization_observed() and not force:
+            self.state['initial_pose_confirmed'] = True
+            self.state['localization_ready'] = True
+            self.state['initial_pose_state'] = 'existing_localization'
+            return {
+                'accepted': False,
+                'reason': 'existing_localization',
+                'detail': 'Valid map localization already observed; pass force=true to overwrite',
+                'pose': self.state.get('pose'),
+            }
+
+        seed = resolve_registered_initial_pose(self.settings, robot_id=self.primary_id)
+        if x is None or y is None:
+            if not seed.get('valid'):
+                return {'accepted': False, 'reason': seed.get('reason') or 'initial_pose_unregistered',
+                        'detail': seed.get('detail')}
+            x = float(seed['x'])
+            y = float(seed['y'])
+            if yaw_rad is None and yaw_deg is None:
+                yaw_rad = float(seed['yaw_rad'])
+            source = source if source != 'operator_api' else str(seed.get('source'))
+        if yaw_rad is None:
+            yaw_rad = math.radians(float(yaw_deg if yaw_deg is not None else 0.0))
+
+        max_attempts = int(getattr(self.settings, 'physical_initial_pose_max_attempts', 3) or 3)
+        retry_s = float(getattr(self.settings, 'physical_initial_pose_retry_s', 12.0) or 12.0)
+        if self._initial_pose_attempts >= max_attempts and not force:
+            self.state['initial_pose_state'] = 'failed_after_max_attempts'
+            return {'accepted': False, 'reason': 'failed_after_max_attempts'}
+        if (time.monotonic() - self._initial_pose_last_attempt) < retry_s and self._initial_pose_attempts > 0 and not force:
+            self.state['initial_pose_state'] = 'retry_wait'
+            return {'accepted': False, 'reason': 'retry_wait'}
+
+        if not self.state.get('map_matches_fms') and not force:
+            return {
+                'accepted': False,
+                'reason': 'map_mismatch',
+                'detail': self.state.get('map_mismatch_detail') or 'map identity not verified',
+            }
+
+        message = pose_with_covariance_dict({
+            'x': float(x), 'y': float(y), 'z': 0.0, 'yaw_rad': float(yaw_rad),
+            'covariance': seed.get('covariance') if seed.get('valid') else None,
+        })
+        topic = str(getattr(self.settings, 'physical_initial_pose_topic', '/initialpose'))
+        self.state['initial_pose_target'] = {
+            'frame_id': 'map', 'x': float(x), 'y': float(y),
+            'yaw_rad': float(yaw_rad), 'yaw_deg': math.degrees(float(yaw_rad)),
         }
+        self.state['initial_pose_source'] = source
         self._initial_pose_last_attempt = time.monotonic()
         self._initial_pose_attempts += 1
+        # Discard any pre-seed samples as confirmation evidence.
+        self._seed_cutoff_monotonic = time.monotonic()
+        self.state['pose'] = None
+        self.state['pose_checked_at'] = None
+        self.state['tf_ready'] = False
+        self.state['localization_ready'] = False
+        self.state['initial_pose_confirmed'] = False
+
         ok, output = await self._ros(
-            'ros2', 'service', 'call', '/set_initial_pose',
-            'nav2_msgs/srv/SetInitialPose', json.dumps(message), timeout=12.0,
+            'ros2', 'topic', 'pub', '--once', topic,
+            'geometry_msgs/msg/PoseWithCovarianceStamped',
+            json.dumps(message),
+            timeout=10.0,
         )
-        if not ok or 'response:' not in output:
+        if not ok:
             self.state['initial_pose_state'] = 'request_failed'
-            log.warning('Pinky-1 AMCL initial pose service failed: %s', output[-800:])
-            self._update('initial_pose_request_failed',
-                         'pinky-1 AMCL /set_initial_pose 요청 실패 (최대 3회 제한)')
-            return False
+            log.warning('Pinky-1 /initialpose publish failed: %s', output[-800:])
+            return {'accepted': False, 'reason': 'request_failed', 'detail': output[-400:]}
+
         self._initial_pose_sent = True
         self.state['initial_pose_sent'] = True
-        self.state['initial_pose_state'] = 'sent_waiting_for_tf'
-        self._update('initial_pose_sent',
-                     'pinky-1 AMCL 초기 위치 X=1.696, Y=0.103 전송; TF 확인 대기')
-        log.info('Pinky-1 initial pose delivered to AMCL at X=1.696 Y=0.103')
-        return True
+        self.state['initial_pose_state'] = 'sent_waiting_for_observation'
+        self._persist_seed_session(confirmed=False, seed=seed if seed.get('valid') else {
+            'ros_domain_id': 24, 'map_sha256': self.state.get('expected_map_sha256'),
+        })
+        log.info(
+            'Pinky-1 /initialpose published at X=%.3f Y=%.3f yaw_rad=%.3f source=%s',
+            x, y, yaw_rad, source,
+        )
+        self._update(
+            'initial_pose_sent',
+            f'/initialpose 전송 ({x:.3f},{y:.3f}) · 관측 확인 대기 (전송≠추정 확인)',
+        )
+        return {
+            'accepted': True,
+            'reason': 'sent',
+            'topic': topic,
+            'target': self.state['initial_pose_target'],
+            'source': source,
+            'note': 'Publish success is not proven localization',
+        }
+
+    async def _ensure_nav2_after_localization(self, nodes: set[str]) -> bool:
+        """Start or resume Nav2 only after map localization is observed."""
+        if not self.state.get('localization_ready'):
+            return False
+        existing = [n for n in NAV_NODES if '/' + n in nodes]
+        if not existing:
+            nav_launch = ROOT / 'launch/pinky1_navigation.launch.py'
+            if not nav_launch.is_file():
+                self._update('nav2_launch_missing', f'Nav2 launch 파일 없음: {nav_launch}')
+                return False
+            if not self._spawn('navigation', ['ros2', 'launch', str(nav_launch)]):
+                self._update('nav2_launch_failed', 'Nav2 실행 실패; logs/physical-nav2-navigation.log 확인')
+            else:
+                self._update('starting_nav2', '위치 확인 후 Nav2 launch 시작 · lifecycle_manager 소유')
+            return False
+
+        # lifecycle_manager owns transitions; FMS only resumes inactive nodes after Aborting.
+        inactive: list[tuple[str, str]] = []
+        for name in NAV_NODES:
+            state = await self._lifecycle(name)
+            if state == 'active':
+                continue
+            if state in {'inactive', 'unconfigured'}:
+                inactive.append((name, state))
+            elif state == 'unavailable' and '/' + name not in nodes:
+                self._update('existing_nav2_partial', f'Nav2 노드 일부 부재: {name}')
+                return False
+
+        if not inactive and len(existing) >= len(NAV_NODES):
+            return True
+
+        max_attempts = int(getattr(self.settings, 'physical_nav2_activate_max_attempts', 5) or 5)
+        if self._nav2_activate_attempts >= max_attempts:
+            self._update(
+                'nav2_bringup_failed',
+                f'Nav2 재활성화 상한({max_attempts}) 초과 · inactive={ [n for n,_ in inactive] }',
+            )
+            return False
+        if time.monotonic() - self._nav2_activate_last < 8.0:
+            self._update('nav2_resume_wait', 'Nav2 재활성화 재시도 대기')
+            return False
+
+        self._nav2_activate_last = time.monotonic()
+        self._nav2_activate_attempts += 1
+        self.state['nav2_resume_attempts'] = self._nav2_activate_attempts
+        for name, state in inactive:
+            if state == 'unconfigured':
+                await self._ros('ros2', 'lifecycle', 'set', '/' + name, 'configure')
+                after = await self._lifecycle(name)
+                if after == 'active':
+                    continue
+                if after != 'inactive':
+                    continue
+            await self._ros('ros2', 'lifecycle', 'set', '/' + name, 'activate')
+        self._update(
+            'resuming_nav2',
+            f'TF 복구 후 Nav2 inactive 재활성화 시도 #{self._nav2_activate_attempts}: '
+            f'{[n for n, _ in inactive]}',
+        )
+        return False
 
     async def poll(self) -> None:
         from app.api.physical import check_ssh, parse_targets
         targets = dict(parse_targets(self.settings.physical_ssh_targets))
         target = targets.get(self.primary_id)
+        # Preserve seed/confirmation flags across polls; refresh observation flags.
+        preserved = {
+            'initial_pose_sent': self.state.get('initial_pose_sent'),
+            'initial_pose_confirmed': self.state.get('initial_pose_confirmed'),
+            'initial_pose_state': self.state.get('initial_pose_state'),
+            'initial_pose_target': self.state.get('initial_pose_target'),
+            'initial_pose_source': self.state.get('initial_pose_source'),
+            'nav2_resume_attempts': self.state.get('nav2_resume_attempts'),
+        }
         self.state.update(ssh_connected=False, ros_online=False, map_server_active=False,
                           amcl_active=False, nav2_active=False, tf_ready=False,
-                          pose=None, pose_checked_at=None,
+                          localization_ready=False,
+                          pose=None, pose_checked_at=None, pose_source=None,
                           cmd_vel_chain_ready=False, nav2_ready=False,
                           map_matches_fms=False, map_server_yaml=None,
                           collision_monitor_active=False,
                           map_content_sha256=None, expected_map_sha256=None,
                           map_mismatch_detail='map identity not checked',
                           launch_owned_by_fms='navigation' in self.children and
-                          self.children['navigation'].poll() is None)
-        if not target:
-            self._update('unconfigured', 'FMS_PHYSICAL_SSH_TARGETS에 대상 Pinky 없음')
-            return
-        authenticated = await check_ssh(self.primary_id, target,
-                                        self.settings.physical_ssh_timeout_seconds,
-                                        self.settings.physical_ssh_password)
-        if authenticated is None:
-            self._ssh_failure_checks += 1
-            if self._ssh_failure_checks >= 2:
-                # Re-arm only after two failed probes; avoid reinitializing
-                # localization on a single transient SSH timeout.
-                self._initial_pose_sent = False
-                self._initial_pose_attempts = 0
-                self._initial_pose_last_attempt = -1e9
-                self.state['initial_pose_sent'] = False
-                self.state['initial_pose_confirmed'] = False
-                self.state['initial_pose_state'] = 'waiting_for_ssh'
-            self._update('waiting_for_ssh', 'SSH 인증 실패 또는 연결 끊김')
-            return
-        self._ssh_failure_checks = 0
-        self.state['ssh_connected'] = True
+                          self.children['navigation'].poll() is None,
+                          initial_pose_auto=bool(getattr(self.settings, 'physical_initial_pose_auto', False)),
+                          bringup_phase='poll',
+                          **preserved)
+        # SSH is optional diagnostics for ros_topic mode. Never gate ROS observation.
+        if target:
+            authenticated = await check_ssh(
+                self.primary_id, target,
+                self.settings.physical_ssh_timeout_seconds,
+                self.settings.physical_ssh_password,
+            )
+            self.state['ssh_connected'] = authenticated is not None
+            if authenticated is None:
+                self._ssh_failure_checks += 1
+            else:
+                self._ssh_failure_checks = 0
+        else:
+            self.state['ssh_connected'] = False
         if not ROS_SETUP.is_file():
             self._update('ros_missing', '/opt/ros/jazzy/setup.bash 없음')
             return
-        # The physical robot's bringup must be running; never remote-start the
-        # motor interface just because SSH authentication succeeded.
         if not await self._publisher('/odom') or not await self._publisher('/scan'):
-            self._update('waiting_for_robot_ros', 'SSH 연결됨; Pinky Bringup /odom, /scan 발행 대기')
+            detail = 'Pinky Bringup /odom, /scan 발행 대기'
+            if not self.state['ssh_connected']:
+                detail += ' (SSH 미연결 · ROS Domain 관측만 시도)'
+            self._update('waiting_for_sensors', detail)
             return
         self.state['ros_online'] = True
+        self.state['bringup_phase'] = 'sensors_ok'
         nodes = await self._nodes()
         map_yaml = Path(self.settings.physical_map_yaml)
         if not map_yaml.is_file():
@@ -458,9 +779,11 @@ class PhysicalNav2Auto:
                  '-p', 'use_sim_time:=false', '-p', 'yaml_filename:=' + str(map_yaml)]):
             return
         self.state['map_server_active'] = True
-        # Active only means the lifecycle state. An already-running server may
-        # still be serving a different YAML. Do not restart a user-owned process.
+        self.state['bringup_phase'] = 'map_server_active'
         await self._record_map_identity(map_yaml)
+        if not self.state.get('map_matches_fms'):
+            self._update('map_mismatch', str(self.state.get('map_mismatch_detail') or 'map mismatch'))
+            return
         if not await self._ensure_lifecycle('amcl', nodes,
                 ['ros2', 'run', 'nav2_amcl', 'amcl', '--ros-args',
                  '-p', 'use_sim_time:=false',
@@ -470,50 +793,34 @@ class PhysicalNav2Auto:
                  '-p', 'tf_broadcast:=true']):
             return
         self.state['amcl_active'] = True
-        if not await self._ensure_pinky1_initial_pose():
+        self.state['bringup_phase'] = 'amcl_active'
+
+        # Initial pose BEFORE Nav2 bringup — breaks the map-TF wait cycle.
+        if not await self._ensure_localization():
             return
-        # Never spawn duplicate Nav2 nodes over an existing manual launch.
-        existing_nav = [n for n in NAV_NODES if '/' + n in nodes]
-        if existing_nav:
-            if len(existing_nav) < len(NAV_NODES):
-                self._update('existing_nav2_partial',
-                             '기존 Nav2 일부 노드가 실행 중; 중복 실행 방지 (로그 확인)')
-                return
-        else:
-            nav_launch = ROOT / 'launch/pinky1_navigation.launch.py'
-            if not nav_launch.is_file():
-                self._update('nav2_launch_missing', f'Nav2 launch 파일 없음: {nav_launch}')
-                return
-            if not self._spawn('navigation', ['ros2', 'launch', str(nav_launch)]):
-                self._update('nav2_launch_failed', 'Nav2 실행 실패; logs/physical-nav2-navigation.log 확인')
-            else:
-                self._update('starting_nav2', 'Nav2 자동 실행 시작; Lifecycle 활성화 대기')
+        self.state['bringup_phase'] = 'localization_ready'
+
+        if not await self._ensure_nav2_after_localization(nodes):
             return
+
         for name in ('controller_server', 'planner_server', 'bt_navigator',
                      'velocity_smoother', 'collision_monitor'):
             if await self._lifecycle(name) != 'active':
-                self._update('activating_nav2', f'{name} 활성화 대기')
+                self._update('activating_nav2', f'{name} 아직 active 아님 · lifecycle_manager/재개 대기')
                 return
         self.state['collision_monitor_active'] = True
         self.state['nav2_active'] = True
+        self._nav2_activate_attempts = 0
         action_ok, action_list = await self._ros('ros2', 'action', 'list', '-t')
         if not action_ok or '/navigate_to_pose [nav2_msgs/action/NavigateToPose]' not in action_list:
             self._update('waiting_for_nav2_action', 'NavigateToPose Action Server 확인 대기')
             return
-        # Even if Nav2 has activated, AMCL must establish map -> base_footprint.
-        self.state['tf_ready'] = await self._tf()
-        if self._initial_pose_sent:
-            self.state['initial_pose_confirmed'] = self.state['tf_ready']
-            self.state['initial_pose_state'] = ('tf_confirmed' if self.state['tf_ready']
-                                               else 'sent_waiting_for_tf')
-        if not self.state['tf_ready']:
-            self._update('waiting_for_initial_pose',
-                         'Nav2 활성화됨; RViz 2D Pose Estimate로 AMCL 초기 위치 설정 필요')
-            return
         self.state['cmd_vel_chain_ready'] = await self._verify_chain()
         self.state['nav2_ready'] = self.state['cmd_vel_chain_ready']
+        self.state['bringup_phase'] = 'nav2_ready' if self.state['nav2_ready'] else 'velocity_chain_missing'
+        ssh_note = 'SSH 연결' if self.state['ssh_connected'] else 'SSH 미연결(선택)'
         if self.state['nav2_ready']:
-            self._update('ready', 'SSH / ROS / 지도 / AMCL TF / Nav2 / cmd_vel 연결 확인')
+            self._update('ready', f'{ssh_note} · ROS / 지도 / 위치관측 / Nav2 / cmd_vel 확인')
         else:
             self._update('velocity_chain_missing', 'Nav2 활성화됐지만 /cmd_vel 연결 확인 실패')
 

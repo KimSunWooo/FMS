@@ -23,8 +23,8 @@ SAFE_P2_HOME = {"x": 0.8, "y": 1.8, "yaw": 0.0}
 def call_env(tmp_path: Path):
     settings = make_settings(
         tmp_path,
-        planning_resolution_m=0.14,
-        planning_robot_radius_m=0.096,
+        planning_resolution_m=0.0948528137423857,
+        planning_robot_radius_m=0.0948528137423857,
     )
     fleet = json.loads(Path(settings.physical_fleet_path).read_text(encoding="utf-8"))
     for robot in fleet["robots"]:
@@ -251,11 +251,11 @@ def test_scenario_e_error_gates(call_env):
     assert ack_only.status_code == 409
 
 
-def test_lattice_defaults_still_fourteen_cm_for_calls(call_env):
+def test_lattice_defaults_still_effective_radius_for_calls(call_env):
     client, runtime = call_env
-    assert runtime.settings.planning_resolution_m == 0.14
+    assert runtime.settings.planning_resolution_m == pytest.approx(0.0948528137423857)
     starts = client.get("/api/planning/starts").json()["map"]
-    assert starts["planning_resolution_m"] == 0.14
+    assert starts["planning_resolution_m"] == pytest.approx(0.0948528137423857)
 
 
 def test_exit_completes_mission_after_dropoff_arrival(call_env):

@@ -35,7 +35,10 @@ def build_graph(
 
 
 def map_summary(graph: WaypointGraph) -> dict:
+    from app.services.robot_geometry import planning_geometry_public
+
     geometry = graph.grid.geometry
+    body = planning_geometry_public()
     return {
         "frame_id": "map",
         "source": geometry.yaml_path.name,
@@ -45,10 +48,17 @@ def map_summary(graph: WaypointGraph) -> dict:
         "resolution_m": geometry.resolution,
         "origin": {"x": geometry.origin_x, "y": geometry.origin_y, "yaw": geometry.origin_yaw},
         "planning_resolution_m": graph.planning_resolution_m,
+        "planning_resolution_requested_m": getattr(
+            graph, "requested_planning_resolution_m", graph.planning_resolution_m
+        ),
+        "planning_resolution_applied_equals_requested": getattr(
+            graph, "resolution_applied_equals_requested", True
+        ),
         "planning_profile": planning_profile(graph.planning_resolution_m, graph.robot_radius_m),
         "occupancy_resolution_m": graph.grid.resolution,
         "robot_radius_m": graph.robot_radius_m,
-        "robot_radius_source": "configured_value",
+        "robot_radius_source": body["source"],
+        "robot_geometry": body,
         "collision_safety_verified": False,
         "unknown_policy": "blocked",
         "allow_diagonal": graph.allow_diagonal,
@@ -84,8 +94,12 @@ def inspect_point(graph: WaypointGraph, x: float, y: float) -> dict:
 
 
 def fresh_tf_pose(snapshot: dict | None, *, now: datetime | None = None) -> dict | None:
-    """Return a recent TF pose from the Nav2 monitor, or None. Never invents one."""
-    if not snapshot or not snapshot.get("ssh_connected"):
+    """Return a recent TF pose from the Nav2 monitor, or None. Never invents one.
+
+    SSH is diagnostic only. A fresh map→base_footprint sample is accepted without
+    an SSH session.
+    """
+    if not snapshot:
         return None
     pose = snapshot.get("pose")
     observed_at = snapshot.get("pose_checked_at")
@@ -98,10 +112,45 @@ def fresh_tf_pose(snapshot: dict | None, *, now: datetime | None = None) -> dict
         return None
     if not 0 <= age <= TF_MAX_AGE_SECONDS:
         return None
-    return {"x": coordinates[0], "y": coordinates[1], "source": "tf:map->base_footprint", "observed_at": observed_at}
+    source = str(snapshot.get("pose_source") or "tf:map->base_footprint")
+    return {"x": coordinates[0], "y": coordinates[1], "source": source, "observed_at": observed_at}
 
 
-def validate_robot_starts(graph: WaypointGraph, registry: list[dict], snapshot: dict | None) -> list[dict]:
+def _physical_start_pose(
+    record: dict,
+    snapshot: dict | None,
+    live_state: dict | None,
+) -> dict | None:
+    """Prefer Gateway/amcl robot_state; fall back to monitor TF. Never invent."""
+    if (
+        isinstance(live_state, dict)
+        and live_state.get("robot_id") == record["robot_id"]
+        and live_state.get("pose_valid")
+        and isinstance(live_state.get("pose"), dict)
+        and live_state.get("pose_source") != "registry_home"
+    ):
+        sample = live_state["pose"]
+        try:
+            return {
+                "x": float(sample["x"]),
+                "y": float(sample["y"]),
+                "source": str(live_state.get("pose_source") or "topic:amcl_pose"),
+                "observed_at": live_state.get("pose_timestamp"),
+                "pose_freshness": live_state.get("pose_freshness"),
+            }
+        except (TypeError, ValueError, KeyError):
+            pass
+    if snapshot is not None and snapshot.get("robot_id") not in (None, record["robot_id"]):
+        return None
+    return fresh_tf_pose(snapshot)
+
+
+def validate_robot_starts(
+    graph: WaypointGraph,
+    registry: list[dict],
+    snapshot: dict | None,
+    states: dict[str, dict] | None = None,
+) -> list[dict]:
     reports = []
     for record in registry:
         if record["kind"] == "virtual":
@@ -115,7 +164,8 @@ def validate_robot_starts(graph: WaypointGraph, registry: list[dict], snapshot: 
                 "inspection": inspection,
             })
             continue
-        pose = fresh_tf_pose(snapshot)
+        live = None if states is None else states.get(record["robot_id"])
+        pose = _physical_start_pose(record, snapshot, live)
         if pose is None:
             reports.append({
                 "robot_id": record["robot_id"],
@@ -132,7 +182,8 @@ def validate_robot_starts(graph: WaypointGraph, registry: list[dict], snapshot: 
             })
             continue
         inspection = inspect_point(graph, pose["x"], pose["y"])
-        inspection["observed_at"] = pose["observed_at"]
+        inspection["observed_at"] = pose.get("observed_at")
+        inspection["pose_freshness"] = pose.get("pose_freshness")
         reports.append({
             "robot_id": record["robot_id"],
             "kind": "physical",
@@ -200,17 +251,19 @@ def resolve_start(
     record: dict,
     requested: dict | None,
     snapshot: dict | None,
+    live_state: dict | None = None,
 ) -> tuple[float, float, str]:
     if requested is not None:
         return float(requested["x"]), float(requested["y"]), "request"
     if record["kind"] == "virtual":
         home = record["home"]
         return float(home["x"]), float(home["y"]), "registry_home"
-    pose = fresh_tf_pose(snapshot)
+    pose = _physical_start_pose(record, snapshot, live_state)
     if pose is None:
         raise PlanningFailure(
             "tf_unavailable",
-            "Pinky-1 has no fresh TF pose. Pass an explicit start or wait for map->base_footprint.",
+            "Physical robot has no fresh map pose (amcl_pose / TF). "
+            "Pass an explicit start or wait for a live observation. SSH is not required.",
             {"robot_id": record["robot_id"], "paths": [], "shortest": None, "reachable": False},
         )
     return pose["x"], pose["y"], pose["source"]

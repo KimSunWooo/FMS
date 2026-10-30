@@ -130,12 +130,13 @@ async def check_ssh(robot_id: str, target: str, timeout: float, password: str = 
 
 
 def _fresh_nav2(snapshot: dict | None) -> dict | None:
+    """Age-gate monitor TF. SSH is not required for a valid observation."""
     if snapshot is None:
         return None
     published = dict(snapshot)
     pose = published.get("pose")
     observed_at = published.get("pose_checked_at")
-    if not (published.get("ssh_connected") and isinstance(pose, dict) and observed_at):
+    if not (isinstance(pose, dict) and observed_at):
         published["pose"] = None
         published["pose_checked_at"] = None
         return published
@@ -185,15 +186,25 @@ async def connected_robots(request: Request) -> dict:
     robots = []
     for record in registry:
         ssh_robot = ssh_by_id.get(record["robot_id"]) if record["kind"] == "physical" else None
-        nav2 = snapshot if ssh_robot is not None and monitor is not None and record["robot_id"] == monitor.primary_id else None
+        # Nav2/TF snapshot is not gated on SSH — ros_topic mode observes Domain alone.
+        nav2 = (
+            snapshot
+            if monitor is not None and record["kind"] == "physical" and record["robot_id"] == monitor.primary_id
+            else None
+        )
         item = present_robot(
             record, ssh_robot=ssh_robot, nav2=nav2, geometry=geometry,
             worker=workers.get(record["robot_id"]),
         )
         state = robot_state(record["robot_id"], settings, snapshot if record["robot_id"] == "pinky-1" else None)
-        # Physical-only RobotStatus telemetry. Virtual robots keep registry home separate.
+        # Physical-only telemetry. Virtual robots keep registry home separate.
         if record["kind"] == "physical":
-            if state.get("pose_valid") and isinstance(state.get("pose"), dict) and state.get("pose_source") != "registry_home":
+            has_pose = (
+                isinstance(state.get("pose"), dict)
+                and state.get("pose_source") != "registry_home"
+                and state.get("pose_freshness") not in {None, "missing"}
+            )
+            if has_pose:
                 item["pose"] = {
                     "x": state["pose"].get("x"),
                     "y": state["pose"].get("y"),
@@ -201,7 +212,7 @@ async def connected_robots(request: Request) -> dict:
                 }
                 item["pose_checked_at"] = state.get("pose_timestamp")
                 item["pose_source"] = state.get("pose_source")
-                item["pose_valid"] = True
+                item["pose_valid"] = bool(state.get("pose_valid"))
                 item["pose_freshness"] = state.get("pose_freshness")
                 if geometry is not None and all(isinstance(item["pose"].get(k), (int, float)) for k in ("x", "y")):
                     located = describe_map_point(
@@ -216,16 +227,17 @@ async def connected_robots(request: Request) -> dict:
                 item["pose_valid"] = False
                 item["pose_freshness"] = state.get("pose_freshness") or "missing"
             item["battery_valid"] = bool(state.get("battery_valid"))
-            item["battery_percentage"] = state.get("battery_percentage") if state.get("battery_valid") else None
-            item["battery_source"] = state.get("battery_source") if state.get("battery_valid") else None
-            item["battery_timestamp"] = state.get("battery_timestamp") if state.get("battery_valid") else None
+            item["battery_percentage"] = state.get("battery_percentage")
+            item["battery_source"] = state.get("battery_source")
+            item["battery_timestamp"] = state.get("battery_timestamp")
             item["battery_freshness"] = state.get("battery_freshness") or "missing"
             item["plan_valid"] = bool(state.get("plan_valid"))
-            item["plan"] = state.get("plan") if state.get("plan_valid") else None
-            item["plan_source"] = state.get("plan_source") if state.get("plan_valid") else None
-            item["plan_timestamp"] = state.get("plan_timestamp") if state.get("plan_valid") else None
+            item["plan"] = state.get("plan")
+            item["plan_source"] = state.get("plan_source")
+            item["plan_timestamp"] = state.get("plan_timestamp")
             item["plan_freshness"] = state.get("plan_freshness") or "missing"
             item["receiver_ready"] = state.get("receiver_ready")
+            # Assignable from ROS pose freshness — not from SSH.
             item["task_assignable"] = bool(state.get("assignable"))
         else:
             item["pose_valid"] = False
@@ -265,6 +277,35 @@ async def physical_nav2_status(request: Request) -> dict:
     if monitor is None:
         return {"state": "disabled", "detail": "FMS_PHYSICAL_NAV2_AUTO_START=false", "nav2_ready": False}
     return monitor.snapshot()
+
+
+class InitialPoseIn(BaseModel):
+    x: float
+    y: float
+    yaw_deg: float | None = None
+    force: bool = False
+    confirm: bool = Field(False, description="Must be true; prevents accidental seeding")
+
+
+@router.post("/robots/{robot_id}/initial-pose")
+async def physical_set_initial_pose(robot_id: str, body: InitialPoseIn, request: Request) -> dict:
+    """Operator-only AMCL seed. Does not run on API restart. Does not send Nav2 goals."""
+    if robot_id != "pinky-1":
+        raise HTTPException(404, "Initial pose API is only defined for pinky-1")
+    if not body.confirm:
+        raise HTTPException(400, "confirm=true is required")
+    monitor = getattr(request.app.state, "physical_nav2", None)
+    if monitor is None:
+        raise HTTPException(503, "Physical Nav2 monitor unavailable")
+    result = await monitor.send_initial_pose(
+        x=body.x, y=body.y, yaw_deg=body.yaw_deg, force=body.force, source="operator_api",
+    )
+    status = 200 if result.get("accepted") else 409
+    if status == 409 and result.get("reason") == "existing_localization":
+        return result
+    if not result.get("accepted"):
+        raise HTTPException(status, result)
+    return result
 
 
 # FMS_PINKY1_5CM_TEST_V1: dedicated real Nav2 test, NOT the mock task API.

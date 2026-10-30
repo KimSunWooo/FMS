@@ -45,14 +45,14 @@ def classify_time_basis(t_start: float, stored: str | None = None) -> str:
     return "absolute"
 
 
-def footprint_corner_m(half_width_m: float) -> float:
-    """Corner radius of a square whose half-width is the configured planning radius.
+def footprint_corner_m(radius_m: float) -> float:
+    """Planning disk radius used for edge/vertex separation.
 
-    Nav2's current footprint is the square (±0.06 m, ±0.06 m). The planning
-    disk of 0.06 m does not cover that corner (~0.085 m). This is a planning
-    clearance, not a measured collision certificate.
+    ``planning_robot_radius_m`` is already R_effective (Nav2 square circumradius
+    + 0.01 m clearance). Do not multiply by sqrt(2) again — that would double
+    the diagonal inflate. Inter-robot center distance uses 2 * R_effective.
     """
-    return max(0.0, half_width_m) * math.sqrt(2)
+    return max(0.0, float(radius_m))
 
 
 def overlaps(a0: float, a1: float, b0: float, b1: float) -> bool:

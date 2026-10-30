@@ -389,7 +389,7 @@ export function FleetTaskPanel({
     await refresh();
   }
 
-  const dispatchable = selected?.status === "RESERVED";
+  const dispatchable = selected?.status === "RESERVED" && !selected?.schedule?.needs_replan;
   const cancelDisabled = !selected || pending || CANCELLABLE.has(selected.status) || Boolean(selected.is_archived);
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const statusOptions = scope === "active" ? ACTIVE_STATUSES : HISTORY_STATUSES;

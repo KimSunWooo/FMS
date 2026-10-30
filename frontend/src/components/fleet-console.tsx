@@ -88,6 +88,19 @@ type PhysicalMap = {
   data_source: "physical_site_map_files";
   grid?: { width: number; height: number; convention: string; row_origin: string };
 };
+type PlanningGeometry = {
+  planning_resolution_m: number;
+  robot_radius_m: number;
+  planning_resolution_applied_equals_requested?: boolean;
+  planning_profile?: string;
+  robot_geometry?: {
+    r_body_m: number;
+    clearance_m: number;
+    r_effective_m: number;
+    source?: string;
+    body?: { length_m: number; width_m: number };
+  };
+};
 
 type Task = {
   task_id: string;
@@ -204,21 +217,24 @@ export function FleetConsole() {
     () => tasks.filter((task) => ["COMPLETED", "CANCELED", "FAILED"].includes(task.status)).slice(0, 8),
     [tasks],
   );
+  const [planningGeometry, setPlanningGeometry] = useState<PlanningGeometry | null>(null);
   const events: FeedEvent[] = useMemo(() => {
     if (!fleet) return [];
+    const rosOnline = fleet.robots.filter((robot) => robot.ros_online || robot.worker?.connection_state === "ros_connected" || robot.worker?.connection_state === "nav2_ready").length;
     return [{
       kind: "fleet_registry",
       code: "fleet_registry_checked",
-      message: `등록 ${fleet.configured_count}대 · 실물 ${fleet.physical_count}대(SSH ${fleet.connected_count}) · 가상 ${fleet.virtual_count}대`,
+      message: `등록 ${fleet.configured_count}대 · 실물 ${fleet.physical_count}대(ROS ${rosOnline} / SSH ${fleet.connected_count}) · 가상 ${fleet.virtual_count}대`,
       created_at: fleet.checked_at,
     }];
   }, [fleet]);
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     // Independent requests: an absent map should not hide authenticated robots.
-    const [robotsResult, mapResult] = await Promise.allSettled([
+    const [robotsResult, mapResult, startsResult] = await Promise.allSettled([
       readJson<PhysicalFleet>("/fms-api/physical/robots", signal),
       readJson<PhysicalMap>("/fms-api/physical/map", signal),
+      readJson<{ map: PlanningGeometry }>("/fms-api/planning/starts", signal),
     ]);
     if (signal?.aborted) return;
     if (robotsResult.status === "fulfilled" && Array.isArray(robotsResult.value.robots)) {
@@ -238,6 +254,9 @@ export function FleetConsole() {
       setMapError(mapResult.status === "rejected"
         ? String(mapResult.reason instanceof Error ? mapResult.reason.message : mapResult.reason)
         : "실제 지도 형식이 올바르지 않습니다.");
+    }
+    if (startsResult.status === "fulfilled" && startsResult.value.map) {
+      setPlanningGeometry(startsResult.value.map);
     }
     setLoading(false);
   }, []);
@@ -529,7 +548,20 @@ export function FleetConsole() {
                   {robot.pose_source ? ` · pose src ${robot.pose_source}` : ""}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">Nav2: {robot.nav2_detail ?? "상태 점검 중"}</p>
+              <p className="text-xs text-muted-foreground">
+                Nav2: {robot.nav2_state ?? "상태"} · {robot.nav2_detail ?? "점검 중"}
+                {robot.kind === "physical" && (robot as { bringup_phase?: string }).bringup_phase
+                  ? ` · phase ${(robot as { bringup_phase?: string }).bringup_phase}`
+                  : ""}
+              </p>
+              {robot.kind === "physical" && robot.robot_id === "pinky-1" && (
+                <p className="font-mono text-xs text-muted-foreground">
+                  초기위치 {(robot as { initial_pose_state?: string }).initial_pose_state ?? "—"}
+                  {(robot as { initial_pose_sent?: boolean }).initial_pose_sent ? " · sent" : ""}
+                  {(robot as { initial_pose_confirmed?: boolean }).initial_pose_confirmed ? " · confirmed" : " · not confirmed"}
+                  {(robot as { localization_ready?: boolean }).localization_ready ? " · loc ready" : ""}
+                </p>
+              )}
               {robot.robot_id === "pinky-1" && livePose?.pose_valid && livePose.pose && livePose.pose_checked_at &&
                 Date.now() - Date.parse(livePose.pose_checked_at) < 5000 && (
                 <p className="font-mono text-xs text-primary">
@@ -713,8 +745,16 @@ export function FleetConsole() {
                       </g>
                     );
                   })}
-                  {liveMarkers.map(({ robot, px, py, rotation, stale }) => (
+                  {liveMarkers.map(({ robot, px, py, rotation, stale }) => {
+                    const radiusM = planningGeometry?.robot_radius_m ?? planningGeometry?.robot_geometry?.r_effective_m;
+                    const radiusPx = Number.isFinite(radiusM) && physicalMap.resolution > 0
+                      ? Number(radiusM) / physicalMap.resolution
+                      : null;
+                    return (
                     <g key={robot.robot_id} aria-label={`${robot.name} ${stale ? "마지막 amcl 위치(stale)" : "현재 amcl 위치"}`} opacity={stale ? 0.45 : 1}>
+                      {radiusPx != null && (
+                        <circle cx={px} cy={py} r={radiusPx} fill="none" stroke="#007d82" strokeWidth={0.6} strokeDasharray="2 1.5" opacity={0.7} />
+                      )}
                       {/* Distinct from the red destination crosshair: teal arrow + label. */}
                       <circle cx={px} cy={py} r={7} fill="#09b8b4" fillOpacity={0.2} stroke="#007d82" strokeWidth={0.7} />
                       <g transform={`translate(${px} ${py}) rotate(${rotation})`}>
@@ -726,14 +766,19 @@ export function FleetConsole() {
                         {stale ? `${robot.name} stale` : robot.name}
                       </text>
                     </g>
-                  ))}
+                    );
+                  })}
                 </svg>
               </div>
             ) : (
               <p className="text-sm text-destructive">{mapError ?? "실제 지도 로딩 중..."}</p>
             )}
             <p className="text-xs text-muted-foreground">
-              청록색 화살표: Pinky-1의 최근 TF(map → base_footprint). 주황·보라 사각형: Pinky-2·3 가상 등록 위치.
+              청록색 화살표: Pinky-1의 최근 map 위치(amcl/TF). 점선 원: 계획 반경 R_effective.
+              {planningGeometry?.robot_geometry
+                ? ` 본체 ${planningGeometry.robot_geometry.body?.length_m?.toFixed(2)}×${planningGeometry.robot_geometry.body?.width_m?.toFixed(2)}m · R_body ${planningGeometry.robot_geometry.r_body_m.toFixed(4)}m · 여유 ${planningGeometry.robot_geometry.clearance_m.toFixed(2)}m · R_eff=격자 ${planningGeometry.robot_radius_m.toFixed(4)}m.`
+                : ""}
+              {" "}주황·보라 사각형: Pinky-2·3 가상 등록 위치.
               빨간 십자: 선택한 목적지(주행 미실행). 선은 계획 경로이며 예약 시각과 실제 자세는 따로 표시합니다. 로봇 마커는 계획 경로를 따라 움직이지 않습니다.
               TF가 미수신·오래됨·지도 밖이면 실물 표시는 숨깁니다.
               {routeOverlay?.historical ? " 회색 점선은 종료된 Task의 저장 경로이며 현재 활성 예약이 아닙니다." : ""}

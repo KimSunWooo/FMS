@@ -5,6 +5,8 @@ from pathlib import Path
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.services.robot_geometry import PINKY_R_EFFECTIVE_M
+
 ROOT = Path(__file__).resolve().parents[3]
 
 _LEGACY_DB_MARKERS = (
@@ -70,10 +72,11 @@ class Settings(BaseSettings):
     physical_fleet_path: Path = Field(
         default_factory=lambda: ROOT / "config" / "physical_fleet.json"
     )
-    # 140 mm lattice: 110x120 mm body plus 20 mm margin on each axis.
-    # The map file stays 0.01 m/px. This spacing is only the planner lattice.
-    planning_resolution_m: float = 0.14
-    planning_robot_radius_m: float = 0.096
+    # Circular planning model: Nav2 square footprint (±0.06 m) circumradius + 0.01 m.
+    # Defaults come from robot_geometry.PINKY_R_EFFECTIVE_M; resolution equals radius.
+    # The occupancy map file stays 0.01 m/px. Do not silently round the lattice.
+    planning_resolution_m: float = PINKY_R_EFFECTIVE_M
+    planning_robot_radius_m: float = PINKY_R_EFFECTIVE_M
     # Time slots stay at the previous 0.05 m / 0.15 m/s step. They do not grow with the lattice.
     planning_depart_slot_s: float = 0.05 / 0.15
     planning_max_candidates: int = 3
@@ -103,7 +106,20 @@ class Settings(BaseSettings):
     facilities_path: Path = Field(default_factory=lambda: ROOT / "config" / "facilities.json")
     physical_5cm_test_enabled: bool = False
     physical_5cm_test_token: str = ""
-    physical_initial_pose_yaw_deg: float = 0.0
+    # Registered seed: unset → load amcl.initial_pose from physical_nav2_params_yaml.
+    physical_initial_pose_x: float | None = None
+    physical_initial_pose_y: float | None = None
+    physical_initial_pose_yaw_rad: float | None = None
+    physical_initial_pose_yaw_deg: float = 0.0  # used only when FMS_PHYSICAL_INITIAL_POSE_YAW_DEG is set
+    physical_initial_pose_topic: str = "/initialpose"
+    physical_nav2_params_yaml: Path = Field(
+        default_factory=lambda: ROOT / "config/maps/physical_site/nav2_params.yaml"
+    )
+    # When true: after AMCL+map match, publish registered /initialpose once if no live pose.
+    physical_initial_pose_auto: bool = False
+    physical_initial_pose_max_attempts: int = 3
+    physical_initial_pose_retry_s: float = 12.0
+    physical_nav2_activate_max_attempts: int = 5
     physical_ssh_timeout_seconds: float = 3.0
     auto_tick: bool = True
     seed_fleet: bool = True
@@ -151,6 +167,10 @@ class Settings(BaseSettings):
             raise ValueError("Refusing a placeholder lease secret when FMS_ENV=production.")
         if self.ros_domain_id < 0 or self.ros_domain_id > 232:
             raise ValueError("FMS_ROS_DOMAIN_ID must be in 0..232.")
+        if self.planning_resolution_m <= 0:
+            raise ValueError("FMS_PLANNING_RESOLUTION_M must be positive.")
+        if self.planning_robot_radius_m < 0:
+            raise ValueError("FMS_PLANNING_ROBOT_RADIUS_M must be >= 0.")
         # Process environment overrides .env. A missing file is a configuration
         # error. Do not replace it with another map.
         map_path = Path(self.physical_map_yaml)

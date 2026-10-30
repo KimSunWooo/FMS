@@ -5,6 +5,8 @@ cell is traversable only when a disk of the configured robot radius is inside
 the map and entirely free. That radius comes from configuration. It is not a
 verified collision-safety certificate.
 
+Lattice spacing uses the requested planning_resolution_m exactly in world
+meters. It is not quietly rewritten by rounding to an occupancy-pixel stride.
 Diagonal steps are rejected when either orthogonal side cell is blocked, so a
 path cannot cut an obstacle corner.
 """
@@ -12,7 +14,7 @@ from __future__ import annotations
 
 import math
 
-from app.services.map_frame import grid_to_pixel, grid_to_world
+from app.services.map_frame import grid_to_pixel, grid_to_world, world_to_grid
 from app.services.occupancy_grid import FREE, OccupancyGrid
 
 ORTHOGONAL = ((1, 0), (-1, 0), (0, 1), (0, -1))
@@ -33,12 +35,26 @@ class WaypointGraph:
         if robot_radius_m < 0:
             raise ValueError("robot_radius_m must be >= 0")
         self.grid = grid
-        self.stride = max(1, int(round(planning_resolution_m / grid.resolution)))
-        self.planning_resolution_m = self.stride * grid.resolution
-        self.robot_radius_m = robot_radius_m
+        self.requested_planning_resolution_m = float(planning_resolution_m)
+        # Keep the operator/config value. Do not replace it with stride * map_res.
+        self.planning_resolution_m = float(planning_resolution_m)
+        self.robot_radius_m = float(robot_radius_m)
         self.allow_diagonal = allow_diagonal
-        self.width = grid.width // self.stride
-        self.height = grid.height // self.stride
+        width_m = grid.width * grid.resolution
+        height_m = grid.height * grid.resolution
+        self.width = max(1, int(math.floor(width_m / self.planning_resolution_m)))
+        self.height = max(1, int(math.floor(height_m / self.planning_resolution_m)))
+        # Legacy field: approximate occupancy cells per lattice step (diagnostics only).
+        self.stride = max(1, int(round(self.planning_resolution_m / grid.resolution)))
+        self.resolution_applied_equals_requested = (
+            abs(self.planning_resolution_m - self.requested_planning_resolution_m) < 1e-12
+        )
+        if not self.resolution_applied_equals_requested:
+            raise ValueError(
+                "planning_resolution_m was rewritten; refusing silent lattice drift "
+                f"(requested={self.requested_planning_resolution_m}, "
+                f"applied={self.planning_resolution_m})"
+            )
         self._traversable: dict[tuple[int, int], bool] = {}
         self._segment_clear: dict[tuple[tuple[float, float], tuple[float, float]], bool] = {}
 
@@ -81,7 +97,7 @@ class WaypointGraph:
         blocked = self.grid.point_is_blocked(x, y, self.robot_radius_m)
         if blocked is not None:
             return blocked, None
-        base = (index[0] // self.stride, index[1] // self.stride)
+        base = self._lattice_at(x, y)
         candidates: list[tuple[float, int, tuple[int, int]]] = []
         for dc in (-1, 0, 1):
             for dr in (-1, 0, 1):
@@ -174,7 +190,19 @@ class WaypointGraph:
         return f"w-{node[0]}-{node[1]}"
 
     def _center_index(self, node: tuple[int, int]) -> tuple[float, float]:
-        return (node[0] + 0.5) * self.stride, (node[1] + 0.5) * self.stride
+        """Occupancy-grid continuous indices of the lattice-cell center."""
+        local_x = (node[0] + 0.5) * self.planning_resolution_m
+        local_y = (node[1] + 0.5) * self.planning_resolution_m
+        return local_x / self.grid.resolution, local_y / self.grid.resolution
+
+    def _lattice_at(self, x: float, y: float) -> tuple[int, int]:
+        col_f, row_f = world_to_grid(self.grid.geometry, x, y)
+        local_x = col_f * self.grid.resolution
+        local_y = row_f * self.grid.resolution
+        return (
+            int(math.floor(local_x / self.planning_resolution_m)),
+            int(math.floor(local_y / self.planning_resolution_m)),
+        )
 
     def suggestions(self, x: float, y: float, limit: int = 3) -> list[dict]:
         """Nearest traversable planning centers. Suggestions are not registered poses."""

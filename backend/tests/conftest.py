@@ -27,7 +27,7 @@ def make_settings(
 ) -> Settings:
     """The shared fixture stays on the previous 0.05 m lattice.
 
-    Production defaults are 0.14 m and 0.096 m. Tests of that lattice must pass
+    Production defaults are R_effective (~0.09485 m). Tests of that lattice must pass
     those values explicitly so this pin cannot hide them.
     """
     return Settings(

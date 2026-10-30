@@ -62,22 +62,38 @@ def _snapshot(request: Request) -> dict | None:
 
 @router.get("/starts")
 def planning_starts(request: Request) -> dict:
+    from app.services.robot_geometry import planning_geometry_public
+    from app.services.robot_state import robot_state
+
     settings = request.app.state.settings
     try:
         graph = _graph(request, None)
         registry = load_registered(settings.physical_fleet_path)
     except PlanningFailure as exc:
         return _failure(exc)
+    snapshot = _snapshot(request)
+    states = {
+        record["robot_id"]: robot_state(
+            record["robot_id"],
+            settings,
+            snapshot if record["robot_id"] == "pinky-1" else None,
+        )
+        for record in registry
+    }
+    body = planning_geometry_public()
     return {
         "map": {
             "source": graph.grid.geometry.yaml_path.name,
             "planning_resolution_m": graph.planning_resolution_m,
+            "planning_resolution_requested_m": graph.requested_planning_resolution_m,
+            "planning_resolution_applied_equals_requested": graph.resolution_applied_equals_requested,
             "robot_radius_m": graph.robot_radius_m,
             "planning_depart_slot_s": settings.planning_depart_slot_s,
             "planning_profile": f"lattice-{graph.planning_resolution_m:.3f}-r{graph.robot_radius_m:.3f}",
+            "robot_geometry": body,
             "collision_safety_verified": False,
         },
-        "robots": validate_robot_starts(graph, registry, _snapshot(request)),
+        "robots": validate_robot_starts(graph, registry, snapshot, states),
     }
 
 
@@ -121,6 +137,8 @@ def planning_conflicts(request: Request) -> dict:
 
 @router.post("/routes/preview")
 def planning_preview(body: _PreviewIn, request: Request):
+    from app.services.robot_state import robot_state
+
     settings = request.app.state.settings
     try:
         registry = load_registered(settings.physical_fleet_path)
@@ -128,10 +146,17 @@ def planning_preview(body: _PreviewIn, request: Request):
         if record is None:
             raise HTTPException(status_code=404, detail=f"Robot is not registered: {body.robot_id}")
         graph = _graph(request, body.allow_diagonal)
+        snapshot = _snapshot(request)
+        live = robot_state(
+            body.robot_id,
+            settings,
+            snapshot if body.robot_id == "pinky-1" else None,
+        )
         start_x, start_y, source = resolve_start(
             record,
             None if body.start is None else {"x": body.start.x, "y": body.start.y},
-            _snapshot(request),
+            snapshot,
+            live,
         )
         count = settings.planning_max_candidates if body.max_candidates is None else body.max_candidates
         return preview_route(

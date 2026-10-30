@@ -46,14 +46,20 @@ def test_expired_live_tf_is_not_described_as_missing():
     assert "live_pose_checked_at missing" not in reasons
 
 
-def test_withheld_names_the_closed_gate_and_hides_the_pose():
-    monitor = PhysicalNav2Auto(SimpleNamespace(physical_nav2_robot_id="pinky-1", physical_initial_pose_yaw_deg=0.0))
+def test_fresh_live_tf_is_not_withheld_for_ssh_or_amcl_flags():
+    """ros_topic mode: a fresh TF sample is shown even if SSH/AMCL flags are false."""
+    monitor = PhysicalNav2Auto(SimpleNamespace(
+        physical_nav2_robot_id="pinky-1",
+        physical_initial_pose_yaw_deg=0.0,
+        physical_initial_pose_auto=False,
+        data_dir="/tmp/fms-test-data",
+    ))
     fresh = datetime.now(timezone.utc).isoformat()
     monitor._published_state.update(
         checked_at=fresh,
-        ssh_connected=True,
+        ssh_connected=False,
         amcl_active=False,
-        initial_pose_confirmed=True,
+        initial_pose_confirmed=False,
         map_matches_fms=True,
         map_mismatch_detail="",
         pose={"x": 1.0, "y": 2.0, "yaw": 0.0},
@@ -63,10 +69,10 @@ def test_withheld_names_the_closed_gate_and_hides_the_pose():
     monitor._live_pose = {"x": 3.0, "y": 4.0, "yaw": 0.1}
     monitor._live_pose_checked_at = fresh
     snap = monitor.snapshot()
-    assert snap["live_tf_status"] == "withheld"
-    assert snap["pose"] is None
-    assert "amcl_active is false" in snap["live_tf_withheld_reason"]
-    assert snap["five_cm_blockers"] == [snap["live_tf_withheld_reason"]]
+    assert snap["live_tf_status"] == "fresh"
+    assert snap["pose"]["x"] == 3.0
+    assert snap.get("live_tf_withheld_reason") == ""
+    assert "live TF pose withheld" not in snap["five_cm_blockers"]
 
 
 def test_lookup_failure_stays_distinct_from_expiry():
@@ -75,7 +81,11 @@ def test_lookup_failure_stays_distinct_from_expiry():
 
 
 def test_snapshot_drops_expired_live_tf_without_reusing_poll_pose():
-    monitor = PhysicalNav2Auto(SimpleNamespace(physical_nav2_robot_id="pinky-1", physical_initial_pose_yaw_deg=0.0))
+    monitor = PhysicalNav2Auto(SimpleNamespace(
+        physical_nav2_robot_id="pinky-1",
+        physical_initial_pose_yaw_deg=0.0,
+        data_dir="/tmp/fms-test-data",
+    ))
     fresh = datetime.now(timezone.utc).isoformat()
     expired = (datetime.now(timezone.utc) - timedelta(seconds=10)).isoformat()
     monitor._published_state.update(

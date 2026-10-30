@@ -1,8 +1,8 @@
 """Registered fleet for the control screen.
 
-pinky-1 is the real SSH/Nav2 robot. pinky-2 and pinky-3 are virtual registry
-entries. A virtual robot never receives an SSH result, a TF pose, or a Nav2
-ready flag from this module.
+pinky-1 is the real ROS Domain / Nav2 robot. pinky-2 and pinky-3 are virtual
+registry entries. A virtual robot never receives an SSH result, a TF pose, or a
+Nav2 ready flag from this module. SSH is optional diagnostics for ros_topic mode.
 """
 from __future__ import annotations
 
@@ -156,7 +156,7 @@ def present_robot(
             "nav2_ready": None,
             "ros_online": False,
             "nav2_state": "not_applicable",
-            "nav2_detail": "가상 로봇 · 실물 연결 대기 · SSH/Nav2/TF 미연결",
+            "nav2_detail": "가상 로봇 · Registry home만 사용",
             "controller_ready": None,
             "map_matches_fms": None,
             "task_assignable": True,
@@ -164,51 +164,39 @@ def present_robot(
             "home": _home_view(record, geometry),
         }
 
-    if ssh_robot is None:
-        return {
-            **identity,
-            "host": None,
-            "connection_status": "ssh_offline",
-            "connection_kind": "ssh_authenticated",
-            "connection_phase": "disconnected",
-            "ssh_online": False,
-            "pose": None,
-            "pose_checked_at": None,
-            "pose_source": None,
-            "nav2_ready": False,
-            "ros_online": False,
-            "nav2_state": "waiting_for_ssh",
-            "nav2_detail": "SSH 인증 전 · 실시간 TF 없음",
-            "controller_ready": False,
-            "map_matches_fms": None,
-            "task_assignable": True,
-            "motion_allowed": False,
-            "home": None,
-        }
-
+    ssh_online = ssh_robot is not None
     robot = {
         **identity,
-        "host": ssh_robot.get("host"),
-        "connection_status": "ssh_connected",
-        "connection_kind": "ssh_authenticated",
-        "connection_phase": "ssh_connected",
-        "ssh_online": True,
+        "host": None if ssh_robot is None else ssh_robot.get("host"),
+        "connection_status": "ssh_connected" if ssh_online else "ssh_offline",
+        "connection_kind": "ssh_authenticated" if ssh_online else "ros_domain",
+        "connection_phase": "ssh_connected" if ssh_online else "ros_only",
+        "ssh_online": ssh_online,
         "pose": None,
         "pose_checked_at": None,
         "pose_source": None,
         "nav2_ready": False,
         "ros_online": False,
         "nav2_state": None,
-        "nav2_detail": None,
+        "nav2_detail": None if ssh_online else "SSH 미연결(선택) · ROS Domain 관측 사용",
         "controller_ready": False,
         "map_matches_fms": None,
         "task_assignable": True,
         "motion_allowed": False,
         "home": None,
     }
+    if worker is not None and worker.get("robot_id") == record["robot_id"]:
+        if worker.get("connection_state") in {"ros_connected", "nav2_ready"}:
+            robot["ros_online"] = True
+        if worker.get("nav2_ready"):
+            robot["nav2_ready"] = True
+        if worker.get("tf_status"):
+            robot["live_tf_status"] = worker.get("tf_status")
+        if worker.get("receiver_ready") is not None:
+            robot["receiver_ready"] = worker.get("receiver_ready")
     if nav2 is None or nav2.get("robot_id") not in (None, record["robot_id"]):
         return robot
-    robot["ros_online"] = bool(nav2.get("ros_online"))
+    robot["ros_online"] = bool(nav2.get("ros_online")) or bool(robot.get("ros_online"))
     robot["nav2_ready"] = bool(nav2.get("nav2_ready"))
     robot["controller_ready"] = bool(nav2.get("cmd_vel_chain_ready")) and bool(nav2.get("nav2_ready"))
     robot["nav2_state"] = nav2.get("state")
@@ -218,16 +206,24 @@ def present_robot(
     robot["map_mismatch_detail"] = nav2.get("map_mismatch_detail")
     robot["live_tf_status"] = nav2.get("live_tf_status")
     robot["five_cm_blockers"] = list(nav2.get("five_cm_blockers") or [])
+    robot["bringup_phase"] = nav2.get("bringup_phase")
+    robot["initial_pose_state"] = nav2.get("initial_pose_state")
+    robot["initial_pose_sent"] = bool(nav2.get("initial_pose_sent"))
+    robot["initial_pose_confirmed"] = bool(nav2.get("initial_pose_confirmed"))
+    robot["initial_pose_auto"] = bool(nav2.get("initial_pose_auto"))
+    robot["initial_pose_target"] = nav2.get("initial_pose_target")
+    robot["initial_pose_source"] = nav2.get("initial_pose_source")
+    robot["localization_ready"] = bool(nav2.get("localization_ready"))
     pose = nav2.get("pose")
     observed_at = nav2.get("pose_checked_at")
-    if nav2.get("ssh_connected") and isinstance(pose, dict) and observed_at:
+    if isinstance(pose, dict) and observed_at:
         robot["pose"] = {
             "x": pose.get("x"),
             "y": pose.get("y"),
             "yaw": pose.get("yaw"),
         }
         robot["pose_checked_at"] = observed_at
-        robot["pose_source"] = "tf:map->base_footprint"
+        robot["pose_source"] = nav2.get("pose_source") or "tf:map->base_footprint"
         if geometry is not None and _finite_pose(robot["pose"]):
             located = describe_map_point(geometry, float(pose["x"]), float(pose["y"]), float(pose.get("yaw") or 0.0))
             robot["pose"]["grid"] = located["grid"]
